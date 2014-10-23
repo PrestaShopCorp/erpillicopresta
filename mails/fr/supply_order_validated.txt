@@ -1,0 +1,13 @@
+Bonjour,
+
+Nous vous informons que la commande fournisseur num&eacute;ro {id_supply_order} a été validé.
+
+Cette commande contient les produits suivants: 
+
+R&eacute;f&eacute;rence - R&eacute;f&eacute;rence fournisseur - Nom - Comment - Prix unitaire HT - Quantit&eacute;
+
+{txt_order_details}
+
+Cordialement.
+
+{shop_name}

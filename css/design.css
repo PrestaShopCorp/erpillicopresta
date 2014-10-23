@@ -1,0 +1,656 @@
+/**
+* 2007-2013 PrestaShop
+*
+* NOTICE OF LICENSE
+*
+* This source file is subject to the Academic Free License (AFL 3.0)
+* that is bundled with this package in the file LICENSE.txt.
+* It is also available through the world-wide-web at this URL:
+* http://opensource.org/licenses/afl-3.0.php
+* If you did not receive a copy of the license and are unable to
+* obtain it through the world-wide-web, please send an email
+* to license@prestashop.com so we can send you a copy immediately.
+*
+* DISCLAIMER
+*
+* Do not edit or add to this file if you wish to upgrade PrestaShop to newer
+* versions in the future. If you wish to customize PrestaShop for your
+* needs please refer to http://www.prestashop.com for more information.
+*
+*  @author    Illicopresta SA <contact@illicopresta.com>
+*  @copyright 2007-2014 Illicopresta
+*  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+*  International Registered Trademark & Property of PrestaShop SA
+*/
+
+#div_mouseover
+{
+    height: 100px;
+    width: 200px;
+    border: #00529b 1px solid;
+    background-color: #bde5f8;
+    padding: 5px;
+    color: #4052b2;
+}
+
+#table_popup
+{
+    text-align: left;
+    width: 100%;
+}
+
+#table_popup, #table_popup th, #table_popup td
+{
+    border:1px solid #00529b;
+    border-collapse: collapse;
+    padding: 5px;
+}
+
+.table_select
+{
+    width: 100px;
+}
+
+.icon-search {
+	width:10px;
+	height:10px;
+}
+
+.hide
+{
+    display:none;
+}
+
+#tbl_container, #dialog-confirm_inventory
+{
+    text-align:left
+}
+
+#tbl_container td input[readOnly="readOnly"]{
+    border: none;
+    width: 139px;
+} 
+    
+
+input.overGap
+{
+    border-color:red;
+}
+
+td.quantity_after.right.stockAImpact
+{
+    color:red;
+}
+
+td.new_stock.right.stocBAImpact
+{
+    color:blue;
+}
+
+.footer_total
+{
+	background-color: #ebedf4;
+	border: 1px solid #c2c4d9;
+	margin-bottom: 15px;
+	padding: 10px;
+	display: block;
+	max-height: 250px;
+	overflow:auto;
+}
+
+/******** Filter ****************/
+
+.clear
+{
+    clear:both;
+}
+
+.alignRight
+{
+    text-align:right;
+}
+
+#filter_list {
+	clear:both;
+	margin:10px 0 0 0;
+}
+
+.prestashop_1_5 #filter_list select{
+	width:200px;
+}
+
+.prestashop_1_6 .moreless_select, .prestashop_1_5 .moreless_select {
+    width: 160px;
+    display: inline-block;
+}
+
+.prestashop_1_6 #quantity_filter, 
+.prestashop_1_6 .moreless_button
+{
+    width: 100px;
+    display: inline-block;
+}
+
+.prestashop_1_5 #quantity_filter, 
+.prestashop_1_5 .moreless_button { 
+    width: 128px;
+     display: inline-block;
+}
+
+#tbl_csv {
+    text-align: left;
+}
+
+
+.prestashop_1_5 .filter-stock #warehouseA_filter {
+	float: left;
+}
+
+.prestashop_1_5 .filter-stock #warehouseB_filter {
+	float: left;
+	margin-left: 20px;
+}
+
+.prestashop_1_5 .filter-stock #warehouseA_filter , .prestashop_1_5 #warehouseB_filter  {
+	margin-bottom:15px;
+}
+
+.prestashop_1_5 .filter-stock #warehouseA_filter label, .prestashop_1_5 #warehouseB_filter  label {
+	display:block;
+	float:none;
+	text-align: left;
+	margin-bottom:5px;
+}
+
+.prestashop_1_5 .filter-stock #name_or_ean {
+	width: 416px;
+	height:25px;
+	border: 1px gray solid;
+	padding-left:5px;
+}
+
+.prestashop_1_5 .filter-stock .filter-one {
+	float:left;
+	margin-right:30px;
+}
+
+.prestashop_1_5 .filter-stock .filter-two div label{
+	width: 156px;
+	text-align: left;
+}
+
+/* advanced order controller */
+
+input[name=submitBulkmultipleChangeStatesorder] {
+    display: none;
+}
+.table_popup
+{
+    text-align: left;
+    width: 100%;
+}
+
+.table_popup, .table_popup th, .table_popup td
+{
+    border:1px solid #00529b;
+    border-collapse: collapse;
+    padding: 5px;
+}
+.cluetip-inner a {
+	color: #268CCD;
+}
+
+.stock_level_color {
+	display:inline-block; 
+	width:16px;
+	height:16px;
+}
+
+.multiple_selection {
+    position: relative;
+    top: 5px;
+}
+
+#dialog_select_product #content{
+    overflow: auto;
+    max-height: 500px;
+    position: relative;
+}
+
+.multiple_selection_loder {
+    display: none;
+}
+
+#product_select_table 
+{
+   border: 1px #ccc solid;
+   font: 400 12px/1.42857 "Open Sans", Helvetica, Arial, sans-serif;
+}
+
+#product_select_table tr th, 
+#product_select_table tr tr 
+{
+    padding:5px;
+}
+
+#product_select_table thead {
+    background-color: #DFF0FC;
+    border: 2px #ccc solid;
+}
+
+/*Style de mise à jour des données AJAX*/
+input[type="text"].updatedField, span.updatedField {
+    background-color:gray;
+    color:white; 
+}
+
+.invoice
+{
+    display:none;
+}
+
+
+.legende_nstock {
+    margin-top: 15px; 
+    float: left;
+}
+
+.legende_nstock span {
+      margin-right:0px; 
+      margin-left:15px; 
+      display:inline-block;
+      width:13px; 
+      height:13px
+}
+
+.legende_nstock .alerte {
+    background-color: orange;
+}
+
+.legende_nstock .rupture {
+    background-color: red;
+}
+
+.legende_nstock .normal {
+    background-color: black;
+}
+
+.legende_nstock .surstock {
+    background-color: purple;
+}   
+
+.legende_nstock .niveau_nr {
+    background-color:   gray;
+}
+
+.four_principal {
+    background-color:   #D2E696;
+}
+
+.legende_produit_four {
+    background-color:   #D2E696;
+    display:inline-block;
+    width:13px; 
+    height:13px;
+    position: relative;
+    top: 2px;
+    margin-right: 6px;
+}
+
+/***** GENERATION DES COMMANDES FOURISSEURS ******/
+
+/*bouton générer*/
+.process-icon-generate-supply-orders {
+    background-image: url('.../../../img/generate.png');
+}
+
+.cluetip-default #cluetip-inner {
+    width: 98%;
+}
+
+#extruderLeft.prestashop_1_6 {
+    z-index: 999999 !important;
+}
+
+#extruderLeft.extruder .text, #extruderLeft.extruder .extruder-content {
+    background: #900000;
+    border:none;
+}
+#extruderLeft.prestashop_1_6 .flap {
+    width: 40px;
+}
+
+#extruderLeft.prestashop_1_6 .voice a.label {
+    display: block;
+    height: 30px;
+    color: white;
+    padding-top: 0;
+    text-decoration: none;
+    font: 18px/24px Arial,Helvetica,sans-serif;
+    text-align: left;
+    color: white;
+}
+
+#extruderLeft.prestashop_1_6 .voice {
+    margin-bottom: 0px;
+    padding-bottom: 33px;
+}
+
+#extruderLeft .extruder-content {
+    height: 363px !important;
+    border-radius: 15px 0px 0px 15px;
+}
+
+.table tbody tr td span select {
+	display:inline-block;
+}
+
+/*stock transfer page */
+#stock_transfer_content .table_grid{
+    width: 50%;
+    float:left; 
+}
+
+.filter-stock select{
+    width: 200px
+}
+
+table.supply_order .selectUpdateSupplyOrderState
+{
+    width: 91%;
+    min-width: 100px;
+}
+
+.location_column input[type=text]{
+    width:90%;
+    margin-bottom: 2px;
+}
+
+/* style for 1.6 boostrap*/
+.icon-book:before, .icon-AdminErpZone:before {
+    content: "\f0ad";
+}
+
+.icon-AdminAdvancedStock:before, 
+.icon-AdminStockTransfer:before, 
+.icon-AdminStockGap:before, 
+.icon-AdminAdvancedSupplyOrder:before,
+.icon-AdminInventory:before,
+.icon-AdminGenerateSupplyOrders:before { 
+    content: "\f187"; 
+}
+
+.icon-AdminAdvancedOrder:before {
+    content: "\f09d"; 
+}
+
+.icon-AdminAdvancedSupplier:before {
+    content: "\f02d";
+}
+
+.adminadvancedorder .bulk-actions{
+    display: none;
+}
+
+.prestashop_1_5.inventory .panel, 
+.prestashop_1_5.advanced_stock .panel 
+{
+    background: none;
+    padding: 0px 20px 20px 20px;
+}
+
+.prestashop_1_5.inventory .form-horizontal .control-label, 
+.prestashop_1_5.advanced_stock .form-horizontal .control-label 
+{
+    text-align: left;
+}
+
+.prestashop_1_5.inventory h3, 
+.prestashop_1_5.advanced_stock h3
+{
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.prestashop_1_5.inventory .form-group, 
+.prestashop_1_5.advanced_stock .form-group 
+{
+    margin-bottom: 5px;
+}
+
+/*personnalisation theme*/
+.block-filter , .infos-franco, .block-multiple-selection{
+    background-color: #dff0d8 !important;
+    box-shadow:none !important;
+    -webkit-box-shadow:none !important;  
+}
+
+.block-multiple-selection, .block-transfert-hold{
+    background-color: #DFF0FC !important;
+}
+
+.panel{
+     border: solid 1px #ccc !important;
+}
+
+.block-filter .panel-heading {
+    margin: -20px -16px 0px -16px !important;
+}
+
+.form-horizontal#orders .panel,
+#products_in_supply_order,
+.form-horizontal#templates .panel{
+    border: 2px #ccc solid !important
+}
+
+.block-multiple-selection .table th{
+    border: 1px #ccc solid;
+}
+
+#products_in_supply_order input[type="text"] {
+    display: inline;
+    width: 70%;
+}
+
+.received_equal_expected td{
+     background-color: #00bb35 !important;
+     color: #fff !important;
+}
+
+.received_sup_expected td{
+     background-color: #fb0008 !important;
+     color: #fff !important;
+}
+
+#transfert_attente tr td{
+    background-color: transparent;
+}
+
+/** stock **/
+
+.legende_stockimg p
+{
+    color:red;
+    font-style: italic;
+}
+
+.bootstrap .table tbody > tr > td,
+.bootstrap .table thead > tr > th span.title_box {
+    color:#000;
+}
+
+.button.validate-transfert{
+    background: red;
+    color: white;
+    border-radius: 5px;
+    width: 150px;
+    height: 35px;
+    text-shadow: none;
+}
+
+.prestashop_1_6 .validate-transfert{
+    position: absolute;
+    top: 38px;
+    right: 19px;
+}
+
+
+/***************************************************************************** -> stock A
+/* stock A : border top*/
+#stock_transfer_content form .table tbody tr:first-child td:nth-child(4),
+#stock_transfer_content form .table tbody tr:first-child td:nth-child(5),
+#stock_transfer_content form .table tbody tr:first-child td:nth-child(6),
+#stock_transfer_content form .table tbody tr:first-child td:nth-child(7)
+{
+    border-top:1px blue solid !important;
+}
+
+/* stock A : border bottom*/
+#stock_transfer_content form .table tbody tr:last-child td:nth-child(4),
+#stock_transfer_content form .table tbody tr:last-child td:nth-child(5),
+#stock_transfer_content form .table tbody tr:last-child td:nth-child(6),
+#stock_transfer_content form .table tbody tr:last-child td:nth-child(7)
+{
+    border-bottom:1px blue solid !important;
+}
+
+
+/* stock A : border left*/
+#stock_transfer_content form .table tbody tr td:nth-child(4)
+{
+    border-left:1px blue solid !important;
+}
+
+/* stock A : border right*/
+#stock_transfer_content form .table tbody tr td:nth-child(7)
+{
+    border-right:1px blue solid !important;
+}
+
+/***************************************************************************** -> stock B
+/* stock B : border top*/
+#stock_transfer_content form .table tbody tr:first-child td:nth-last-child(1),
+#stock_transfer_content form .table tbody tr:first-child td:nth-last-child(2),
+#stock_transfer_content form .table tbody tr:first-child td:nth-last-child(3)
+{
+    border-top:1px red solid !important;
+}
+
+/* stock A : border bottom*/
+#stock_transfer_content form .table tbody tr:last-child td:nth-last-child(1),
+#stock_transfer_content form .table tbody tr:last-child td:nth-last-child(2),
+#stock_transfer_content form .table tbody tr:last-child td:nth-last-child(3)
+{
+    border-bottom:1px red solid !important;
+}
+
+
+/* stock A : border left*/
+#stock_transfer_content form .table tbody tr td:nth-last-child(3)
+{
+    border-left:1px red solid !important;
+}
+
+/* stock A : border right*/
+#stock_transfer_content form .table tbody tr td:nth-last-child(1)
+{
+    border-right:1px red solid !important;
+}
+
+/*mise en forme du tableau issu d'une pastille orange dans les commandes clients*/
+#entete_pastille_orange th
+{
+    background-color: rgb(211, 84, 0);
+    padding: 5px 40px;
+    margin-right: 20px;
+    margin-left: 20px;
+    color : white;
+}
+
+#erp_commande_pastille_orange_table tr[class^="details_detailsAjax_"]
+{
+    border-color: black;
+    border-style: dashed;
+    border-width: 0px 1px;
+}
+
+#erp_commande_pastille_orange_table tr[class^="details_detailsAjax_"] td:only-child form tr
+{
+    text-align: center;
+    background-color: #E1E1E1;
+    width: 100%;
+}
+
+#erp_commande_pastille_orange_table tr[class^="details_detailsAjax_"] td:only-child form .panel th
+{
+    padding: 0px 40px;
+}
+
+/*Si plus de deux produits, le sous-tableau généré par prestashop contient une 7è colonne <th> mais pas les <td> correspondants*/
+#erp_commande_pastille_orange_table tr[class^="details_detailsAjax_"] td:only-child form .panel th:nth-child(7)
+{
+    width: 0px;
+    padding: 0px;
+}
+
+#erp_commande_pastille_orange_table tr[class^="details_detailsAjax_"] td:only-child form td
+{
+    background-color: #F1F1F1;
+    border-color: #E1E1E1;
+    border-style: solid;
+    border-width: 0px;
+    border-bottom-width: 1px;
+    text-align: center;
+}
+
+#erp_commande_pastille_orange_table tr[class^="details_detailsAjax_"] td:only-child form
+{
+    border-width: 0px 20px;
+    border-color: rgb(241, 196, 15);
+    border-style: solid;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    margin: 0px 30px;
+}
+
+#erp_commande_pastille_orange_table .legende_nstock
+{
+    padding-top: 0px;
+    margin-bottom: 20px;
+    margin-top: 3px;
+    text-align: center;
+    margin-left:60px;
+    margin-right:30px;
+}
+
+#erp_commande_pastille_orange_table .panel
+{
+    border: none !important;
+}
+
+.row_pastille_orange
+{
+    border-top-width:2px; 
+    border-top-style:solid; 
+    border-top-color:rgb(211, 84, 0);
+    padding: 5px 40px;
+    background: rgb(241, 196, 15);
+}
+
+/*Pour assurer  de pouvoir voir tout le tableau malgré la div qui apparait en bas de la fenêtre.*/
+#erp_commande_pastille_orange_table
+{
+    margin-bottom: 40px;
+}
+
+
+/* Mise en forme de la pop-up de confirmation des paramètres*/
+.ui-dialog[aria-describedby="dialog-confirmWeight"]
+{
+    width: 500px !important;
+}
+
+input[class^="check-confirmWeight-"]
+{
+    width: 50px;
+}

@@ -1,0 +1,13 @@
+Hello,
+
+We inform you that the supplier order number{id_supply_order} was validated.
+
+This supplier order contains the following products :
+
+Reference - Supplier Reference - Name - Comment - Unit Price (tax excl.) - Quantity
+
+{txt_order_details}
+
+Cordially.
+
+{shop_name}
