@@ -2,7 +2,7 @@
         <module>
             <name>erpillicopresta</name>
             <displayName><![CDATA[1 Click ERP Illicopresta]]></displayName>
-            <version><![CDATA[2.6]]></version>
+            <version><![CDATA[2.6.1]]></version>
             <description><![CDATA[ERP int&eacute;gr&eacute; pour Prestashop]]></description>
             <author><![CDATA[illicopresta]]></author>
             <tab><![CDATA[administration]]></tab>

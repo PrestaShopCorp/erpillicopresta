@@ -66,7 +66,7 @@ class ErpIllicopresta extends Module
 
 		$this->name = 'erpillicopresta';
 		$this->tab = 'administration';
-		$this->version = '2.6';
+		$this->version = '2.6.1';
 		$this->author = 'illicopresta';
 		$this->displayName = $this->l('1 Click ERP Illicopresta');
 		$this->description = $this->l('Save 2 hours / day with this complete and scalable ERP pack, quickly and effectively manage your shop (shipments, inventory, management and export inventory, purchase orders ...)');
@@ -863,7 +863,10 @@ class ErpIllicopresta extends Module
                     if($result['code'] == 200)
                     {
                     	if ($this->installModuleTabs())
+			{
+				Configuration::updateValue('ERPILLICOPRESTA_CONFIGURATION_OK', true);
                              $output_success .= $this->l('Licence updated successfully').'<br/>';
+			}
                          else
                              $output_error .= $this->l('Licence updated successfully but unable to install tabs').'<br/>';
                     }
