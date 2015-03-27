@@ -19,7 +19,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -53,7 +53,7 @@ class StockImage extends ObjectModel
 		)
 	);
 
-	/* Retourne la liste des images de stocks enregistrées */
+	/* Returns a list of stocks images recorded  */
 	public static function getStockImages()
 	{
 		// build query
@@ -90,10 +90,10 @@ class StockImage extends ObjectModel
 		return Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($query);
 	}
 
-	/* Création du container */
+	/* Create container */
 	public function createImage($id_stock_image, $name_stock_image)
 	{
-		// Suppression d'abord de l'image et des ligne de stock liées
+		// First deleting image and linked stock lines
 		if ($id_stock_image != -1)
 		{
 			$this->id_stock_image = trim($id_stock_image);
@@ -113,18 +113,18 @@ class StockImage extends ObjectModel
 			}
 		}
 
-		// Création de la nouvel image
+		// CREATE NEW IMAGE
 		$this->id_stock_image = '';
 		$this->name = $name_stock_image;
 		$this->type_stock = Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT');
 
-		//Création du container d'image de stokc
+		// Create stock image container
 		if ($this->add(true))
 		{
-			// Pour chaque produit en stock, on récupère les informations nécessaires
+			// For each product in stock, getting necessary informations
 			$products = ErpStock::getAllProductInStock($this->type_stock, (int)Tools::getValue('id_warehouse'));
 
-			// Enregistrement
+			// Saving
 			foreach ($products as $product)
 			{
 				$product['id_stock_image'] = $this->getLastId();
@@ -133,7 +133,7 @@ class StockImage extends ObjectModel
 		}
 	}
 
-	/* Enregistrement d'une ligne de stock */
+	/* Saving a stock line */
 	public function createStockImageContent($product)
 	{
 		$image_content = new StockImageContent();

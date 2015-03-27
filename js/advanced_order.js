@@ -18,7 +18,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -39,7 +39,7 @@ var IEexpeCheck;
 
 
 function OnReady () {
-	// Initialisation info bulle
+	// Tooltip init
 	/*$("a.info-orders").cluetip({
 		showTitle: true,
 		ajaxCache: false,
@@ -56,7 +56,7 @@ function OnReady () {
             'closeText': '<img src="../img/admin/cross.png">'
         });
 	
-	// Bloquage de l'infobulle sur les stocks pas en orange
+	// Blocking tooltip on stocks not orange
 	var tabLinkStock = $("a#info-stock");
 	for (i in  tabLinkStock){
 		if (((tabLinkStock.eq(i)).children("img")).attr('alt') !== '2'){
@@ -64,7 +64,7 @@ function OnReady () {
 		}
 	};
 
-	// Initialisation dialog confirmation changement d'un statut
+	// Init dialog confirmation status change
 	$("#dialog-confirmUpdateOrderState").dialog({
 		autoOpen: false,
 		show: "clip",
@@ -90,7 +90,7 @@ function OnReady () {
                 }
         ]}); 
     
-	// Initialisation dialog confirmation des poids 
+	// Init dialog confirmation weights 
 	$("#dialog-confirmWeight").dialog({
 		autoOpen: false,
 		show: "clip",
@@ -115,7 +115,7 @@ function OnReady () {
                 }            
         ]});
         
-	// Initialisation dialog chgement statuts en masse
+	// Init dialog confirmation massive status change
 	$("#dialog-updateStates").dialog({
 		autoOpen: false,
 		show: "clip",
@@ -135,10 +135,10 @@ function OnReady () {
                     text: $('#transtation_update').val(),
                     click: function() 
                     {
-                        //On vérifie si certaines commandes sont en alerte de stock
+                        // Check if some commands are on stock alert
                         if (tabCheckedAlert.length > 0){
 
-                                // Remplir dialog
+                                // Fill in dialog
                                 var tableContent = '<table style="text-align: center;" class="table_popup"><tr><th>ID</th><th>'+$('#transtation_alert').val()+'</th><th>'+$('#transtation_confirm_update').val()+'</th></tr>';
                                 for (var i in tabCheckedAlert){
                                         tableContent += '<tr><td>&nbsp;'+i+'&nbsp;</td><td><img src="'+tabCheckedAlert[i]+'"/></td><td><input type="checkbox" class="check-confirmOrderInAlert-'+i+'" checked="checked"/></td></tr>';
@@ -155,7 +155,7 @@ function OnReady () {
                 }            
         ]});
     
-	// Initialisation dialog stock alert
+	// Init dialog stock alert
 	$("#dialog-confirmUpdateOrderInAlert").dialog({
 		autoOpen: false,
 		show: "clip",
@@ -168,7 +168,7 @@ function OnReady () {
                     text: $('#transtation_continue').val(),
                     click: function() 
                     {
-                        // On prends toutes les commandes non chékés, on les supprimes de tabChecked
+                        // Take all unchecked orders, then delete from tabChecked
                         var checkBoxAlert = $("input[class^='check-confirmOrderInAlert-']");
                         for (var i = 0; i < checkBoxAlert.length; i += 1){
                                 if (!(checkBoxAlert.eq(i)).attr("checked")){
@@ -193,7 +193,7 @@ function OnReady () {
 		$("#dialog-confirmUpdateOrderState").dialog("open");
 	});
 
-	//Variables pour l'expédition
+	//Variables for shipping
 	MRelayCheck = ($('#MRToken').val() !== 'false') ? false : true;
 	IEexpeCheck = ($('#ExpeditorToken').val() !== 'false') ? false : true;
 	
@@ -210,7 +210,7 @@ function OnReady () {
 
 function updateSelection (){
 
-	// On remplis le tableau des commandes selectionnés
+	// Fill table of Selected orders
 	tabChecked = [];
 	tabCheckedAlert = [];
         var id_order_checked;
@@ -226,13 +226,49 @@ function updateSelection (){
 			}
 		}
 	}    
-	// Si aucune commande séléctionnée
+	// If no command selected
 	if (tabChecked.length === 0){
                 jAlert ($('#transtation_select_least_one_order').val(), $('#transtation_alert').val());
 		return false;
 	}
 	  
 	$("#dialog-updateStates").dialog("open");
+}
+
+
+function updateStates (dialog_element) {
+
+        $('#dialog-updateStates img.loader-update-states').show('slow');
+	var idState = ($('.selectUpdateStates option:selected').attr('class')).substring(19);
+	$.ajax({
+		type: 'POST',
+		url: 'index.php?controller=AdminAdvancedOrder&ajax=1&task=updateOrderStatus&token='+token,
+		dataType:'json',
+		data: {
+                    'idOrder' : tabChecked,
+                    'idState' : idState,
+                    //'token': token,
+                    'action': 'masse',
+                    //'task' : 'updateOrderStatus',
+                    'id_employee' : $('input#id_employee').val()
+                },
+		success: (function (retour) {
+                        if( retour.free_limitation_msg )
+                        {
+                            jAlert(retour.free_limitation_msg);
+                            dialog_element.dialog("close");
+                            $('#dialog-updateStates img.loader-update-states').hide();
+                        }
+                        else {
+                            //dialog_element.dialog("close");
+                            $('#content form').prepend('<input type="hidden" id="linkPDF" name="linkPDF" value="'+retour['ordersWithoutError']+'"/>');
+                            $('#content form').prepend('<input type="hidden" id="newState" name="newState" value="'+idState+'"/>');
+                            $('#content form').prepend('<input type="hidden" id="handle" name="handle" value="'+retour['message']+'"/>');
+                            $('#content form').submit();
+                        }
+		})
+	});
+
 }
 
 function updateOrderState (){
@@ -242,19 +278,20 @@ function updateOrderState (){
 
 	$.ajax({
 		type: 'POST',
-		url: '../modules/erpillicopresta/ajax/ajax.php',
+		url: 'index.php?controller=AdminAdvancedOrder&ajax=1&task=updateOrderStatus&token='+token,
 		dataType:'json',
 		data: {
                     'idOrder' : idOrder, 
                     'idState' : idState, 
-                    'token': token, 
+                    //'token': token, 
                     'action': 'unique', 
-                    'task':'updateOrderStatus', 
+                    //'task':'updateOrderStatus', 
                     'id_employee' : $('input#id_employee').val() 
                 },
 		success: (function (retour) {
+                    
 			if (retour['res']) {
-				// POPUP DE CONFIRMATION
+				// CONFIRMATION POPUP
 				($('.selectUpdateOrderState-'+idOrder+'').parent()).css('background-color', retour['newColor']);
 				
                                 var message = $('#transtation_order_state_2').val();
@@ -290,36 +327,45 @@ function checkAllId () {
 	}
 }
 
-function updateStates (dialog_element) {
-
-        $('#dialog-updateStates img.loader-update-states').show('slow');
-	var idState = ($('.selectUpdateStates option:selected').attr('class')).substring(19);
-	$.ajax({
-		type: 'POST',
-		url: '../modules/erpillicopresta/ajax/ajax.php',
-		dataType:'json',
-		data: {
-                    'idOrder' : tabChecked,
-                    'idState' : idState,
-                    'token': token,
-                    'action': 'masse',
-                    'task' : 'updateOrderStatus',
-                    'id_employee' : $('input#id_employee').val()
-                },
-		success: (function (retour) {
-                        //dialog_element.dialog("close");
-                        $('#content form').prepend('<input type="hidden" id="linkPDF" name="linkPDF" value="'+retour['ordersWithoutError']+'"/>');
-                        $('#content form').prepend('<input type="hidden" id="newState" name="newState" value="'+idState+'"/>');
-                        $('#content form').prepend('<input type="hidden" id="handle" name="handle" value="'+retour['message']+'"/>');
-			$('#content form').submit();
-		})
-	});
-
-}
+//function updateStates (dialog_element) {
+//
+//        $('#dialog-updateStates img.loader-update-states').show('slow');
+//	var idState = ($('.selectUpdateStates option:selected').attr('class')).substring(19);
+//	$.ajax({
+//		type: 'POST',
+//		url: '../modules/erpillicopresta/ajax/ajax.php',
+//		dataType:'json',
+//		data: {
+//                    'idOrder' : tabChecked,
+//                    'idState' : idState,
+//                    'token': token,
+//                    'action': 'masse',
+//                    'task' : 'updateOrderStatus',
+//                    'id_employee' : $('input#id_employee').val()
+//                },
+//		success: (function (retour) {
+//                    
+//                        if( retour.free_limitation_msg )
+//                        {
+//                            jAlert(retour.free_limitation_msg);
+//                            dialog_element.dialog("close");
+//                            $('#dialog-updateStates img.loader-update-states').hide();
+//                        }
+//                        else {
+//                            //dialog_element.dialog("close");
+//                            $('#content form').prepend('<input type="hidden" id="linkPDF" name="linkPDF" value="'+retour['ordersWithoutError']+'"/>');
+//                            $('#content form').prepend('<input type="hidden" id="newState" name="newState" value="'+idState+'"/>');
+//                            $('#content form').prepend('<input type="hidden" id="handle" name="handle" value="'+retour['message']+'"/>');
+//                            $('#content form').submit();
+//                        }
+//		})
+//	});
+//
+//}
 
 function printOrders () {
         
-	// On récupère toutes les commandes séléctionnées 
+	// Retrieving selected orders 
 	tabChecked = [];
         var id_order_checked;
         var checkBox = $("input[name='orderBox[]']");
@@ -327,9 +373,9 @@ function printOrders () {
             if ((checkBox.eq(i)).attr("checked")){
                     id_order_checked = checkBox.eq(i).val(); 
                     tabChecked.push(id_order_checked);
-            }
+            } 
 	}
-	// Si aucune commande séléctionnée
+	// If no command selected
 	if (tabChecked.length === 0){
                 jAlert ($('#transtation_select_least_one_order').val(), $('#transtation_alert').val());
 		return false;
@@ -342,13 +388,13 @@ function printOrders () {
 }
 
 // --------------------------------------
-//          EXPEDITIONS
+//          SHIPMENT
 // --------------------------------------
 
-// On remplis la fenetre de dialog avec les poids pour laisser l'utilisateur les modifier
+// Dialog window is filled with weights to let the user change
 function openDialogWeight (){
     
-	// On remplis le tableau des commandes selectionnés
+	// Fill table of selected orders
 	tabChecked = [];
         
 	numSelected = $("input[name='orderBox[]']:checked").length;
@@ -361,25 +407,25 @@ function openDialogWeight (){
             order['id'] = $(this).val();
             
             
-            //VERRUE :  Cas d'une commande mal passée dont le statut s'affiche "--"
-            //On teste l'existence de la balise de sélection des statuts pour cette commande
-            //On ne met pas cette commande dans le tabchecked
+            //HACK :  Case of a bad placed order whose displayed status is "--"
+            //Testing existence of status selection tag for this command
+            //This command won't be put in tabchecked
             if (($("select[class='selectUpdateOrderState-" + $(this).val() + "']")).length)
                 {
                     tabChecked.push(order);
                     
-                     // on va chercher le statut de la commande en question
-                    // ne pas ommettre le option:first dans la sélection pour le cas où l'utilsateur a fait afficher un autre statut sans le valider (le statut reste affiché mais il n'est pas correct)
+                     // Fetching order status
+                    // Do not forget the "option:first" in the selection in case the user displayed another status without saving it (status still displayed but not correct)
                     var current_order_status = $("select[class='selectUpdateOrderState-" + $(this).val() + "'] option:first").prop('class').match(/\d+$/)[0];
                     //var reference = $(this).parent().parent().children('td').eq(3).text().trim();
                     var carrier = $(this).parent().parent().children('td').eq(5).find('img').data('carrier');
 
-                    // Si commande expeditor avec un statut différent de celui paramétré dans expeditor : on enregitre l'erreur
+                    // If command expeditor with a different status than set in expeditor : error is recorded 
                     if(carrier == 'Expeditor' && (expeditor_status != current_order_status))
                         {
                         erreurs += $('#translate_order_status_error').val() + $(this).val() + ' : ' + $('#translate_order_status_error_EXP').val() + ' : ' + $("select[class='selectUpdateOrderState-" + $(this).val() + "'] option[class='selectedOrderState-" + expeditor_status + "']").text() + '<br/>';
                         }
-                    // Si commande MR avec un statut différent de celui paramétré dans MR : on enregitre l'erreur
+                    // If command MR with a different status than set in MR : error is recorded
 //                    if(carrier == 'MR' && (MR_status != current_order_status))
 //                        {
 //                        erreurs += $('#translate_order_status_error').val() + $(this).val() + ' : ' + $('#translate_order_status_error_MR').val() + ' : ' + $("select[class='selectUpdateOrderState-" + $(this).val() + "'] option[class='selectedOrderState-" + expeditor_status + "']").text() + '<br/>';
@@ -387,13 +433,13 @@ function openDialogWeight (){
                 }
 	});
 
-	// Si aucune commande séléctionnée
+	// If no command selected
 	if (tabChecked.length === 0){
 		jAlert ($('#transtation_select_least_one_order').val(), $('#transtation_alert').val());
 		return false;
 	}
 
-	// On remplis la fenetre
+	// Fill the window
 	var tableContent = '<table style="text-align: center;" class="table_popup">\n\
                                 <tr>\n\
                                     <th>ID</th>\n\
@@ -405,11 +451,11 @@ function openDialogWeight (){
             
 		var carrier =  $('input[value="'+tabChecked[i]['id']+'"]').parent("td").parent("tr").find("img.carrier_image").attr("alt");
 		
-                //Pour une commande MR, on propose le choix de la police d'assurance.
+                // If command MR, offering the choice of insurance policy.
                 if(carrier === 'MR')
                     {
-                        // Les assurances de mondial relay peuvent avoir 6 niveaux, dont le 0 qui correspond à aucune assurance.
-                        // Voir mondialrelay\views\templates\admin\generate_tickets.tpl lignes 90 à 96.
+                        // MONDIAL RELAY insurances may have 6 levels, including 0 corresponding to no insurance.
+                        // See mondialrelay\views\templates\admin\generate_tickets.tpl lines 90 to 96.
 			tableContent += '<tr>\n\
                                             <td>&nbsp;'+tabChecked[i]['id']+'&nbsp;</td>\n\
                                             <td><input type="text" value="' + $('input[value="'+tabChecked[i]['id']+'"]').parent("td").parent("tr").find("input[name~='weight-carrier_id']").attr("value")
@@ -426,7 +472,7 @@ function openDialogWeight (){
                                             </td>\n\
                                         </tr>';
                     }
-                //Pour une commande Expeditor, on ne propose pas le choix de la police d'assurance mais on propose de choisir non-standard size
+                // If command Expeditor, insurance policy won't be proposed but a non-standard size will be
                 if (carrier === 'Expeditor')
                     {
                         tableContent += '<tr>\n\
@@ -444,7 +490,7 @@ function openDialogWeight (){
 	tableContent += '</table><p id="textLoading">...</p><div style="position: relative; text-align: center;" id="barreLoading"></div>';
 	$('#dialog-confirmWeight-content').html(tableContent);
 
-	// Progress bar n'est pas sur certaines versions de Prestahsop
+	// Progress bar won't be on some Prestashop versions
 	if ($.isFunction($('#barreLoading').progressbar))
 			$('#barreLoading').progressbar();
                     
@@ -454,7 +500,7 @@ function openDialogWeight (){
 var PDF = [];
 var erreurs = '';
 
-// Récupération des commandes cochés et envoi à tous les expéditeurs (appellé par la popup dialog de confirmation des poids)
+// Fetchhing checked orders and sending to all shippers (called by weight confirmation popup dialog)
 function sendToCarrier () {
 
 	// MONDIAL RELAY
@@ -469,17 +515,17 @@ function sendToCarrier () {
                 var ids = [];
 		for (var i in tabChecked)
                 {
-                    // Poids
+                    // Weights
                     weight_list.push($('.check-confirmWeight-'+tabChecked[i]['id']).val()+'-'+tabChecked[i]['id']);
                     
                     // Ids
                     ids.push(tabChecked[i]['id']);
                     
-                    // Assurance
+                    // Insurance
                     assurance_list.push($('.assurance_list-'+tabChecked[i]['id']+' option:selected').val()+'-'+tabChecked[i]['id']);
 		}
                 
-		$.ajax({ // Appel ajax à mondial relay
+		$.ajax({ // Ajax call to mondial relay
 			 type : 'POST',
                         url: '../modules/mondialrelay/ajax.php',
 			 data : {'order_id_list' : ids,
@@ -491,13 +537,11 @@ function sendToCarrier () {
 			 dataType: 'json',
 			 success: function(json_success)
 			 {
-//                             console.log('Ok');
-//                             console.log(json_success);
                              
                              var translate_mr_done  = $('#translate_mr_done').val();
 				$("#textLoading").html(translate_mr_done);
 
-				// Progress bar n'est pas sur certaines versions de Prestahsop
+				// Progress bar won't be on some Prestashop versions
 				if ($.isFunction($('#barreLoading').progressbar))
 					$('#barreLoading').progressbar({ value: $('#barreLoading').progressbar("option", "value") + 20});
 
@@ -506,7 +550,7 @@ function sendToCarrier () {
 
 
                                  // COMMANDES OK
-				 // On concatene les liens vers les etiquettes séparés par un espace
+				 // Links to labels are concatenated separated by a spacebar
 				 for (var i in json_success['success'])
                                  {
 
@@ -522,8 +566,8 @@ function sendToCarrier () {
 				 $('#deliveryNumbersMR').val(deliveryNumbers);
 
 				 
-                                 // COMMANDES NOK
-				 //On supprime les commandes en erreur de tabChecked et on ajoute l'erreur
+                                 // COMMANDS NOK
+				 // Delete errored orders from tabChecked then an error is added
 				 for (var i in json_success['error'])
                                  {
                                     if (json_success['error'][i] !== null)
@@ -541,7 +585,6 @@ function sendToCarrier () {
                                         {
                                            tabChecked.splice((tabChecked.indexOf(i)),1);
                                            errorMR = json_success['other']['error'];
-                                           //console.log(errorMR);
                                            erreurs += $('#translate_mr_wtf_error').val() + ' : '+errorMR[0]+'<br/>';
                                         }
                                     }        
@@ -553,8 +596,8 @@ function sendToCarrier () {
 			 },
 			 error : function(json_failed)
                          {
-                            // COMMANDES NOK
-                            //On supprime les commandes en erreur de tabChecked et on ajoute l'erreur
+                            // COMMANDS NOK
+                            // Delete errored orders from tabChecked then an error is added
                             for (var i in json_failed['error'])
                             {
                                if (json_failed['error'][i] !== null)
@@ -567,7 +610,7 @@ function sendToCarrier () {
                             
                             $("#textLoading").html($('#transtation_mr_error1').val());
                        
-                            // Progress bar n'est pas sur certaines versions de Prestahsop
+                            // Progress bar won't be on some Prestashop versions
                             if ($.isFunction($('#barreLoading').progressbar))
                                   $('#barreLoading').progressbar({ value: $('#barreLoading').progressbar("option", "value") + 20});
 
@@ -585,13 +628,13 @@ function sendToCarrier () {
         {
             var order = [];
             for (var i in tabChecked){
-                    //On définit la propriété standard_size de Expeditor Inet qu'on met à 0 ou à 1 selon si la case a été cochée pour cette commande ou non.
+                    // Define standard_size Expeditor property set to 0 or 1 whether the checked box or no for that command.
                     order[i] = {'id' : tabChecked[i]['id'], 
                         'weight': $('.check-confirmWeight-'+tabChecked[i]['id']).val(), 
                         'standard_size': ($('[name="non-standard_size_'+tabChecked[i]['id']+'"]').prop('checked'))?0:1};
             }
 
-            $.ajax({ // Appel ajax à expeditor inet
+            $.ajax({ // Ajax call to expeditor inet
                     type : 'POST',
                     url : 'index.php?controller=AdminExpeditor&token='+$('#ExpeditorToken').val(),
                     data : 
@@ -604,42 +647,42 @@ function sendToCarrier () {
                         var translate_ExpInet_done  = $('#translate_ExpInet_done').val();
                         $("#textLoading").html(translate_ExpInet_done);
 
-                        // Progress bar n'est pas sur certaines versions de Prestahsop
+                        // Progress bar won't be on some Prestashop versions
                         if ($.isFunction($('#barreLoading').progressbar))
                                 $('#barreLoading').progressbar({ value: $('#barreLoading').progressbar("option", "value") + 20});
 
-                        // SI expeditor retourne bien un CSV de commande traitées
+                        // If expeditor returns a CSV about processed orders
                         if (typeof (data) !== 'undefined')
                         {
                             var retour = [];
 
-                            // On sépare toutes les lignes du CSV
+                            // Separating all the CSV lines
                             var csv = data.split('\n'); 
                             csv.splice(csv.length -1, 1);
 
-                            // Traitement de chaque ligne
+                            // Processing each row
                             for (var i in csv)
                             { 
-                                // Récupération de chaque valeur
+                                // Recovery of each value
                                 var tmp = csv[i].split(";");
 
-                                // Récup numéro expé
+                                // Fetching expedition number
                                 var id_exp = tmp[1].substring(4, tmp[1].length-1);
 
-                                // Vérification si la commande retournée fait partie de celles sélectionnées
+                                // Checking if the returned order is among those selected
                                 for (var j=0; j< tabChecked.length; j++)
                                 {
                                     if(id_exp == tabChecked[j]['id'])
                                     {
-                                        // Enregistre la ligne de CSV expéditor à retourner
+                                        // Saves the CSV line Expeditor to be returned
                                         retour.push(csv[i]);
 
-                                        // Commande traitée, on la supprime de la liste
+                                        // Order processed, remove it from the list
                                         tabChecked.splice(j,1);
                                     }
                                 }
                             }
-                            //console.log(erreurs);
+                            
                             $('#expeditorCSV').val(retour);
                         } 
                         IEexpeCheck= true;
@@ -652,7 +695,7 @@ function sendToCarrier () {
                             
                             $("#textLoading").html($('#transtation_ex_error1').val());
                        
-                            // Progress bar n'est pas sur certaines versions de Prestahsop
+                            // Progress bar won't be on some Prestashop versions
                             if ($.isFunction($('#barreLoading').progressbar))
                                   $('#barreLoading').progressbar({ value: $('#barreLoading').progressbar("option", "value") + 20});
 
@@ -665,11 +708,10 @@ function sendToCarrier () {
 
 	function callTnt()
         {
-            PDF = tabChecked.slice(0, tabChecked.length);
             
             $("#textLoading").html($().val('#translate_other_done'));
             
-            // Progress bar n'est pas sur certaines versions de Prestahsop
+            // Progress bar won't be on some Prestashop versions
             if ($.isFunction($('#barreLoading').progressbar))
                 $('#barreLoading').progressbar({ value: 100}); 
             
@@ -679,22 +721,20 @@ function sendToCarrier () {
                 // Ids
                 ids.push(tabChecked[i]['id']);
             }
-            // Commandes non traitées : on essaye de les passer à TNT après rechargement : HOOK TNT
+            // orders unprocessed : trying to pass them to TNT after reloading : HOOK TNT
             $('#idOthers').val(ids);
             
             if (erreurs == '')
                 erreurs = false;
 
-            //console.log(erreurs);
-
-            $('#hidden_form').prepend('<input type="hidden" id="linkPDF" name="linkPDF" value="'+PDF+'"/>');
+            $('#hidden_form').prepend('<input type="hidden" id="linkPDF" name="linkPDF" value="'+ids+'"/>');
             $('#hidden_form').prepend('<input type="hidden" id="newState" name="newState" value="'+4+'"/>');
             $('#hidden_form').prepend('<input type="hidden" id="handle" name="handle" value="' + erreurs + '"/>');
             $('#hidden_form').submit();
 	}
 }
 
-// Ouverture  en blank
+// Open to a blank
 function _blank(url)
 {
    window.open(url, '_blank');

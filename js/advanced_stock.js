@@ -18,12 +18,12 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
-// Récupération du Token pour sécuriser les requetes AJAX
+// Fetching token to secure AJAX queries
 var token = document.location.href.split("token=");
 token = token[1].split("#");
 token = token[0].split("&");
@@ -73,7 +73,7 @@ $('document').ready(function()
         width: "500",
         buttons:
             [
-                // cnacel
+                // cancel
                 {
                     text: $("#trad_cancel").val(),
                     click: function()
@@ -101,7 +101,7 @@ $('document').ready(function()
 //        $("#dialog-confirm_image").dialog("open");
 //    }); --> DIRECT DANS LE HREF DU INITTOOLBAR..
 
-	// Sélection d'un inventaire, ajoute la classe 'selected' sur la ligne pour le repérer
+	// Selecting an inventory, adding the class 'selected' on the line to locate it
     $('input.id_stock_image').click(function()
     {
 		$('#form-confirm-image input.id_stock_image').each( function(){
@@ -124,7 +124,7 @@ $('document').ready(function()
 	});
 	
 	//for 1.5
-	$('#desc-stock_available-save-and-stay').click(function(){
+	$('#desc-product-save-and-stay').click(function(){
 		$('#dialog-confirm_image').dialog('open');
 		return false;
 	});

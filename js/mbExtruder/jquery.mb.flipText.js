@@ -3,7 +3,7 @@
  *  jquery.mb.components
  *  file: jquery.mb.flipText.js
  *
- *  Copyright (c) 2001-2014. Matteo Bicocchi (Pupunzi);
+ *  Copyright (c) 2001-2015. Matteo Bicocchi (Pupunzi);
  *  Open lab srl, Firenze - Italy
  *  email: matteo@open-lab.com
  *  site: 	http://pupunzi.com

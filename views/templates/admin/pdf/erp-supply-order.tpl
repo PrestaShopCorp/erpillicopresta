@@ -18,7 +18,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 *}
@@ -189,7 +189,7 @@
 										{/if}
 						
 										<td style="text-align: right; padding-right: 1px;">{$supply_order_detail->tax_rate|escape:'htmlall'} %</td>
-									  
+									  {$total_price_with_discount = $total_price_with_discount + ($supply_order_detail->unit_price_te * $supply_order_detail->quantity_received - ($supply_order_detail->unit_price_te * $supply_order_detail->quantity_received * $supply_order_detail->discount_rate / 100))}
 									</tr>
 								{/if}
 							{/foreach}
@@ -223,19 +223,30 @@
 					  
 							{foreach $supply_order_details as $supply_order_detail}
 									
-									{foreach $supply_order_receipt_history[$supply_order_detail->id] as $supply_order_receipt_history_detail}
-										{$unit_price = $supply_order_receipt_history_detail['unit_price']}
-										{$qty = $supply_order_receipt_history_detail['quantity']}
-										{$discount = $supply_order_receipt_history_detail['discount_rate']}
-							
+									{if $supply_order_receipt_history[$supply_order_detail->id]|@count == 0}
 										{if $supply_order_detail->tax_rate == $entry['tax_rate'] }
-												{assign var=total_te_before_discount2 value=$unit_price * $qty}
-												{assign var=total_te_after_discount2 value=$total_te_before_discount2 - (($total_te_before_discount2 * $discount) / 100)}
+												{assign var=total_te_before_discount2 value=$supply_order_detail->unit_price_te * $supply_order_detail->quantity_received}
+												{assign var=total_te_after_discount2 value=$total_te_before_discount2 - (($total_te_before_discount2 * $supply_order_detail->discount_rate) / 100)}
 												{$total_base_te_all = $total_base_te_all + $total_te_after_discount2}
 												{$total_base_te = $total_base_te + $total_te_after_discount2}
 
 										{/if}
-									{/foreach}
+									{else}									
+									
+										{foreach $supply_order_receipt_history[$supply_order_detail->id] as $supply_order_receipt_history_detail}
+											{$unit_price = $supply_order_receipt_history_detail['unit_price']}
+											{$qty = $supply_order_receipt_history_detail['quantity']}
+											{$discount = $supply_order_receipt_history_detail['discount_rate']}
+								
+											{if $supply_order_detail->tax_rate == $entry['tax_rate'] }
+													{assign var=total_te_before_discount2 value=$unit_price * $qty}
+													{assign var=total_te_after_discount2 value=$total_te_before_discount2 - (($total_te_before_discount2 * $discount) / 100)}
+													{$total_base_te_all = $total_base_te_all + $total_te_after_discount2}
+													{$total_base_te = $total_base_te + $total_te_after_discount2}
+
+											{/if}
+										{/foreach}
+									{/if}
 									
 							{/foreach}
 							

@@ -1,0 +1,637 @@
+/* PRODUCT DESCRIPTION, CONFIGURATION PAGE */
+@font-face 
+{
+	font-family: 'Myriad Pro Regular';
+	font-style: normal;
+	font-weight: normal;
+	src: local('Myriad Pro Regular'), url('fonts/MYRIADPRO-REGULAR.woff') format('woff');
+}
+@font-face 
+{
+	font-family: 'Myriad Pro Bold';
+	font-style: normal;
+	font-weight: normal;
+	src: local('Myriad Pro Bold'), url('fonts/MYRIADPRO-BOLD.woff') format('woff');
+}
+
+#configuration_content
+{
+	width: 100%;
+	height: 100px;
+	font-family:'Myriad Pro Regular';
+	font-size: 14px;
+}
+
+#configuration_content .configuration_heading 
+{
+	height: 30px;
+        line-height:30px;
+	color: #FFF;
+	background-color: #3e3e3f;
+	margin-bottom: 10px;
+	font-size: 18px;
+}
+
+.block
+{
+	float: left;
+	display: block;
+	width: 30px;
+	height: 100%;
+	background-color: #841417;
+	margin-right: 10px;
+}
+
+#configuration_content .licence_heading 
+{
+	height: 30px;
+        line-height:30px;
+	color: #FFF;
+	background-color: #841417;
+	margin-bottom: 10px;
+	font-size: 18px;
+}
+
+#configuration_content .licence_heading .block
+{
+	background-color: #3e3e3f;
+}
+
+
+.fieldset_content
+{
+	background-color: #f0f0f0;
+	padding-left: 10px;
+	font-size: 14px;
+	padding-bottom: 10px;
+}
+
+#configuration_content h2
+{
+	color:#841417;
+	font-size: 16px;
+	font-family:'Myriad Pro Bold';
+}
+
+#configuration_content
+{
+	color:#3e3e3f
+}
+
+#configuration_content ul 
+{
+   list-style-type: none;
+}
+
+#configuration_content ul li:before 
+{
+   content: '- ';
+}
+
+#configuration_content ol li 
+{
+   
+}
+
+#configuration_content .why1click
+{
+	width: 80%;
+}
+
+#configuration_content .why1click h2
+{
+	display: block;
+	background-color: #841417;
+	color: #FFF;
+	font-size: 16px;
+	font-family:'Myriad Pro Bold';
+	margin-bottom: 5px;
+        padding:5px;
+	text-align: center;
+}
+
+#configuration_content .why1click .why1click_content
+{
+	padding-top: 10px;
+	padding-bottom: 5px;
+	color:#FFF;
+	font-size: 13px;
+	text-align: center;
+	background-color: #3e3e3f;
+	width: 100%;
+	font-family:'Myriad Pro Bold';
+}
+
+#configuration_content ol#howToActivateList, #configuration_content ol#howToActivateSbscribeList
+{
+    list-style-type: none;
+}
+#configuration_content ol#howToActivateList li,#configuration_content ol#howToActivateSbscribeList li 
+{
+    margin-bottom: 7px;
+}
+.number
+{
+    background-color: #841417;
+    color: #fff;
+    padding-left:5px;
+    padding-right:5px;
+    font-size:1.2em;
+}
+
+#configuration_content ol#resourcesList
+{
+    list-style-type: none;
+}
+#configuration_content ol#resourcesList li
+{
+    margin-bottom: 7px;
+}
+
+.p11
+{
+	font-size: 11px;
+}
+
+.bold
+{
+	font-family:'Myriad Pro Bold';
+}
+
+.right
+{
+	text-align: right;
+}
+
+/* BOOTSTRAP OVERRIDE */
+#content.bootstrap .panel .panel
+{
+	border:none;
+}
+
+#content.bootstrap .panel .panel label
+{
+	text-transform: uppercase;
+}
+
+#content.bootstrap .panel .panel button
+{
+	text-transform: uppercase;
+}
+
+.bootstrap .panel .panel-footer
+{
+	border: none;
+}
+
+#content.bootstrap .panel .panel, #content.bootstrap #dash_version .panel, #content.bootstrap .message-item-initial .message-item-initial-body .panel, #content.bootstrap .timeline .timeline-item .timeline-caption .timeline-panel .panel, #content.bootstrap .panel #dash_version, #content.bootstrap #dash_version #dash_version, #content.bootstrap .message-item-initial .message-item-initial-body #dash_version, #content.bootstrap .timeline .timeline-item .timeline-caption .timeline-panel #dash_version, #content.bootstrap .panel .message-item-initial .message-item-initial-body, #content.bootstrap .message-item-initial .panel .message-item-initial-body, #content.bootstrap #dash_version .message-item-initial .message-item-initial-body, #content.bootstrap .message-item-initial #dash_version .message-item-initial-body, #content.bootstrap .message-item-initial .message-item-initial-body .message-item-initial-body, #content.bootstrap .timeline .timeline-item .timeline-caption .timeline-panel .message-item-initial .message-item-initial-body, #content.bootstrap .message-item-initial .timeline .timeline-item .timeline-caption .timeline-panel .message-item-initial-body, #content.bootstrap .panel .timeline .timeline-item .timeline-caption .timeline-panel, #content.bootstrap .timeline .timeline-item .timeline-caption .panel .timeline-panel, #content.bootstrap #dash_version .timeline .timeline-item .timeline-caption .timeline-panel, #content.bootstrap .timeline .timeline-item .timeline-caption #dash_version .timeline-panel, #content.bootstrap .message-item-initial .message-item-initial-body .timeline .timeline-item .timeline-caption .timeline-panel, #content.bootstrap .timeline .timeline-item .timeline-caption .message-item-initial .message-item-initial-body .timeline-panel, #content.bootstrap .timeline .timeline-item .timeline-caption .timeline-panel .timeline-panel 
+{
+	-webkit-box-shadow: none;
+	box-shadow: none;
+}
+
+.bootstrap .form-control, .bootstrap input[type="text"], .bootstrap input[type="search"], .bootstrap input[type="password"], .bootstrap textarea, .bootstrap select 
+{
+	border-radius: 0px;
+}
+
+.bootstrap .btn 
+{
+	border-radius: 0px;
+}
+
+.bootstrap .fixed-width-xl 
+{
+	width: 100%  !important;
+}
+
+#licenceAlreadyActive
+{
+    padding:5px;
+    text-align:center;
+    margin-bottom:15px;
+    font-weight:bold;
+    color:white;
+    background-color:#76BE43;
+    font-size:1.2em;    
+}
+
+#logoRight 
+{
+    text-align: right;
+}
+
+
+/* ERP configuration page*/
+.erp-configuration-page {
+    padding: 0px 20px 0px 20px;
+}
+
+.erp-configuration-page .row{
+    background: none;
+}
+
+.erp-configuration-page p,
+.erp-configuration-page h1,
+.erp-configuration-page h2,
+.erp-configuration-page h4 {
+    font-family: Arial,sans-serif;
+}
+
+.erp-configuration-page input.error{
+    border: 1px red solid;
+}
+
+.erp-configuration-page label.error{
+    color: red;
+    font-weight: bold
+}
+
+.erp-configuration-page .bold{
+    font-weight: bold;
+}
+
+.erp-configuration-page .header h1,
+.erp-configuration-page .header h2 {
+    text-align: center;
+    padding: 0px;
+    margin: 0px;
+    color: #a83839;
+    background-color: #fff;
+}
+
+.erp-configuration-page .header h1{
+    font-size: 35px;
+}
+
+.erp-configuration-page .header h2{
+    font-size: 25px;   
+}
+
+.erp-configuration-page h2{
+    background-color: #4a494d;
+    color: #FFF; 
+    padding:7px 0px 7px 15px;
+    text-transform: uppercase;
+    font-size: 20px;
+}
+
+.erp-configuration-page .blok_content{
+    background-color: #e0e2e4;
+    padding: 5px;
+    height: 330px;
+    text-align: center;
+    font-size: 17px;
+}
+
+.erp-configuration-page .blok_content p{
+    color:#383f50;
+}
+
+.erp-configuration-page .blok_content.first h4{
+    margin-bottom: 20px;
+    margin-top: 20px;
+}
+
+.erp-configuration-page .blok_content h4{
+    text-transform: uppercase;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.erp-configuration-page .blok_content h4.red{
+    color: #a0090a;
+}
+
+.erp-configuration-page .blok_content .features_list{
+    text-align: left;
+    list-style-type: none;
+}
+
+.erp-configuration-page .blok_content .version{
+    text-align: left;
+    margin-top: 30px;
+    margin-left: 30px;
+}
+
+.erp-configuration-page .blok_content .blok_button {
+    margin-top: 30px;
+}
+
+.erp-configuration-page .blok_content .blok_button a{
+    display: block;
+    height: 60px;
+    background-color: #f2645c;
+    color: #FFF;
+    text-transform: uppercase; 
+    padding: 5px;
+    max-width: 275px;
+}
+
+.erp-configuration-page .blok_content .blok_button .button2 a {
+    padding-top: 16px;
+}
+
+
+.erp-configuration-page .blok_licence h2{
+    background: url('../img/licence-arrow.png') 290px -2px no-repeat;
+    padding: 8px 0px 8px 10px;
+}
+
+.erp-configuration-page .blok_licence h2.red{
+    background-color: #a0090a;
+}
+
+.erp-configuration-page .blok_licence h2 span{
+   font-size: 16px;
+    margin-left: 59px;
+    text-transform: none;
+    position: relative;
+    top: -2px;
+}
+
+.erp-configuration-page .sticky {
+    position: fixed;
+    top: 105px;
+    right: 4px;
+    z-index: 100;
+    width: 34%;
+}
+
+/*ERP CART */
+#cart_features #cart_total_price {
+    display: block;
+    border: 1px gray solid;
+    width: 150px;
+    height: 50px;
+    font-size: 30px;
+    text-align: right;
+    padding-right: 7px;
+}
+
+#cart_features .features_list {
+    margin-bottom: 40px;
+    padding-left: 4px;
+}
+    #cart_features .features_list h4{
+        background-color: #4a494d;
+        text-transform: uppercase;
+        color: white; 
+        padding: 3px;
+        font-size: 16px;
+    }
+    
+    #cart_features ul.freature_block{
+        list-style-type: none;
+        text-align: justify;
+        width: 50%;
+    }
+    
+    .prestashop_1_5 #cart_features ul.freature_block {
+        padding-left: 40px;
+    }
+
+    #cart_features .features_list .enable {
+        color: #11929a;
+        font-weight: bold;
+    }
+    
+    #cart_features .features_list .disable {
+       color: #9d9d9d;
+       background: initial;
+    }
+    
+    #cart_features .features_list .not-available {
+       padding-top: 10px;
+    }
+  
+
+
+
+#cart_features .arrow-right { 
+    height: 0; 
+    border-top: 20px solid transparent;
+    border-bottom: 20px solid transparent;
+    border-left: 20px solid #3aa28f;
+}
+
+#cart_features .price_slider{
+    color: #383f50;
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+#cart_features .blok-economiser {
+    background-color: #eeeff0;
+    padding: 10px 0px 0px 15px;
+    min-height: 180px;
+}
+    #cart_features .blok-economiser h4 {
+        color: #383f50;
+        text-transform: uppercase;
+        font-size: 20px;
+        text-decoration: underline;
+        font-weight: bold;
+    }
+    
+    #cart_features .blok-economiser p {
+        color: #383f50;
+        font-size: 15px;
+    }
+    
+    #cart_features .blok-economiser .price_old {
+        display: none;
+    }
+    
+    #cart_features .blok-economiser .price_old span{
+        text-decoration:  line-through;
+    }
+    
+#cart_features .global_price {
+    display: none;
+}
+
+#cart_features .blok-cart-price {
+    background-color: #e0e2e4;
+    padding: 5px;
+    min-height: 180px;
+}
+
+    #cart_features .blok-cart-price .block-left { 
+
+    }
+
+    #cart_features .blok-cart-price .block-right { 
+        text-align: center;
+    }
+
+    #cart_features .blok-cart-price .block-right .price #total_price, 
+    #cart_features .blok-cart-price .block-right .price .devise{ 
+        font-size: 50px;
+        letter-spacing: 0px;
+    }
+    
+    #cart_features .blok-cart-price .block-right .tax { 
+        font-size: 15px;
+    }
+    
+    #cart_features .blok-cart-price .block-right button { 
+        background-color: #f2645c;
+        width: 70%;
+        height: 50px;
+        color: #fff;
+        font-size: 18px;
+    }
+    
+    #cart_features .blok-cart-price .block-right button.purchasse { 
+        width: 100%;
+        margin-top: 10px;
+    }
+
+#cart_features .slider {
+    font-family: "SimHei", "Hei", sans-serif;
+    margin-top: 20px;
+    margin-left: 5px;
+    border: none;
+    margin-bottom: 40px;
+}
+
+#cart_features .features_list .slider {
+    margin-bottom: 60px;
+}
+
+
+                    
+#cart_features .slider .ui-sliper-pip {
+    font-size: 1.4em; 
+}
+  
+#cart_features .slider .ui-slider-handle .ui-slider-tip {
+    display: none;
+}
+
+#cart_features .slider .ui-slider-handle .ui-slider-tip:before, 
+#cart_features .slider .ui-slider-handle .ui-slider-tip:after {
+    border-top-color: #434d5a; 
+}
+
+#cart_features .ui-widget-content { 
+    border: 1px solid #ccc; 
+    background: #dde1eb; 
+}
+
+#cart_features .ui-widget-header {
+    border: 1px solid #aaaaaa; 
+    background: #f2645c; 
+    color: #222222; 
+    font-weight: bold; 
+}
+
+#cart_features .ui-corner-all {
+    border-radius: 0px;
+}
+
+#cart_features .ui-corner-all .ui-state-default, #cart_features .ui-widget-content .ui-state-default  {
+    background: #95969a;
+}
+
+#cart_features .ui-slider .ui-slider-handle {
+    height: 1.7em;
+    width: 1em;
+}
+
+#cart_features .ui-slider-horizontal .ui-slider-handle {
+    top: -.5em;
+}
+
+#cart_features .ui-slider-pips .ui-slider-pip {
+    color: #95969a;
+    font-size: 13px;
+}
+
+#cart_features .ui-slider-pip-selected .ui-slider-label{
+    color: #11929a;
+    font-weight: bold;
+}
+
+/* Css for prestashop 1.5 */
+.erp-configuration-page.prestashop_1_5 label{
+    display: inline;
+    max-width: none;
+}
+
+#content .erp-configuration-page.prestashop_1_5 form input.error {
+    background: none;
+    padding: 0; 
+}
+
+#content .erp-configuration-page.prestashop_1_5 form label.error {
+    display: none !important;
+}
+
+.erp-configuration-page.prestashop_1_5 .blok_content {
+    height: 354px;
+}
+
+.prestashop_1_5.erp-configuration-page fieldset {
+    margin-top: 13px;
+}
+
+.erp-configuration-page.prestashop_1_5 .sticky {
+    top: 10px;
+}
+
+#video_link{
+    color: #a0090a;
+    text-transform: uppercase;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+
+
+@media (max-width: 768px) {
+    #logoRight,#logoLeft
+    {
+        text-align: center;        
+    }
+    
+    .erp-configuration-page .blok_content {
+        height: 100%;
+        margin-bottom: 10px;
+    }
+    
+    #cart_features .slider {
+        width: 98%;
+    }
+    
+    #cart_features .blok-economiser, #cart_features .blok-cart-price {
+        padding-bottom: 15px;
+    }
+    
+    #cart_features ul.freature_block {
+        padding-left: 0px;
+        margin-top: 19px;
+    }
+}
+
+@media (max-width:  992px) {
+    .erp-configuration-page .header h1{
+        font-size: 25px;
+    }
+    
+    .erp-configuration-page .header h2 {
+        font-size: 15px;
+    }
+    
+}
+
+@media (max-width:  1200px) {
+    
+    #cart_features .blok-economiser,
+    #cart_features .blok-cart-price {
+        height: 100%;
+        margin-bottom: 10px;
+    }
+    
+}

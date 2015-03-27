@@ -19,7 +19,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -29,8 +29,8 @@ class ErpProduct extends Product
 
 	/**
 	 * Gets the name of a given product, in the given lang
-	 * HAI : surcharge de cette methode pour enregistrer le nom des produits avec un ordre
-	 *
+	 * HAI : override method to record product name with sort
+         * 
 	 * @since 1.5.0
 	 * @param int $id_product
 	 * @param int $id_product_attribute Optional
@@ -90,20 +90,18 @@ class ErpProduct extends Product
 
 		// selects different names, if it is a combination
 		if ($id_product_attribute)
+		{
 			$query->select('pa.ean13 AS ean13, pa.reference AS reference');
-		else
-			$query->select('p.ean13 AS ean13, p.reference AS reference');
-
-		// adds joins & where clauses for combinations
-		if ($id_product_attribute)
-		{
+			// adds joins & where clauses for combinations
 			$query->from('product_attribute', 'pa');
-			$query->where('pa.id_product = '.(int)$id_product.' AND pa.id_product_attribute = '.(int)$id_product_attribute);
+			$query->where('pa.id_product = \''.pSQL($id_product).'\' AND pa.id_product_attribute = '.pSQL($id_product_attribute));
 		}
-		else // or just adds a 'where' clause for a simple product
+		else
 		{
+			$query->select('p.ean13 AS ean13, p.reference AS reference');
+			// or just adds a 'where' clause for a simple product
 			$query->from('product', 'p');
-			$query->where('p.id_product = '.(int)$id_product.'');
+			$query->where('p.id_product = \''.pSQL($id_product).'\'');
 		}
 
 		$data = Db::getInstance()->executeS ($query);

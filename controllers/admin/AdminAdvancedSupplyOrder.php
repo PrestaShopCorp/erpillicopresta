@@ -19,23 +19,24 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
+require_once _PS_MODULE_DIR_.'erpillicopresta/controllers/admin/IPAdminController.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/erpillicopresta.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpSupplyOrderClasses.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpSupplyOrder.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpSupplyOrderDetail.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/config/control.php';
 
-class AdminAdvancedSupplyOrderController extends ModuleAdminController
+class AdminAdvancedSupplyOrderController extends IPAdminController
 {
 
 	private $controller_status = 0;
 	private $advanced_stock_management = false;
-
+        private $nbcmdfou = 0;
 	/*
 	 * @var array List of warehouses
 	 */
@@ -55,6 +56,16 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 
                 // get controller status
 		$this->controller_status = Configuration::get(ErpIllicopresta::getControllerStatusName('AdminAdvancedSupplyOrder'));
+                if($this->controller_status == STATUS1)
+                {
+                    $sql = 'SELECT count(*) from '._DB_PREFIX_.'erpip_supply_order';
+                    $query = new DbQuery();
+			$query->select('count(distinct so.id_supply_order)');
+			$query->from('erpip_supply_order', 'so');
+                        $query->innerJoin('supply_order','s','so.id_supply_order = s.id_supply_order');
+                        $query->where("s.date_add >= '".pSQL(Configuration::get('ERP_FIRST_INSTALL_DATE'))."'");
+                        $this->nbcmdfou = Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($query);
+               }
 
                 // template path for avdanced supply ordr
                 $this->template_path = _PS_MODULE_DIR_.'erpillicopresta/views/templates/admin/';
@@ -192,6 +203,9 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
                     'erp_feature' => ErpFeature::getFeaturesWithToken($this->context->language->iso_code),
                     'inheritance_merge_compiled_includes' => false
                 ));
+
+        // get controller status
+  	 	$this->controller_status = Configuration::get(ErpIllicopresta::getControllerStatusName('AdminAdvancedOrder'));
                                                     
 		parent::__construct();
 	}
@@ -202,7 +216,16 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 	 */
 	public function init()
 	{
-
+                if( $this->controller_status == STATUS1)
+                    {
+                        $this->informations[] = '<b><a href="?controller=AdminModules&configure=erpillicopresta&token='.Tools::getAdminTokenLite('AdminModules').'">'.$this->l('Do not limit yourself to 1 trial order, take advantage of the Light version of the Supplier area for €79.99 before tax or €8.00/month before tax. Go to your back-office, under the module tab, page 1-Click ERP!').'</b></a><br/><br/>';
+                    } else if( $this->controller_status == STATUS2)
+                    {
+                        $this->informations[] = '<a href="?controller=AdminModules&configure=erpillicopresta&token='.Tools::getAdminTokenLite('AdminModules').'">'.$this->l('Optimise Supplier management with accounting reconciliation, multiple product selection and a decision-making assistant tool for just €20.00 before tax or €1.00/month before tax. Go to your back-office, under the module tab, page 1-Click ERP!').'</a>';
+                    } else if( $this->controller_status == STATUS3)
+                    {
+                        $this->informations[] = '<a href="?controller=AdminModules&configure=erpillicopresta&token='.Tools::getAdminTokenLite('AdminModules').'">'.$this->l('Activate additional features in your TIME SAVER module in the Module section of your back-office! Go to your back-office, under the module tab, page 1-Click ERP!').'</a>';
+                    }
 		parent::init();
 
 		if (Tools::isSubmit('addsupply_order') ||
@@ -553,6 +576,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 
 			$this->context->smarty->assign(array(
 					'franco_amount' => $franco_amount,
+                                        'shipping_amount' => $erp_filed_value['shipping_amount'],
 					'supply_order_total_te' => number_format($this->object->total_te, 2, ',', ' '),
 					'amount_to_franco_with_produc_discount' => number_format(((float)$franco_amount - $this->object->total_te), 2, ',', ' '),
 					'template_path' => $this->template_path,
@@ -575,7 +599,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 	 */
 	public function getList($id_lang, $order_by = null, $order_way = null, $start = 0, $limit = null, $id_lang_shop = false)
 	{
-		if (Tools::isSubmit('csv_orders') || Tools::isSubmit('csv_orders_details') || Tools::isSubmit('csv_order_details'))
+		if (Tools::isSubmit('csv_orders') || Tools::isSubmit('csv_orders_details') || Tools::isSubmit('csv_order_details') || Tools::isSubmit('export_history'))
 			$limit = false;
 
 		// defines button specific for non-template supply orders
@@ -584,14 +608,14 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 			// adds export csv buttons
 			$this->toolbar_btn['export-csv-orders'] = array(
 					'short' => 'Export Orders',
-					'href' => $this->context->link->getAdminLink('AdminAdvancedSupplyOrder').'&amp;csv_orders&id_warehouse='.$this->getCurrentWarehouse(),
+					'href' => $this->context->link->getAdminLink('AdminAdvancedSupplyOrder').'&csv_orders&id_warehouse='.$this->getCurrentWarehouse().'&id_supplier='.$this->getCurrentSupplier(),
 					'desc' => $this->l('Export Orders (CSV)'),
 					'class' => 'process-icon-export'
 			);
 
 			$this->toolbar_btn['export-csv-details'] = array(
 					'short' => 'Export Orders Details',
-					'href' => $this->context->link->getAdminLink('AdminAdvancedSupplyOrder').'&amp;csv_orders_details&id_warehouse='.$this->getCurrentWarehouse(),
+					'href' => $this->context->link->getAdminLink('AdminAdvancedSupplyOrder').'&csv_orders_details&id_warehouse='.$this->getCurrentWarehouse().'&id_supplier='.$this->getCurrentSupplier(),
 					'desc' => $this->l('Export Orders Details (CSV)'),
 					'class' => 'process-icon-export'
 			);
@@ -599,12 +623,26 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 			unset($this->toolbar_btn['new']);
 			if ($this->tabAccess['add'] === '1')
 			{
-					$this->toolbar_btn['new'] = array(
-							'href' => self::$currentIndex.'&amp;add'.$this->table.'&amp;token='.$this->token,
+                            if($this->controller_status == STATUS1 && $this->nbcmdfou >= 1)
+                            {
+                                $text = addslashes($this->l('Only one order is allowed in FREE version. Switch to superior version to kick off the limit.'));        
+                                $this->toolbar_btn['new'] = array(
+                                                        'js' => 'cancelBubble(event, \''.$text.'\');',
+							'href' => '#',
 							'desc' => $this->l('Add New')
 					);
+                            }
+                            else
+                            {
+                                $this->toolbar_btn['new'] = array(
+							'href' => self::$currentIndex.'&add'.$this->table.'&token='.$this->token,
+							'desc' => $this->l('Add New')
+					);
+                            }
+					
 			}
 		}
+                
 
 		parent::getList($id_lang, $order_by, $order_way, $start, $limit, $id_lang_shop);
 
@@ -646,10 +684,10 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 			}
 		}
 
-				// Uniquement sur l'écran de réception
+                        // only on home screen
 			if ($this->display == 'update_receipt')
 			{
-				// Envoi du nombre de produits au tpl pour afficher / masquer la div-popup
+                                // Send the number of products to the template to hide or show the div-popup
 				$nb_items = count($this->_list);
 				$this->tpl_list_vars['nb_items'] = $nb_items;
 
@@ -751,12 +789,15 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 
 		$first_list = parent::renderList();
 
-		if (Tools::isSubmit('csv_orders') || Tools::isSubmit('csv_orders_details') || Tools::isSubmit('csv_order_details'))
+		if (Tools::isSubmit('csv_orders') || Tools::isSubmit('csv_orders_details') || Tools::isSubmit('csv_order_details') || Tools::isSubmit('export_history'))
 		{
 			if (count($this->_list) > 0)
 			{
-				$this->renderCSV();
-				die;
+                            if($this->controller_status == STATUS1)
+                                $first_list = array_splice($first_list,0,ERP_STCKMGTFR);
+                            
+                            $this->renderCSV();
+                            die;
 			}
 			else
 				$this->displayWarning($this->l('There is nothing to export as a CSV.'));
@@ -799,7 +840,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 		$this->initToolbar();
 		unset($this->toolbar_btn['new']);
 		$this->toolbar_btn['new'] = array(
-			'href' => self::$currentIndex.'&amp;add'.$this->table.'&mod=template&amp;token='.$this->token,
+			'href' => self::$currentIndex.'&add'.$this->table.'&mod=template&token='.$this->token,
 			'desc' => $this->l('Add a new template')
 		);
 
@@ -822,7 +863,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 		if (Tools::isSubmit('submitAddsupply_order') && !($this->tabAccess['add'] === '1'))
 			$this->errors[] = Tools::displayError($this->l('You do not have permission to add a supply order.'));
 		if (Tools::isSubmit('submitBulkUpdatesupply_order_detail') && !($this->tabAccess['edit'] === '1'))
-			$this->errors[] = Tools::displayError($this->l('You do not have permission to edit an order.'));
+			$this->errors[] = Tools::displayError($this->l('You do not have permission to edit an order.')); 
 
 		// Trick to use both Supply Order as template and actual orders
 		if (Tools::isSubmit('is_template'))
@@ -1102,23 +1143,102 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 		// exports orders
 		if (Tools::isSubmit('csv_orders'))
 		{
-			$ids = array();
-			foreach ($this->_list as $entry)
-				$ids[] = $entry['id_supply_order'];
+			// header
+			header('Content-type: text/csv; charset=utf-8');
+			header('Cache-Control: no-store, no-cache');
+			header('Content-disposition: attachment; filename="supply_orders.csv"');
 
-			if (count($ids) <= 0)
-				return;
 
-			$id_lang = Context::getContext()->language->id;
-			$orders = new Collection('SupplyOrder', $id_lang);
-			$orders->where('is_template', '=', false);
-			$orders->where('id_supply_order', 'in', $ids);
+			// write headers column
+			$keys = array(
+                    'id_supplier',
+                    'supplier_name',
+                    'id_lang',
+                    'id_warehouse',
+                    'id_supply_order_state',
+                    'id_currency',
+                    'reference',
+                    'date_add',
+                    'date_upd',
+                    'date_delivery_expected',
+                    'total_te',
+                    'total_with_discount_te',
+                    'total_ti',
+                    'total_tax',
+                    'discount_rate',
+                    'discount_value_te',
+                    'is_template',
+                    'escompte',
+                    'invoice_number',
+                    'date_to_invoice',
+                    'global_discount_amount',
+                    'global_discount_type',
+                    'shipping_amount',
+                    'description'
+            );
+
+			echo sprintf("%s\n", implode(';', $keys));
+
+
+			$query = null;
+			$query = new DbQuery();
+			$query->select(
+						'so.*, ipso.*');
+
+			$query->from('supply_order', 'so');
+			$query->leftjoin('erpip_supply_order', 'ipso', 'ipso.id_supply_order = so.id_supply_order');
+                        if($this->controller_status == STATUS1)
+                            $query->limit(ERP_STCKMGTFR);
+                        
+			// FILTERS SUPPLIER & WAREHOUSE
 			$id_warehouse = $this->getCurrentWarehouse();
 			if ($id_warehouse != -1)
-				$orders->where('id_warehouse', '=', $id_warehouse);
-			$orders->getAll();
-			$csv = new CSV($orders, $this->l('supply_orders'));
-			$csv->export();
+				$query->where('so.id_warehouse = '.(int)$id_warehouse);
+
+			$id_supplier = $this->getCurrentSupplier();
+			if ($id_supplier != -1)
+				$query->where('so.id_supplier = '.(int)$id_supplier);
+			
+			// Execute query
+			$res = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
+
+
+			// write datas
+			foreach ($res as $order)
+			{
+                $content_csv = array( 
+                    $order['id_supplier'],
+                    self::transformText($order['supplier_name']),
+                    $order['id_lang'],
+                    $order['id_warehouse'],
+                    $order['id_supply_order_state'],
+                    $order['id_currency'],
+                    $order['reference'],
+                    $order['date_add'],
+                    $order['date_upd'],
+                    $order['date_delivery_expected'],
+                    $order['total_te'],
+                    $order['total_with_discount_te'],
+                    $order['total_ti'],
+                    $order['total_tax'],
+                    $order['discount_rate'],
+                    $order['discount_value_te'],
+                    $order['is_template'],
+                    $order['escompte'],
+                    $order['invoice_number'],
+                    ($order['date_to_invoice'] == '0000-00-00') ? '' : $order['date_to_invoice'],
+                    $order['global_discount_amount'],
+                    $order['global_discount_type'],
+                    $order['shipping_amount'],
+                    self::transformText($order['description']),
+                    PHP_EOL
+                );
+                 echo implode(';', $content_csv);
+			}
+                        if($this->controller_status == STATUS1)
+                            echo sprintf($this->l('Your are using a free version of 1-Click ERP which limits the export to %d lines.'),ERP_STCKMGTFR);
+			die();
+
 		}
 		// exports details for all orders
 		else if (Tools::isSubmit('csv_orders_details'))
@@ -1133,7 +1253,10 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 			$ids = array();
 			foreach ($this->_list as $entry)
 				$ids[] = $entry['id_supply_order'];
-
+                        
+                        if($this->controller_status == STATUS1)
+                            $ids = array_splice($ids,0,ERP_STCKMGTFR);
+                        
 			if (count($ids) <= 0)
 				return;
 
@@ -1141,7 +1264,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 			$keys = array('id_product', 'id_product_attribute', 'reference', 'supplier_reference', 'ean13', 'upc', 'name',
 						  'unit_price_te', 'quantity_expected', 'quantity_received', 'price_te', 'discount_rate', 'discount_value_te',
 						  'price_with_discount_te', 'tax_rate', 'tax_value', 'price_ti', 'tax_value_with_order_discount',
-						  'price_with_order_discount_te', 'id_supply_order');
+						  'price_with_order_discount_te', 'id_supply_order', 'comment');
                         
 			echo sprintf("%s\n", implode(';', array_map(array('CSVCore', 'wrap'), $keys)));
 
@@ -1152,16 +1275,25 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 						  'FORMAT(sod.discount_rate, 2)', 'FORMAT(sod.discount_value_te, 2)',
 						  'FORMAT(sod.price_with_discount_te, 2)', 'FORMAT(sod.tax_rate, 2)', 'FORMAT(sod.tax_value, 2)',
 						  'FORMAT(sod.price_ti, 2)', 'FORMAT(sod.tax_value_with_order_discount, 2)',
-						  'FORMAT(sod.price_with_order_discount_te, 2)', 'sod.id_supply_order');
+						  'FORMAT(sod.price_with_order_discount_te, 2)', 'sod.id_supply_order', 'ipsod.comment');
 			foreach ($ids as $id)
 			{
 				$query = new DbQuery();
 				$query->select(implode(', ', $keys));
 				$query->from('supply_order_detail', 'sod');
 				$query->leftJoin('supply_order', 'so', 'so.id_supply_order = sod.id_supply_order');
+				$query->leftJoin('erpip_supply_order_detail', 'ipsod', 'ipsod.id_supply_order_detail = sod.id_supply_order_detail');
+				
+				// FILTERS SUPPLIER & WAREHOUSE
 				$id_warehouse = $this->getCurrentWarehouse();
 				if ($id_warehouse != -1)
 					$query->where('so.id_warehouse = '.(int)$id_warehouse);
+
+				$id_supplier = $this->getCurrentSupplier();
+				if ($id_supplier != -1)
+					$query->where('so.id_supplier = '.(int)$id_supplier);
+
+
 				$query->where('sod.id_supply_order = '.(int)$id);
 				$query->orderBy('sod.id_supply_order_detail DESC');
 				$resource = Db::getInstance()->query($query);
@@ -1175,6 +1307,9 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
                                     echo sprintf("%s\n", implode(';', $row));
                                 }
 			}
+                        if($this->controller_status == STATUS1)
+                            echo sprintf($this->l('Your are using a free version of 1-Click ERP which limits the export to %d lines.'),ERP_STCKMGTFR);
+
 		}
 		// exports details for the given order
 		else if (Tools::isSubmit('csv_order_details') && Tools::getValue('id_supply_order'))
@@ -1188,37 +1323,102 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 				$csv->export();
 			}
 		}
-				else if (Tools::isSubmit('export_csv'))
-				{
-					// get id lang
-					$id_lang = Context::getContext()->language->id;
+		else if (Tools::isSubmit('export_csv'))
+		{
+			// get id lang
+			$id_lang = Context::getContext()->language->id;
 
-					// header
-					header('Content-type: text/csv');
-					header('Cache-Control: no-store, no-cache');
-					header('Content-disposition: attachment; filename="Supply order detail.csv"');
+			// header
+			header('Content-type: text/csv');
+			header('Cache-Control: no-store, no-cache');
+			header('Content-disposition: attachment; filename="Supply order detail.csv"');
 
-					// puts hearder of CSV
-					$keys = array('supplier_reference', 'quantity_expected');
-					echo sprintf("%s\n", implode(';', $keys));
+			// puts hearder of CSV
+			$keys = array('supplier_reference', 'quantity_expected');
+			echo sprintf("%s\n", implode(';', $keys));
 
-					// gets global order information
-					$supply_order = new SupplyOrder((int)  Tools::getValue( 'id_supply_order'));
+			// gets global order information
+			$supply_order = new SupplyOrder((int)  Tools::getValue( 'id_supply_order'));
 
-					// get supply order detail
-					$supply_order_detail = $supply_order->getEntries($id_lang);
+			// get supply order detail
+			$supply_order_detail = $supply_order->getEntries($id_lang);
 
-					// puts data
-					foreach ($supply_order_detail as $product)
-					{
-							$row_csv = array($product['supplier_reference'], $product['quantity_expected']);
+			// puts data
+			foreach ($supply_order_detail as $product)
+			{
+					$row_csv = array($product['supplier_reference'], $product['quantity_expected']);
 
-							// puts one row
-							echo sprintf("%s\n", implode(';', array_map(array('CSVCore', 'wrap'), $row_csv)));
-					}
+					// puts one row
+					echo sprintf("%s\n", implode(';', array_map(array('CSVCore', 'wrap'), $row_csv)));
+			}
+                        if($this->controller_status == STATUS1)
+                            echo sprintf($this->l('Your are using a free version of 1-Click ERP which limits the export to %d lines.'),ERP_STCKMGTFR);
 
-					die();
-				}
+			die();
+		}
+		else if (Tools::isSubmit('export_history'))
+		{
+			// header
+			header('Content-type: text/csv; charset=utf-8');
+			header('Cache-Control: no-store, no-cache');
+			header('Content-disposition: attachment; filename="supply_orders_history.csv"');
+
+
+			// write headers column
+			$keys = array(
+                    'id_supply_order_history',
+                    'id_supply_order',
+                    'id_employee',
+                    'employee_lastname',
+                    'employee_firstname',
+                    'id_state',
+                    'state',
+                    'unit_price',
+                    'discount_rate',
+                    'is_canceled'
+            );
+
+			echo sprintf("%s\n", implode(';', $keys));
+
+
+			$query = null;
+			$query = new DbQuery();
+			$query->select(
+						'sorh.*, ipsorh.*, "state" as state');
+
+			$query->from('supply_order_receipt_history', 'sorh');
+			$query->leftjoin('erpip_supply_order_receipt_history', 'ipsorh', 'ipsorh.id_supply_order_receipt_history = sorh.id_supply_order_receipt_history');
+			$query->leftjoin('supply_order_detail', 'sod', 'sod.id_supply_order_detail = sorh.id_supply_order_detail');
+			$query->where('sod.id_supply_order = '.(int)Tools::getValue('id_supply_order'));
+			
+                        if($this->controller_status == STATUS1)
+                            $query->limit(ERP_STCKMGTFR);
+			
+			// Execute query
+			$res = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
+
+			// write datas
+			foreach ($res as $history)
+			{
+                $content_csv = array( 
+                    $history['id_supply_order_history'],
+                    $history['id_supply_order'],
+                    $history['id_employee'],
+                    $history['employee_lastname'],
+                    $history['employee_firstname'],
+                    $history['id_state'],
+                    $history['state'],
+                    $history['unit_price'],
+                    $history['discount_rate'],
+                    $history['is_canceled'],
+                    PHP_EOL
+                );
+                 echo implode(';', $content_csv);
+			}
+                        if($this->controller_status == STATUS1)
+                            echo sprintf($this->l('Your are using a free version of 1-Click ERP which limits the export to %d lines.'),ERP_STCKMGTFR);
+			die();
+		}
 	}
 
 	/**
@@ -1244,7 +1444,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 				//--ERP information add new product
 		foreach ($rows as $row)
 		{
-					// Si on a _new : c'est un nouveau produit, on découpe pour n'avoir que le numéro
+                                        // If _new, it mean new product, then we explode to get the number
 					if (strpos($row, "_") !== false)
 					{
 						$row = explode('_', $row);
@@ -1273,18 +1473,19 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 						$supply_order_detail->supplier_reference = (Tools::getValue("input_supplier_reference_$row") == null) ? '' :
 						Tools::getValue("input_supplier_reference_$row");
 						$supply_order_detail->name_displayed = Tools::getValue('input_name_displayed_'.$row);
+                                                
 
 
 						$ids = Tools::getValue("input_id_product_$row");
 
-						// Si déclinaison on explode
+						// If declension we explode
 						if (strrpos($ids, "_"))
 						{
 							$ids = explode('_', $ids);
 							$supply_order_detail->id_product = $ids[0];
 							$supply_order_detail->id_product_attribute = $ids[1];
 						}
-						// Sinon id decl = 0
+						// else id decl = 0
 						else
 						{
 							$supply_order_detail->id_product = $ids;
@@ -1327,7 +1528,6 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 						}
 						else
 						{
-
 							$supply_order_detail->save();
 							$to_update[Db::getInstance()->Insert_ID()] = (int)Tools::getValue('quantity_received_today_'.$row);
 							$comment[Db::getInstance()->Insert_ID()] = Tools::getValue('input_comment_'.$row);
@@ -1355,7 +1555,12 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 					}
 					else {
 						if (Tools::isSubmit('quantity_received_today_'.$row))
-							$to_update[$row] = (int)Tools::getValue('quantity_received_today_'.$row);
+                                                {
+                                                    if (Tools::isSubmit('input_comment_'.$row)){
+                                                        $comment[Db::getInstance()->Insert_ID()] = Tools::getValue('input_comment_'.$row);
+                                                    }
+                                                    $to_update[$row] = (int)Tools::getValue('quantity_received_today_'.$row);
+                                                }
 					}
 		}
 
@@ -1427,7 +1632,6 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 												$price,
 												true,
 												$supply_order->id);
-
 					if ($res)
 						StockAvailable::synchronize($supply_order_detail->id_product);
 					else
@@ -1527,6 +1731,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 				'&create_supply_order&token='.($token != null ? $token : $this->token),
 			'confirm' => self::$cache_lang['CreateSupplyOrderConfirm'],
 			'action' => self::$cache_lang['CreateSupplyOrder'],
+                        'controller_status' => $this->controller_status,
 		));
 
 		return $this->context->smarty->fetch('helpers/list/list_action_supply_order_create_from_template.tpl');
@@ -1800,7 +2005,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 
 			$this->_where = 'AND a.`id_supply_order_detail` = '.(int)$id_supply_order_detail;
 
-						// Récup prix d'achat
+						// get the purchasing price
 						$this->_join = ' INNER JOIN '._DB_PREFIX_.'supply_order_detail sod ON a.id_supply_order_detail = sod.id_supply_order_detail';
 						$this->_join .= ' INNER JOIN '._DB_PREFIX_.'stock s ON (s.id_product = sod.id_product AND s.id_product_attribute = sod.id_product_attribute)';
 						$this->_join .= ' INNER JOIN '._DB_PREFIX_.'stock_mvt sm ON (sm.id_stock = s.id_stock AND sm.id_supply_order = sod.id_supply_order)';
@@ -1833,6 +2038,8 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 
 				elseif (Tools::isSubmit('task') && Tools::getValue('task') == 'getSupplyOrderDetail')
 					$this->ajaxGetSupplyOrderDetail();
+                                elseif(Tools::isSubmit('task') && Tools::getValue('task') == 'supplier')
+                                     include_once(_PS_MODULE_DIR_.'erpillicopresta/ajax/ajax.php');
 
 		die;
 	}
@@ -1888,6 +2095,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 
 		$query->groupBy('p.id_product, pa.id_product_attribute');
 
+
 		$items = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
 
 		foreach ($items as &$item)
@@ -1895,9 +2103,9 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 			$ids = explode('_', $item['id']);
 			$prices = ProductSupplier::getProductSupplierPrice($ids[0], $ids[1], $id_supplier, true);
 			if (count($prices))
-				$item['unit_price_te'] = Tools::convertPriceFull($prices['product_supplier_price_te'],
-																 new Currency((int)$prices['id_currency']),
-																 new Currency($id_currency));
+                            $item['unit_price_te'] = $item['unit_price_te'] = Tools::convertPriceFull($prices['product_supplier_price_te'],
+                                new Currency((int)$prices['id_currency']),
+                                new Currency($id_currency));
 		}
 		if ($items)
 			die(Tools::jsonEncode($items));
@@ -2122,8 +2330,8 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 			$total_escompte = $total_shipping - $escompte_amount;
 			$total_to_pay = $total_escompte + $supply_order->total_tax;
 
-			// suppression de l'attribut id_lang pour version >= 1.5.5
-			// Le parameter id_lang dans la fonction displayDate() est deprecé
+                        // remove id_lang attribute for version >= 1.5.5
+                        // id_lang parameter in displayDate() is deprecated
 			if (version_compare(_PS_VERSION_,'1.5.5','>='))
 			{
 				$supply_order_creation_date =  Tools::displayDate($supply_order->date_add, null, false);
@@ -2208,7 +2416,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 
 		$content .= '<span style="width:20px">';
 		if ($supply_order_state->enclosed == true && $supply_order_state->receipt_state == true)
-			$content .= '<a href="'.$this->context->link->getAdminLink('AdminAdvancedSupplyOrder').'&amp;id_supply_order='.(int)$supply_order->id.'
+			$content .= '<a href="'.$this->context->link->getAdminLink('AdminAdvancedSupplyOrder').'&id_supply_order='.(int)$supply_order->id.'
 						 &csv_order_details" title='.$this->l('Export as CSV').'">
 						 <img src="../img/admin/excel_file.png" alt=""/></a>';
 		else
@@ -2248,6 +2456,21 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
                                                                 'href' => $this->context->link->getAdminLink('AdminGenerateSupplyOrders'),
                                                                 'desc' => html_entity_decode($this->l('Generate Supply Orders')),
                                                 );
+
+                                                 $this->toolbar_btn['save'] = array(
+                                                                'short' => $this->l('Export orders'),
+                                                                'href' => $this->context->link->getAdminLink('AdminAdvancedSupplyOrder').'&csv_orders&id_warehouse='.$this->getCurrentWarehouse().'&id_supplier='.$this->getCurrentSupplier(),
+                                                                'desc' => html_entity_decode($this->l('Export orders')),
+                                                );
+
+                                                 $this->toolbar_btn['save-and-stay'] = array(
+                                                                'short' => $this->l('Export orders details'),
+                                                                'href' => $this->context->link->getAdminLink('AdminAdvancedSupplyOrder').'&csv_orders_details&id_warehouse='.$this->getCurrentWarehouse().'&id_supplier='.$this->getCurrentSupplier(),
+                                                                'desc' => html_entity_decode($this->l('Export orders details')),
+                                                );
+
+
+
                                         }
                                 }
 
@@ -2271,6 +2494,12 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 					$this->toolbar_btn['cancel'] = array(
 						'href' => $back,
 						'desc' => $this->l('Cancel')
+					);
+
+					$this->toolbar_btn['save'] = array(
+							'short' => $this->l('Export history'),
+							'href' => $this->context->link->getAdminLink('AdminAdvancedSupplyOrder').'&export_history&id_supply_order='.Tools::getValue('id_supply_order'),
+							'desc' => html_entity_decode($this->l('Export history')),
 					);
 				}
 			break;
@@ -2306,6 +2535,8 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 					'desc' => $this->l('Save and stay')
 				);
 
+
+
 			default:
 				parent::initToolbar();
 		}
@@ -2332,6 +2563,15 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
                             'desc' => $this->l('Back to list'),
                             'icon' => 'process-icon-back'
                     );
+
+        if($this->display == 'update_receipt')
+        {
+        	$this->page_header_toolbar_btn['save'] = array(
+					'short' => $this->l('Export history'),
+					'href' => $this->context->link->getAdminLink('AdminAdvancedSupplyOrder').'&export_history&id_supply_order='.Tools::getValue('id_supply_order'),
+					'desc' => html_entity_decode($this->l('Export history')),
+			);
+        }
                 
 		elseif (empty($this->display))
 		{
@@ -2341,19 +2581,56 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 						'short' => $this->l('Billing with several orders'),
 						'href' => 'javascript:void(0)',
 						'desc' => $this->l('Billing with several orders'));*/
-
-				 $this->page_header_toolbar_btn['refresh'] = array(
+                                if($this->controller_status == STATUS3)
+                                {
+                                    $this->page_header_toolbar_btn['refresh'] = array(
+                                                   'short' => $this->l('Generate Supply Orders'),
+                                                   'href' => $this->context->link->getAdminLink('AdminGenerateSupplyOrders'),
+                                                   'desc' => html_entity_decode($this->l('Generate Supply Orders')),
+                                   );
+                                }
+                                else
+                                {
+                                    $text = addslashes($this->l('To use this feature, switch to the PRO offer'));                              
+                                    $this->page_header_toolbar_btn['refresh'] = array(
 						'short' => $this->l('Generate Supply Orders'),
-						'href' => $this->context->link->getAdminLink('AdminGenerateSupplyOrders'),
+						'js' => 'cancelBubble(event, \''.$text.'\');',
+                                                'href' => '#',
 						'desc' => html_entity_decode($this->l('Generate Supply Orders')),
+                                    );
+                                }
+
+				 $this->page_header_toolbar_btn['save'] = array(
+						'short' => $this->l('Export orders'),
+						'href' => $this->context->link->getAdminLink('AdminAdvancedSupplyOrder').'&csv_orders&id_warehouse='.$this->getCurrentWarehouse().'&id_supplier='.$this->getCurrentSupplier(),
+						'desc' => html_entity_decode($this->l('Export orders')),
+				);
+
+				 $this->page_header_toolbar_btn['save-and-stay'] = array(
+						'short' => $this->l('Export orders details'),
+						'href' => $this->context->link->getAdminLink('AdminAdvancedSupplyOrder').'&csv_orders_details&id_warehouse='.$this->getCurrentWarehouse().'&id_supplier='.$this->getCurrentSupplier(),
+						'desc' => html_entity_decode($this->l('Export orders details')),
 				);
 			}
                         
-                        $this->page_header_toolbar_btn['new_supply_order'] = array(
-				'href' => self::$currentIndex.'&addsupply_order&token='.$this->token,
-				'desc' => html_entity_decode($this->l('Add a new supply order')),
-				'icon' => 'process-icon-new'
-			);
+                        if($this->controller_status == STATUS1 && $this->nbcmdfou > ERP_CMFOFR)
+                        {
+                            $text = addslashes($this->l('Only 1 order is allowed in the free version. Switch to a higher version to eliminate this limit.'));
+                            $this->page_header_toolbar_btn['new_supply_order'] = array(
+                                    'js' => 'cancelBubble(event, \''.$text.'\');',
+                                    'desc' => html_entity_decode($this->l('Add a new supply order')),
+                                    'href' => '#',
+                                    'icon' => 'process-icon-new'
+                            );
+                        }
+                        else
+                        {
+                            $this->page_header_toolbar_btn['new_supply_order'] = array(
+                                    'href' => self::$currentIndex.'&addsupply_order&token='.$this->token,
+                                    'desc' => html_entity_decode($this->l('Add a new supply order')),
+                                    'icon' => 'process-icon-new'
+                            );
+                        }
                         
 			$this->page_header_toolbar_btn['new_supply_order_template'] = array(
 				'href' => self::$currentIndex.'&addsupply_order&mod=template&token='.$this->token,
@@ -2633,7 +2910,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 		// defines the fields of the form to display
                 if ($this->is_1_6)
                 {
-                    //Fonctionne pour 1.6 
+                    // works for 1.6 
                     $this->fields_form[0]['form'] = array(
                             'legend' => array(
                                     'title' => $this->l('Supply order status'),
@@ -2960,7 +3237,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 		$this->list_no_link = true;
 		$this->colorOnBackground = true;
 		$this->row_hover = false;
-		$this->bulk_actions = array('Update' => array('text' => $this->l('Update selection'), 'confirm' => $this->l('Update selected items?')));
+		$this->bulk_actions = array('Update' => array('text' => $this->l('Update receipt of selected orders'), 'confirm' => $this->l('Update receipt of selected orders?')));
                 
 		$this->addRowAction('details');
 
@@ -3371,7 +3648,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 
 			if ($with_description)
 					$output .= '<a href="#" class="cluetip-min" title="'.$this->l('Supply order description').'" '
-											. 'rel="../modules/erpillicopresta/ajax/ajax.php?id_supplier_order='.(int)$data['id_supply_order'].'&task=supplier&action=getSupplyOrderDescription&token='.$this->token.'">'
+											. 'rel="AdminAdvancedSupplyOrder&ajax=1&id_supplier_order='.(int)$data['id_supply_order'].'&task=supplier&action=getSupplyOrderDescription&token='.$this->token.'">'
 													.'<img src="../img/admin/note.png" />'
 											.'</a>';
 
@@ -3395,7 +3672,8 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 
 			$output = '<input class="input_price" style="width:100px" type="text" size="5" value="'.pSQL($wholesale_price).'" '.$disabled.' /> '.$currency->sign;
 
-	   // Possible de remonter le prix à la fiche produit que si la réception n'a pas été annulée -->
+                        // allow the price to be show on the product only if recept is not cancel
+                        
 			if ($data['action'] == '0')
 			   $output .= '<a href="#" title="'.$this->l('Updating supplier price').'" ><img class="wholesale_update" src="../img/admin/export.gif" /></a>';
 
@@ -3406,7 +3684,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 	{
 			 $output = '';
 
-			// si is_canceled est à 0 on affiche le bouton de delete -->
+                        // Show the delete button only if is_cancel equal "0"
 			if ($action == '0')
 			{
 					$output .= '<a href="#" title="'.$this->l('Updating receipt').'" ><img class="receipt_update" src="../img/admin/edit.gif" /></a>';
@@ -3496,7 +3774,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 					return $supplier;
 	}
 
-	// Génération du PDF bon de réception
+        // generate the purchase receipt
 	public function processGenerateSupplyReceivingSlipFormPDF()
 	{
 		if (!Tools::isSubmit('id_supply_order'))
@@ -3504,6 +3782,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 
 		$id_supply_order = (int)Tools::getValue('id_supply_order');
 		$supply_order = new SupplyOrder($id_supply_order);
+	
 
 		if (!Validate::isLoadedObject($supply_order))
 						die($this->errors[] = Tools::displayError('Cannot find this supply order in the database'));
@@ -3511,6 +3790,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 		require_once (_PS_MODULE_DIR_.'erpillicopresta/classes/pdf/HTMLTemplateErpSupplyOrderForm.php');
 
 		$pdf = new PDF(array($supply_order) , 'ErpSupplyOrderForm', Context::getContext()->smarty);
+		 
 		$pdf->render(true);
 	}
 
@@ -3545,22 +3825,22 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 	*/
 	public function sendMailOnValidateSupplyOrder($supply_order)
 	{
-			//Vérification si l'envoi de mail au fournisseur a été activé
+                        // Verify that the provider mail is activate
 			$enable_sending_mail_supplier = Configuration::get('ERP_ENABLE_SENDING_MAIL_SUPPLIER');
 
 			if (!empty($enable_sending_mail_supplier) && $enable_sending_mail_supplier == '1')
 			{
 
-					//Statut configuré pour pour envoyer l'email
+                                        // if status is configured to send mail
 					$supply_order_state_to_send_mail = Configuration::get('ERP_SO_STATE_TO_SEND_MAIL');
 
 					$id_state_to = (int)Tools::getValue('id_supply_order_state', 0);
 
-					//Envoi du mail au fournisseur si passage à l'etape de validation
+                                        // send mail to provider if validation step
 					if ($id_state_to == $supply_order_state_to_send_mail)
 					{
 
-							//Recupération du fournisseur de la commande
+                                                        // Get the order provider
 							$supplier = new Supplier( $supply_order->id_supplier);
 
 							//If supplier is valid
@@ -3605,7 +3885,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 
 											 //Id order_lang
 
-											 //Si le fournisseur viens d'un pays français : pays parlant français ,DOM, TOM, l'id lang = fr (5)
+                                                                                         // if the provider come from a francophone country France, DOM, TOM, id lang = fr (5)
 											 if (ErpSupplierClass::isSupplierFrench((int)$supplier->id))
 											 {
 													 $supplier_id_lang = Language::getIdByIso('fr');
@@ -3613,7 +3893,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 													 //subject
 													 $subject = 'Commande fournisseur valide';
 											}
-											 //Si pays etranger recherche la 1er langue actives
+                                                                                        // if other counter look for the first active language
 											 else {
 
                                                                                                 $languages = Language::getLanguages();
@@ -3626,13 +3906,13 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 											 //Template path
 											 $template_path = _PS_MODULE_DIR_.'erpillicopresta/mails/';
 
-											 //Récupération des produits de la commande
+                                                                                         // Get the purchased products
 											 $supply_order_details = $supply_order->getEntries();
 
 											 $html_order_details = '';
 											 $txt_order_details  = '';
 
-											 //Création du code HTML et TXT pour l'envoi du mail
+											 // Build html and text code for email
 											 if (!empty($supply_order_details))
 											 {
 													 foreach ($supply_order_details as $product)
@@ -3705,7 +3985,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 												$j = $j + 1;
 								}
 
-								/*  Nom des champs :name, quantity_expected,name_displayed, price_te,price_ti
+								/*  fields name :name, quantity_expected,name_displayed, price_te,price_ti
 								 * ,price_with_order_discount_te, tax_rate , quantity_received
 								 * , reference ,supplier_reference */
 								?>
@@ -3746,7 +4026,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 		require_once _PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpSupplyOrderClasses.php';
 		require_once _PS_MODULE_DIR_.'erpillicopresta/erpillicopresta.php';
 
-		/* gestion du stock avancé */
+		/* manage advanced stock */
 		$stock_management_active    = Configuration::get ('PS_ADVANCED_STOCK_MANAGEMENT');
 		$sales_forecast_type        = Configuration::get ('ERP_SALES_FORECAST_CHOICE');
 
@@ -3766,7 +4046,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 
 			foreach ($products as $product)
 			{
-				/*  Si on a déjà le produit dans le tableau destination, on passe */
+                                // If product already in destination array, continue
 				if (strrpos($existing_ids, $product['id']) !== false)
 								continue;
 
@@ -3774,10 +4054,10 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 				$id_product = $ids[0];
 				$id_product_attribute = $ids[1];
 
-				/* si la gestion du stock avancé est activée */
+                                // If the advanced stock manager is activated
 				if ($stock_management_active == '1')
 				{
-                                    //  Récupération des quantités physique et utilisable
+                                    // Get the physical and usable quantities
                                     $query = new DbQuery();
                                     $query->select('physical_quantity');
                                     $query->select('usable_quantity');
@@ -3785,22 +4065,22 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
                                     $query->where('id_product = '.(int)$id_product.' AND id_product_attribute = '.(int)$id_product_attribute);
                                     $res = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($query);
 
-                                    /* Les deux quantités */
+                                    /* the two quantities */
                                     $physical_quantity = (int)$res['physical_quantity'];
                                     $usable_quantity   = (int)$res['usable_quantity'];
 
-                                    /*  La quantité réelle dépend de l'entrepot */
+                                    // The real quantity depends of the warehouse
                                     $manager = StockManagerFactory::getManager();
                                     $product['stock'] = $real_quantity = (int)$manager->getProductRealQuantities($id_product,$id_product_attribute, $id_warehouse , true);
 				}
 				else
 				{
-                                    // Retourne la quantités disponibles
+                                    // get the free quantities
                                     $product['stock'] = $usable_quantity = (int)Product::getQuantity($id_product,$id_product_attribute);
 				}
 
-				/*  TAXE */
-				/*  Récupération de la taxe courante */
+				/*  TAX */
+				/*  Get the current tax */
 				$query = new DbQuery();
 				$query->select('rate');
 				$query->from('tax', 't');
@@ -3816,27 +4096,27 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 				$prices = ErpSupplyOrderClasses::getWholesalePrice((int)$id_product, (int)$id_product_attribute , (int)$id_supplier);
 				$product['unit_price_te'] = Tools::convertPriceFull($prices, new Currency((int)$id_currency));
 
-				/* quantité vendue depuis x mois glissant */
+                                // sales quantity for X rolling month
 				$quantity_sales = ErpSupplyOrderClasses::getQuantitySales((int)$id_product, (int)$id_product_attribute);
 
-				/*  Si la vente previsionnelle est activ�e */
+                                // if sale forecast is activ
 				if ($sales_forecast_type != 0)
 				{
-                                    //Si on utilise la m�thode des 6 mois glissants
+                                    // if we use the 6 month rolling method
                                     if ($sales_forecast_type == 1)
                                             $sales_forecasts = round(ErpSupplyOrderClasses::getProductSalesForecasts($id_product, $id_product_attribute), 1);
 
-                                    // Si on utilise les chiffres de l'ann�e derni�re a la meme periode
+                                    // if we use last year statistics on same period
                                     else
                                             $sales_forecasts = round(ErpSupplyOrderClasses::getProductSalesForecastsByPeriod($id_product, $id_product_attribute), 1);
 				} else {
                                     $sales_forecasts = 'NA';
                                 }
 
-				// progression des ventes
+                                // Sales gain
 				$sales_gains = ErpSupplyOrderClasses::getProductSalesGains($id_product, $id_product_attribute);
 
-				//  Prépare le json caché pour chaque ligne
+                                // Prepare the hidden json foreach line
 				$product['comment'] = '';
 				$product_json = Tools::jsonEncode($product);
 
@@ -3847,7 +4127,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
                                         <td>'.$product['reference'].'</td>
                                         <td>
                                                          <a href="#" class="cluetip-supply-price" title="'.$this->l('Supplier Price').'"
-                                                                                        rel="index.php?controller=AdminAdvancedStock&ajax=1&id_product='.$id_product.'&amp;id_product_attribute='.$id_product_attribute.'&amp;id_currency='.$id_currency.'&amp;task=getProductSupplierPrice&amp;token='.$advanced_stock_token.'" >
+                                                                                        rel="index.php?controller=AdminAdvancedStock&ajax=1&id_product='.$id_product.'&id_product_attribute='.$id_product_attribute.'&id_currency='.$id_currency.'&task=getProductSupplierPrice&token='.$advanced_stock_token.'" >
                                                                                                                            <img src="themes/default/img/icon-search.png">
                                                         </a>
                                                         '.$product['name'].'
@@ -3883,7 +4163,7 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
 	}
 
 	/* RJMA
-	* Rajout pour la traduction du controller AdminAdvancedSupplyOrder
+         * Added to translate AdminAdvancedSupplyOrder controller
 	*/
 	protected function l($string, $class = 'AdminTab', $addslashes = false, $htmlentities = true)
 	{
@@ -3893,22 +4173,5 @@ class AdminAdvancedSupplyOrderController extends ModuleAdminController
                 $str = $htmlentities ? htmlentities($str, ENT_QUOTES, 'utf-8') : $str;
                 return str_replace('"', '&quot;', ($addslashes ? addslashes($str) : Tools::stripslashes($str)));
 	   }
-	}
-        
-        /**/
-	protected static function transformText($text)
-	{
-                //delete html tags
-		$text = strip_tags($text);
-                
-                // decode html specialchar 
-                $text = html_entity_decode($text);
-                $text = utf8_decode($text);
-                
-		$text = str_replace("\n", '.', $text);
-		$text = str_replace("\r", '.', $text);
-		$text = str_replace(";", ',', $text);
-                
-		return $text;
 	}
 }

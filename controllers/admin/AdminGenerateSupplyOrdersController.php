@@ -19,18 +19,19 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
+require_once _PS_MODULE_DIR_.'erpillicopresta/controllers/admin/IPAdminController.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/erpillicopresta.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpStock.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpSupplyOrderClasses.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpSupplyOrderCustomer.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/config/control.php';
 
-class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
+class AdminGenerateSupplyOrdersController  extends IPAdminController {
 
 	public function __construct()
 	{
@@ -40,6 +41,7 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
 			$this->lang = false;
 			$this->addRowAction('view');
 			$this->context = Context::getContext();
+                        
 
 			$this->list_no_link = true;
 
@@ -51,6 +53,7 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
 
                         // template path
                         $this->template_path = _PS_MODULE_DIR_.'erpillicopresta/views/templates/admin/';
+                        $this->override_folder = $this->template_path;
 
 			// build query
 			$this->_select = 'a.id_order as checkbox,a.id_order as action, CONCAT(c.`firstname`, \' \', c.`lastname`) AS `customer`, c.`email`';
@@ -110,6 +113,9 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
             $this->context->smarty->assign(array(
                 'erp_feature' => ErpFeature::getFeaturesWithToken($this->context->language->iso_code)
             ));
+
+            // get controller status
+           	$this->controller_status = Configuration::get(ErpIllicopresta::getControllerStatusName('AdminAdvancedOrder'));
             
 	}
 
@@ -122,7 +128,7 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
 
            $poutput = '<input type="checkbox" name="selected_orders[]" class="selected_orders" checked="checked" value="'.(int)$id_order.'">';
 
-           if (isset( $this->context->cookie->unselected_orders) && !empty( $this->context->cookie->unselected_orders))
+           if (!empty( $this->context->cookie->unselected_orders))
            {
                      $unselected_orders_array = Tools::unSerialize( $this->context->cookie->unselected_orders);
 
@@ -136,6 +142,11 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
 
 	public function initContent()
 	{
+            
+            if( $this->controller_status == STATUS3)
+            {
+                $this->informations[] = '<a href="?controller=AdminModules&configure=erpillicopresta&token='.Tools::getAdminTokenLite('AdminModules').'">'.$this->l('Activate additional features in your TIME SAVER module in the Module section of your back-office! Go to your back-office, under the module tab, page 1-Click ERP!').'</a>';
+            }
             if (!Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT'))
             {
                 $this->warnings[md5('PS_ADVANCED_STOCK_MANAGEMENT')] = $this->l('You need to activate advanced stock management prior to using this feature. (Preferences/Products/Products Stock)');
@@ -170,7 +181,7 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
 
 	public function initOrderingContent()
 	{
-		// liste des id commandes fournisseurs crées
+                // list order id by created providers
 		$supply_order_created = array();
 
 		$this->show_toolbar = true;
@@ -195,22 +206,22 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
 			foreach ($datas['data_return'] as $id_supplier => $products_info)
 			{
 
-				// récupération des informations sur le fournisseur
+                                // Get provider datas
 				$supplier = new Supplier ( (int)$id_supplier);
 
-				// récupération des informations entrepôts, date de livraison prévue et taxe pour la commande fournisseur
+                                // get warehouse datas, delivery date and tax for the provider order
 				$id_warehouse_data = Tools::getValue('id_warehouse');
 				$date_delivery_expected_data = Tools::getValue('date_delivery_expected');
 				$tax_rate_data = Tools::getValue('tax_rate');
                                 $tax_rate_data = $tax_rate_data[$id_supplier];
 
-				// id entrepos
+				// id warehouse
 				$id_warehouse = $id_warehouse_data[ $id_supplier ];
 
-				// date de livraison prévu
+				// delivery date
 				$date_delivery_expected = $date_delivery_expected_data[ $id_supplier ];
 
-				// Création de la commande fournisseur
+                                // create the provider order
 				$supply_order = new SupplyOrder();
 				$supply_order->reference = ErpSupplyOrderClasses::getNextSupplyOrderReference();
 				$supply_order->id_supplier = $id_supplier;
@@ -222,15 +233,16 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
 				$supply_order->id_ref_currency = (int)Currency::getDefaultCurrency()->id;
 				$supply_order->date_delivery_expected  = $date_delivery_expected;
                                 
-				// si enregistrement OK, on crée les lignes de commande
+                                // if recording is ok, create the order lines
 				if ($supply_order->add())
 				{
-					// récpération de l'id de la commande fournisseur
+                                        // get the provider id order
 					$id_supply_order = $this->getLastIdSupplyOrder();
 
 					$supply_order_created[] = $id_supply_order;
 
 					// Ajout de son historique
+                                        // add historical
 					$history = new SupplyOrderHistory();
 					$history->id_supply_order = $id_supply_order;
 					$history->id_state = 3;
@@ -239,7 +251,7 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
 					$history->employee_lastname = pSQL($this->context->employee->lastname);
 					$history->save();
 
-					// creation des entrées de la commande fournisseur
+                                        // Create entries for provider order
 					if (!empty($products_info))
 					{
                                             $i = 0;
@@ -263,10 +275,10 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
                                                     $supply_order_detail->tax_rate = $tax_rate_data[$i];
                                                     $supply_order_detail->save();
 
-                                                    // récpération de l'id de la lien commande fournisseur crée
+                                                    // Get the supply order created
                                                     $id_supply_order_detail = $this->getLastIdSupplyOrderDetail();
 
-                                                    // enregistrement de la relation entre commande fournisseur et commande client
+                                                    // Record the relation between provider order and customer order
                                                     if (!empty($item))
                                                     {
                                                             foreach ($item['concerned_id_order_detail'] as $customer_link)
@@ -282,13 +294,13 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
                                                     $i++;
                                             }
 
-                                            // on réenregistre les données de la commande fournisseur afin de mettre à jour les totaux
+                                            // Rerecording provider order data to update totals
                                             $supply_order->save();
 					}
 				}
 			}
 
-			// changement des statut des commandes en commande au fournisseur
+                        // update provider order status
 			if (!empty($datas['order_to_change_state']))
 			{
                             foreach ($datas['order_to_change_state'] as $id_order)
@@ -300,7 +312,7 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
 
 			$this->confirmations[] = $this->l('Order saved successfully !');
 
-			// suppression des commande traité dans les cookies
+                        // remove treated order in cookies
 			$this->context->cookie->__unset('unselected_orders');
 
 		}
@@ -320,7 +332,8 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
 				'supply_order_created' => !empty($supply_order_created) ? implode(',',$supply_order_created) : ''
 		));
 
-		$this->template = '../../../../modules/'.$this->module->name.'/views/templates/admin/generate_supply_orders/ordering.tpl';
+                $this->createTemplate('ordering.tpl');
+                $this->template = 'ordering.tpl';
 	}
 
 	public function initSimulateContent()
@@ -353,7 +366,8 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
                 'url_post_ordering' => $this->context->link->getAdminLink('AdminGenerateSupplyOrders').'&submitOrdering',
             ));
 
-            $this->template = '../../../../modules/'.$this->module->name.'/views/templates/admin/generate_supply_orders/simulate.tpl';
+           $this->createTemplate('simulate.tpl');
+           $this->template = 'simulate.tpl';
 	}
 
 	public function getTax($tax, $data)
@@ -491,7 +505,7 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
 
                                     $product = new Product($order_detail['product_id'], $order_detail['product_attribute_id']);
 
-                                    // changement du prix de vente en prix d'achat
+                                    // update selling price to purchase price
                                     $order_detail['unit_price_tax_excl'] = ErpStock::getWholesalePrice( $order_detail['product_id'] , $order_detail['product_attribute_id']);
                                     $order_detail['tax_rate'] = Tax::getProductTaxRate( $order_detail['product_id']);
 
@@ -578,7 +592,7 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
                     }
 		}
                
-		// pour la commande on revoi aussi la liste des commandes dont il faut modifier le statut en commande au fournisseur
+                // for the order, get the orders list that the statuts should be update in provider order
 		if ($this->display == 'ordering')
 				return array('data_return' => $data_return, 'order_to_change_state' => $order_to_change_state);
 		else
@@ -658,16 +672,22 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
 	}
 
 
-	// affiche la liste des commandes clients pour génération commande fournisseur
+        // Get the customer order list to generate the provider order
 	public function getList($id_lang, $order_by = null, $order_way = null, $start = 0, $limit = null, $id_lang_shop = false)
 	{
-		parent::getList($id_lang, $order_by, $order_way, $start, $limit, $id_lang_shop);
+            parent::getList($id_lang, $order_by, $order_way, $start, $limit, $id_lang_shop);
+            
+            $nb_items = count($this->_list);
+            
+            // Alert if there are no orders in the status
+            if($nb_items == 0)
+               $this->errors[] = $this->l('No orders found with the given status');
 	}
 
 
 	public function postProcess()
 	{
-		// sauvegarde des commandes non selectionnées
+                // record all order unselected
 		$this->saveUnselectedOrders();
 
 				// Export PDF of supply order
@@ -684,15 +704,15 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
 	}
 
 	/*
-	 * sauvegarde des commandes non selectionnées dans les cookies
+         * backup unselected orders in cookies
 	 *
 	*/
 	public function saveUnselectedOrders()
 	{
-		 // récupération des données POST des commandes non selectionnées
+                 // Get the POST datas of the unselected orders
 		 $unselected_orders_post = Tools::getValue('unselected_orders_list');
 
-                 // Si chargement d'une page avec une désélection en cours
+                 // Si page load with unselect in progress
 		 if (!Tools::isSubmit('submitSimulate') && !empty( $this->context->cookie->unselected_orders))
 		 {
 			 $_POST['unselected_orders_list'] = implode(',', Tools::jsonDecode( $this->context->cookie->unselected_orders));
@@ -701,6 +721,7 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
 		 {
 			$unselected_orders_array = explode(',', $unselected_orders_post);
 			$unselected_orders_array = array_map('trim', $unselected_orders_array);
+			//$this->context->cookie->__set('unselected_orders', json_encode( $unselected_orders_array));
 			$this->context->cookie->__set('unselected_orders', Tools::jsonEncode( $unselected_orders_array));
 		}
 	}
@@ -752,7 +773,7 @@ class AdminGenerateSupplyOrdersController  extends ModuleAdminController {
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders').'&id_order='.$id_order.'&vieworder');
         }
         
-        // Ouverture détail commande en blank
+        // open detail order in blank
         public function displayViewLink($token, $id)
         {
             $tpl = $this->createTemplate('helpers/list/list_action_view.tpl');

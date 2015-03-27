@@ -19,7 +19,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -39,7 +39,7 @@ class StockTransferHelper
 	 */
 	public static function getTransfertDataAsArray ($transfertDataString, $elementSeparator = '_', $quantitySeparator = '|', $paSeparator = ';')
 	{
-		// Transformation de la chaine transfert en tableau sans doublon (à mettre dans une méthode et y faire appel dans les méthodes AJAX => refactoring)
+                // transform transfert chain in an array without duplicate (to set in a method and to call in ajax method => refactoring)
 		$transferts = explode ($elementSeparator, $transfertDataString);
 		$transferts = array_reverse ($transferts);
 
@@ -51,14 +51,14 @@ class StockTransferHelper
 
 			if (count($ligne) >= 2)
 			{
-				// Si déjà traité pour cet ID(;ID_ATTRIBUTE) on passe au suivant
+                                // if already treated for this ID (;ID_ATTRIBUTE)  go to next
 				if (isset ($data[$ligne[0]]) || empty($ligne[0]))
 					continue;
 
 				$id_product = $ligne[0];
 				$id_product_attribute = null;
 
-				// Dans le cas d'une déclinaison
+                                // declension case
 				if (strpos ($id_product, $paSeparator))
 				{
 					$ids = explode ($paSeparator, $id_product);

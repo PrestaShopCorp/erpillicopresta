@@ -18,13 +18,13 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 *}
 
 <form id="hidden_form" method="post" action="index.php?controller=AdminAdvancedOrder&token={$token|escape:'htmlall'}#order">
-    {* input for js translation  *}
+
     <input type="hidden" id="transtation_select_least_one_order" value="{l s='Please select at least one valid order' mod='erpillicopresta'}" />
     <input type="hidden" id="transtation_alert" value="{l s='Alert' mod='erpillicopresta'}" />
     <input type="hidden" id="transtation_cancel" value="{l s='Cancel' mod='erpillicopresta'}" />
@@ -58,7 +58,7 @@
     <input type="hidden" id="translate_mr_wtf_error" value="{l s='Mondial relay error : ' mod='erpillicopresta'}" />
     <input type="hidden" id="translate_non-standard_size" value="{l s='Non standard size' mod='erpillicopresta'}" />
 
-    {* input advanced order controller *}
+
     <input type="hidden" id="MRToken" name="MRToken" value="{$token_mr|escape:'htmlall'}" />
     <input type="hidden" id="ExpeditorToken" name="ExpeditorToken" value="{$token_expeditor|escape:'htmlall'}" />
     <input type="hidden" id="etiquettesMR" name="etiquettesMR" />
@@ -70,7 +70,7 @@
     {*<input type="hidden" id="MR_status" name="MR_status" value="{$MR_status|intval}" />*}
 </form>
 
-{* div for jquery ui tabs*}
+
 <div id="dialog-confirmUpdateOrderState" title="{l s='Confirm order update ?' mod='erpillicopresta'}"> {l s='Change state of order #' mod='erpillicopresta'} <b id="dialog-idOrder"></b> {l s='to' mod='erpillicopresta'} "<b id="dialog-textStateOrder"></b>" {l s='?' mod='erpillicopresta'}</div>
 <div id="dialog-updateStates" title="{l s='Select new state' mod='erpillicopresta'}">&nbsp;<br/>
 
@@ -94,7 +94,28 @@
     <p id="dialog-confirmWeight-content"></p>
 </div>
     
+    {if $controller_status == $smarty.const.STATUS1}
+	{literal}
+        <script>
+            $(document).ready(function(){
+            $('input[type="checkbox"]').change(function(){
+				var msg = "{/literal} {l s='You are using a FREE version of 1-CLICK ERP. So your limited to 3 orders maximum. Switch to up-version to break the limit' mod='erpillicopresta'} {literal}";
+                var counter = $('input[type="checkbox"]:checked').length;
+                if(counter > 3)
+                {
+                    jAlert(msg);
+                    $(this).attr('checked', false);
+                }
+            
+			});
+			});
+        </script>
+	{/literal}
+    {/if}
 {* sidebar *}
 {include file=$template_path|cat:'common/erp_sidebar.tpl' erp_feature=$erp_feature}
-
+ <script>
+     var _module_dir_ = "{$_module_dir_|escape:'htmlall'}";
+ </script>
+     
 {$content}

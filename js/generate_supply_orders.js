@@ -18,7 +18,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -30,7 +30,7 @@
 
 $(document).ready(function(){
     
-    // coche tous les boutons
+    // check all buttons
     $("input.checkAll-order-generate").click(function() {
         var checked_status = this.checked;       
         $("input.selected_orders").each(function()
@@ -45,7 +45,7 @@ $(document).ready(function(){
         });
     });
     
-    // clique sur les commandes choisies
+    // click on the chosen orders
     $("input.selected_orders").click(function()				
     {
         var checked_status = this.checked;       
@@ -57,7 +57,7 @@ $(document).ready(function(){
            unsetUnselectedOrdersList( this );
     });	
     
-    // envoi les commandes sélectionnées pour simulation
+    // Sending selected orders to simulation
     $('.toolbarBox a#desc-order-simulate, .toolbarBox a#page-header-desc-order-simulate').click(function(){
          
         if ($('input.selected_orders').length > 0)
@@ -91,13 +91,13 @@ $(document).ready(function(){
         return false;
     });
 
-    // envoi les commandes sélectionnées pour commande
+    // Sending selected orders to generate supply order
     $('.toolbarBox a#desc-order-generate-supply-orders').click(function(){
 	
         
     });
 
-    // Passage champs date factu en datepicker
+    // changing billing date field into datepicker
     $('.date_delivery_expected_simulation').datepicker(
     {
         defaultDate:new Date,
@@ -197,7 +197,7 @@ function submitFormOrdering()
             $(this).css('border', '1px #ccc solid');
     });
 
-    // si le formulaire est valide on le soumet
+    // If form is valid
     if( form_valid )
     {
         /* Annomalie smarty : le form qui devrait contenir tous les tableaux de fournisseur s'arrete au premier
@@ -225,7 +225,7 @@ function submitFormOrdering()
             $('form#form-ordering-info').append(hidden);
         });
         
-        // Submit du formulaire
+        // Submit form
        $('form#form-ordering-info').submit();
     }
    else
@@ -235,7 +235,7 @@ function submitFormOrdering()
 }
 
 
-// Ouverture  en blank
+// open into blank
 function _blank(url)
 {
    window.open(url, '_blank');

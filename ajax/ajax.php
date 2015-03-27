@@ -19,7 +19,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -40,7 +40,7 @@ $erpip = new ErpIllicopresta();
 
 $token = Tools::getValue('token');
 
-	/* vérification du Token */
+	/* check Token */
 	if (!Tools::isSubmit ('token') || (
 			$token != Tools::getAdminToken ('AdminAdvancedStock'.(int)(Tab::getIdFromClassName('AdminAdvancedStock')).(int)$cookie->id_employee)
 			&& $token != Tools::getAdminToken('AdminSupplyOrders'.(int)(Tab::getIdFromClassName('AdminSupplyOrders')).(int)$cookie->id_employee)
@@ -50,6 +50,7 @@ $token = Tools::getValue('token');
 			&& $token != Tools::getAdminToken('AdminAdvancedOrder'.(int)(Tab::getIdFromClassName('AdminAdvancedOrder')).(int)$cookie->id_employee)
 			&& $token != Tools::getAdminToken('AdminAdvancedSupplyOrder'.(int)(Tab::getIdFromClassName('AdminAdvancedSupplyOrder')).(int)$cookie->id_employee)
 			&& $token != Tools::getAdminToken('AdminModules'.(int)(Tab::getIdFromClassName('AdminModules')).(int)$cookie->id_employee)
+			&& $token != Tools::getAdminToken('AdminERP'.(int)(Tab::getIdFromClassName('AdminERP')).(int)$cookie->id_employee)
 		)
 		|| Tools::getValue ('task') === false)
 	exit ('ERROR');
@@ -58,18 +59,24 @@ $token = Tools::getValue('token');
 	{
 
 	case 'updateOrderStatus' :
-
+                               
+                if( Configuration::get($erpip->getControllerStatusName('ADVANCEDORDER')) == STATUS1 
+                        && Tools::getValue('action') == 'masse' 
+                        && count(Tools::getValue('idOrder')) > ERP_ORDERFR )
+                {
+                    $erp_orderfr = array(
+                        'free_limitation_msg' => sprintf($erpip->l('You are using a free version of 1-Click ERP which limits the order change state to %d orders.'), ERP_ORDERFR)
+                    );
+                    print Tools::jsonEncode($erp_orderfr); exit();
+                }
                 
-            
-		if (Tools::isSubmit('idOrder') && Tools::isSubmit('idState') && Tools::isSubmit('action') && Tools::isSubmit('id_employee'))
+		else if (Tools::isSubmit('idOrder') && Tools::isSubmit('idState') && Tools::isSubmit('action') && Tools::isSubmit('id_employee'))
 		{
 			$retour = null;
 			$id_employee = (int)Tools::getValue('id_employee');
 
 			require_once _PS_MODULE_DIR_.'erpillicopresta/classes/order/ErpOrder.php';
                         
-                        //Spécifie une fonction utilisateur comme gestionnaire d'erreurs
-                        // Pour catcher les warnings et autre erreurs PHP
                         set_error_handler(array('ErpOrder', 'ErpOrdersAjaxErrorHandler'));
                         
 			switch (Tools::getValue('action'))
@@ -78,8 +85,8 @@ $token = Tools::getValue('token');
 					$retour = array('res' => false, 'newColor' => null);
 					$currOrder = new ErpOrder( (int)Tools::getValue('idOrder'));
 					$currOrder->setCurrentState( (int)Tools::getValue('idState'), (int)$id_employee);
-					$currOrder = new ErpOrder( (int)Tools::getValue('idOrder')); /* On recrée l'objet car le précédent ne se met pas à jour après la modification */
-					$currOrderState = ($currOrder->getCurrentOrderState()); /* On récupère le nouvel état (pas de constructeur, il faut passer par la commande) */
+					$currOrder = new ErpOrder( (int)Tools::getValue('idOrder')); /* Recreate object because the prvious one do not update after modification */
+					$currOrderState = ($currOrder->getCurrentOrderState()); /* Get new state (no builder, need to pass by order) */
 					$retour['newColor'] = $currOrderState->color;
 					$retour['res'] = true;
                                         
@@ -87,7 +94,7 @@ $token = Tools::getValue('token');
                                         {
                                             $retour['message'] .= $context->cookie->errorOrderAjaxHandler;
                                         }
-                                        
+                                                                                
 				break;
 
 				case 'masse' :
@@ -113,11 +120,11 @@ $token = Tools::getValue('token');
                                                         $retour['message'] = '';
                                             
                                             if (!empty($context->cookie->errorOrderAjaxHandler))
-                                                $retour['message'] .= $context->cookie->errorOrderAjaxHandler.'<br/>';
+                                                $retour['message'] .= $context->cookie->errorOrderAjaxHandler.'<br/>';                                            
 					}
 				break;
 			}
-
+                        
 			print Tools::jsonEncode($retour);
                         $context->cookie->__unset('errorOrderAjaxHandler');
 			exit();
@@ -140,7 +147,7 @@ $token = Tools::getValue('token');
 		
 			$data = StockTransferHelper::getTransfertDataAsArray(Tools::getValue ('values'));
 
-			/*  Récupération information complémentaire */
+			/*  Get addition information */
 			foreach ($data as $key => &$val)
 			{
 				$val['product_name'] = ErpProduct::getProductName ($val['id_product'], $val['id_product_attribute']);
@@ -202,7 +209,7 @@ $token = Tools::getValue('token');
 				$objProd = new Product($prod['product_id']);
 
 				$message .= '<tr>';
-				/*  Si la commande n'est ni envoyée, ni annulée ni la commande courante */
+				/*  If order neither sent nor cancelled nor current order */
 				$message .= '<td>'.$objProd->reference.'</td><td>'.$objProd->getProductName($prod['product_id'], $prod['product_attribute_id']).'</td><td>'.$prod['product_quantity'].'</td>';
 
 				if (Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT')) /* Si la gestion avancée est activée */
@@ -213,7 +220,7 @@ $token = Tools::getValue('token');
 								.'<td>'.$manager->getProductRealQuantities	($prod['product_id'], $prod['product_attribute_id']).'</td>';
 				}
 				else
-					$message .= '<th>'.StockAvailable::getQuantityAvailableByProduct($prod['product_id'], $prod['product_attribute_id']).'</th>';
+					$message .= '<td>'.StockAvailable::getQuantityAvailableByProduct($prod['product_id'], $prod['product_attribute_id']).'</td>';
 
 				$message .= '</tr>';
 			}
@@ -227,14 +234,14 @@ $token = Tools::getValue('token');
 
 	case 'productSupplierPrice' :
 
-		/*  Si on a bien appeler le script avec un terme à rechercher */
+		/*  If we have called the script with a term to search */
 		if (Tools::isSubmit ('id_product') && Tools::isSubmit ('id_product_attribute'))
 		{
                     $id_product 			= Tools::getValue ('id_product');
                     $id_product_attribute 	= Tools::getValue ('id_product_attribute');
                     $id_currency 			= Tools::getValue ('id_currency', false) ? Tools::getValue ('id_currency') : Configuration::get('PS_CURRENCY_DEFAULT');
 
-                    /*  Prix de tous les fournisseurs pour le produit */
+                    /* Prices of all suppliers for the product */
                     $supplier_prices = ErpProductSupplier::getAllProductSupplierPrice ($id_product, $id_product_attribute, true);
 
                     if (!empty ($supplier_prices))
@@ -242,13 +249,13 @@ $token = Tools::getValue('token');
                         echo '<table class="table">';
                         foreach ($supplier_prices as $price)
                         {
-                            /*  Si prix fournisseur = 0, on prend celui de base */
+                            /*  If supplier price = 0 we get the basic one */
                             if ($price['product_supplier_price_te'] == '0.000000')
                                     $wholesale_price = Stock::getWholesalePrice ($id_product, $id_product_attribute);
                             else
                                     $wholesale_price = $price['product_supplier_price_te'];
 
-                            /*  Ecriture du tableau HTML */
+                            /*  Write of the HTML table */
                             echo  '<tr>
                                     <td>'.$price['supplier_name'].'</td>
                                     <td>'.number_format($wholesale_price , 2, '.', ' ').'€</td>
@@ -264,19 +271,19 @@ $token = Tools::getValue('token');
 
 	case 'getSupplierReference' :
 
-		/*  Si on a bien appeler le script avec un terme à rechercher */
+		/* If we called the script with a search term */
 		if (Tools::isSubmit ('id_product'))
 		{
 			$id_product = Tools::getValue ('id_product');
 
-			/*  Détermination de l'id déclinaison. */
-			/*  Si recu en get */
+			/*  Get id attribute. */
+			/*  If get in get */
 			if (Tools::isSubmit ('id_product_attribute'))
 				$id_product_attribute = (int)Tools::getValue ('id_product_attribute');
 			else
 			{
-				/*  Sinon, si il est concaténé avec l'id produit */
-				/** Note NDE : devrait être strstr($id_product,';') plutôt ? c'est toujours un string $id_product nan ? */
+				/*  Else concat with id product */
+				/** Note NDE : Should be in strstr($id_product,';') ? */
 				if (strpos($id_product, ';') !== false)
 				{
                                     $ids = explode (';', $id_product);
@@ -290,7 +297,7 @@ $token = Tools::getValue('token');
 			/** Note NDE : à enlever ?? on perd la récupération faites au dessus si dans le cas de la concaténation dans id_produt */
 			$id_product = Tools::getValue ('id_product');
 
-			/*  Pour chaque fournisseur */
+			/*  For each supplier */
 			$suppliers = Supplier::getSuppliers ();
 
 			$supplier_ref_output = array();
@@ -322,477 +329,428 @@ $token = Tools::getValue('token');
 		}
 
 	break;
-	
-	case 'ActivateLicense':
-		$return = Licence::generateEvaluateLicence(Tools::getValue('erp_contact_name'),Tools::getValue('erp_contact_mail'),Tools::getValue('erp_knowledge_source'),Tools::getValue('_erp_newsletter'));
-
-		if(isset($return['id_customer']))
-			$id_customer = $return['id_customer'];
-		else
-			$id_customer = 0;
-
-		// Si activation de la licence, ajout de l'onglet 1CLICK ERP dans le menu
-		if($return['code'] == 200)
-		{
-			$erpcontroller = new ErpIllicopresta();
-			if (!$erpcontroller->installModuleTabs())
-			{
-				$result = array(
-					'code' => 801,
-					'message' => $erpip->l('Error during installing module controllers. Please contact your customer service.'),
-					'id_customer' => $id_customer
-				);
-			}
-
-			$result =  array(
-				'code' => 200,
-				'message' => $erpip->l('the licence has been successfully actived.'),
-				'id_customer' => $id_customer
-			);
-		}
-
-		$result = array(
-			'code' => $return['code'],
-			'message' => $return['message'],
-			'id_customer' => $id_customer
-		);
-		
-		echo Tools::jsonEncode($result);
-		
-	break;
-		
+	        
 	case 'supplier':
 	default:
 
-		/* Execution des requettes AJAX */
+		/* Execute AJAX requests */
 		if (Tools::isSubmit('action'))
 		{
-			/* get supplier info */
-			if (Tools::getValue('action') == 'getSupplier')
+			switch(Tools::getValue('action'))
 			{
-				if (Tools::isSubmit('id_supplier') && (int)Tools::getValue('id_supplier') > 0)
-				{
-					require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpSupplier.php';
-
-					$id_supplier = (int)Tools::getValue('id_supplier');
-
-					//-ERP information
-					$erp_supplier = null;
-					$id_erpip_supplier = ErpSupplier::getErpSupplierIdBySupplierId($id_supplier);
-					if ($id_erpip_supplier > 0)
-							$erp_supplier = new ErpSupplier( (int)$id_erpip_supplier);
-
-					if (!is_null($erp_supplier))
-						echo Tools::jsonEncode($erp_supplier);
-				}
-				else
-					echo Tools::jsonEncode(array('error' => $erpip->l('Error : no supplier found !')));
-			}
-
-			elseif (Tools::getValue('action') == 'getSupplyOrderDescription')
-			{
-				if (Tools::isSubmit('id_supplier_order'))
-				{
-					require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpSupplyOrder.php';
-
-					$id_supplier_order = (int)pSQL(Tools::getValue('id_supplier_order'));
-					if ($id_supplier_order > 0)
+				/* get supplier info */
+				case 'getSupplier':
+					if (Tools::isSubmit('id_supplier') && (int)Tools::getValue('id_supplier') > 0)
 					{
-						/*-ERP get association */
-						$id_erpip_supply_order = ErpSupplyOrder::getErpSupplierOrderIdBySupplierOrderId($id_supplier_order);
+						require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpSupplier.php';
 
-						if ((int)$id_erpip_supply_order > 0)
+						$id_supplier = (int)Tools::getValue('id_supplier');
+
+						//-ERP information
+						$erp_supplier = null;
+						$id_erpip_supplier = ErpSupplier::getErpSupplierIdBySupplierId($id_supplier);
+						if ($id_erpip_supplier > 0)
+								$erp_supplier = new ErpSupplier( (int)$id_erpip_supplier);
+
+						if (!is_null($erp_supplier))
+							echo Tools::jsonEncode($erp_supplier);
+					}
+					else
+						echo Tools::jsonEncode(array('error' => $erpip->l('Error : no supplier found !')));
+				break;
+
+				case 'getSupplyOrderDescription':
+					if (Tools::isSubmit('id_supplier_order'))
+					{
+						require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpSupplyOrder.php';
+
+						$id_supplier_order = (int)(Tools::getValue('id_supplier_order'));
+						if ($id_supplier_order > 0)
 						{
-							$erp_supply_order = new ErpSupplyOrder((int)$id_erpip_supply_order);
+							/*-ERP get association */
+							$id_erpip_supply_order = ErpSupplyOrder::getErpSupplierOrderIdBySupplierOrderId($id_supplier_order);
 
-							if ($erp_supply_order)
-								echo $erp_supply_order->description;
+							if ((int)$id_erpip_supply_order > 0)
+							{
+								$erp_supply_order = new ErpSupplyOrder((int)$id_erpip_supply_order);
+
+								if ($erp_supply_order)
+									echo $erp_supply_order->description;
+							}
 						}
 					}
-				}
-			}
+				break;
 
-			elseif (Tools::getValue('action') == 'getSupplyOrderDetail')
-			{
+				/*  Dash product*/
+				case 'getProduct':
+					$id_product = Tools::getValue('id_product');
+					$id_supplier = Tools::getValue('id_supplier');
+					$id_currency = (Tools::isSubmit('id_currency')) ? Tools::getValue('id_currency') : Context::getContext()->id_currency;
 
+					/*  get lang from context */
+					$id_lang = (int)Context::getContext()->language->id;
 
-			}
-			/*  Produit poubelle */
-			elseif (Tools::getValue('action') == 'getProduct')
-			{
+					$query = new DbQuery();
+					$query->select('
+						CONCAT(p.id_product, \'_\', IFNULL(pa.id_product_attribute, \'0\')) as id,
+						ps.product_supplier_reference as supplier_reference,
+						IFNULL(pa.reference, IFNULL(p.reference, \'\')) as reference,
+						IFNULL(pa.ean13, IFNULL(p.ean13, \'\')) as ean13,
+						IFNULL(pa.upc, IFNULL(p.upc, \'\')) as upc,
+						md5(CONCAT(\''._COOKIE_KEY_.'\', p.id_product, \'_\', IFNULL(pa.id_product_attribute, \'0\'))) as checksum,
+						IFNULL(CONCAT(pl.name, \' : \', GROUP_CONCAT(DISTINCT agl.name, \' - \', al.name SEPARATOR \', \')), pl.name) as name
+					');
 
-				$id_product = Tools::getValue('id_product');
-				$id_supplier = Tools::getValue('id_supplier');
-				$id_currency = (Tools::isSubmit('id_currency')) ? Tools::getValue('id_currency') : Context::getContext()->id_currency;
+					$query->from('product', 'p');
+					$query->innerJoin('product_lang', 'pl', 'pl.id_product = p.id_product AND pl.id_lang = '.(int)$id_lang);
+					$query->leftJoin('product_attribute', 'pa', 'pa.id_product = p.id_product');
+					$query->leftJoin('product_attribute_combination', 'pac', 'pac.id_product_attribute = pa.id_product_attribute');
+					$query->leftJoin('attribute', 'atr', 'atr.id_attribute = pac.id_attribute');
+					$query->leftJoin('attribute_lang', 'al', 'al.id_attribute = atr.id_attribute AND al.id_lang = '.(int)$id_lang);
+					$query->leftJoin('attribute_group_lang', 'agl', 'agl.id_attribute_group = atr.id_attribute_group AND agl.id_lang = '.(int)$id_lang);
+					$query->leftJoin('product_supplier', 'ps', 'ps.id_product = p.id_product AND ps.id_product_attribute = IFNULL(pa.id_product_attribute, 0)');
+					$query->where('p.id_product NOT IN (SELECT pd.id_product FROM `'._DB_PREFIX_.'product_download` pd WHERE (pd.id_product = p.id_product))');
+					$query->where('p.is_virtual = 0 AND p.cache_is_pack = 0');
+							$query->where('p.id_product = '.(int)$id_product.'');
 
-				/*  get lang from context */
-				$id_lang = (int)Context::getContext()->language->id;
+					$query->groupBy('p.id_product, pa.id_product_attribute');
 
-				$query = new DbQuery();
-				$query->select('
-					CONCAT(p.id_product, \'_\', IFNULL(pa.id_product_attribute, \'0\')) as id,
-					ps.product_supplier_reference as supplier_reference,
-					IFNULL(pa.reference, IFNULL(p.reference, \'\')) as reference,
-					IFNULL(pa.ean13, IFNULL(p.ean13, \'\')) as ean13,
-					IFNULL(pa.upc, IFNULL(p.upc, \'\')) as upc,
-					md5(CONCAT(\''._COOKIE_KEY_.'\', p.id_product, \'_\', IFNULL(pa.id_product_attribute, \'0\'))) as checksum,
-					IFNULL(CONCAT(pl.name, \' : \', GROUP_CONCAT(DISTINCT agl.name, \' - \', al.name SEPARATOR \', \')), pl.name) as name
-				');
+					$item = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($query);
 
-				$query->from('product', 'p');
-				$query->innerJoin('product_lang', 'pl', 'pl.id_product = p.id_product AND pl.id_lang = '.(int)$id_lang);
-				$query->leftJoin('product_attribute', 'pa', 'pa.id_product = p.id_product');
-				$query->leftJoin('product_attribute_combination', 'pac', 'pac.id_product_attribute = pa.id_product_attribute');
-				$query->leftJoin('attribute', 'atr', 'atr.id_attribute = pac.id_attribute');
-				$query->leftJoin('attribute_lang', 'al', 'al.id_attribute = atr.id_attribute AND al.id_lang = '.(int)$id_lang);
-				$query->leftJoin('attribute_group_lang', 'agl', 'agl.id_attribute_group = atr.id_attribute_group AND agl.id_lang = '.(int)$id_lang);
-				$query->leftJoin('product_supplier', 'ps', 'ps.id_product = p.id_product AND ps.id_product_attribute = IFNULL(pa.id_product_attribute, 0)');
-				$query->where('p.id_product NOT IN (SELECT pd.id_product FROM `'._DB_PREFIX_.'product_download` pd WHERE (pd.id_product = p.id_product))');
-				$query->where('p.is_virtual = 0 AND p.cache_is_pack = 0');
-						$query->where('p.id_product = '.(int)$id_product.'');
+							$ids = explode('_', $item['id']);
 
-				$query->groupBy('p.id_product, pa.id_product_attribute');
+					if ($item)
+						die(Tools::jsonEncode($item));
+					die(1);
+				//break;
 
-				$item = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($query);
-
-						$ids = explode('_', $item['id']);
-
-				if ($item)
-					die(Tools::jsonEncode($item));
-				die(1);
-			}
-
-			/*  MAJ wholesaleprice */
-			elseif (Tools::getValue('action') == 'majWholesalePrice' 
-						&& Tools::isSubmit('id_product')
-						&& Tools::isSubmit('id_product_attribute')
-						&& Tools::isSubmit('wholesale_price')
-						&& Tools::isSubmit('id_supplier'))
-			{
-                require_once (_PS_MODULE_DIR_.'erpillicopresta/classes/ErpProductSupplier.php');
-				$id_product = Tools::getValue('id_product');
-				$id_product_attribute = Tools::getValue('id_product_attribute');
-				$wholesale_price = Tools::getValue('wholesale_price');
-				$id_supplier = Tools::getValue('id_supplier');
-
-				/* Si on a un prix pour ce fournisseur, on maj pour le fournisseur
-				 * Dans tous les cas, on maj le prix principal pour le produit ou la déclinaison
-				 */
-
-				$query = 'SELECT COUNT(id_product_supplier) as nb_products, id_product_supplier
-                                            FROM '._DB_PREFIX_.'product_supplier
-                                            WHERE id_product = '.(int)$id_product.' AND id_product_attribute = '.(int)$id_product_attribute
-                                            .' '. 'AND id_supplier = '.(int)$id_supplier.' AND product_supplier_price_te >0.000000';
-
-				$nbProducts = DB::getInstance(_PS_USE_SQL_SLAVE_)->getRow($query);
-
-				/*  Si on a un prix pour ce fournisseur, on MAJ */
-				if ((int)$nbProducts['nb_products'] > 0)
-				{
-                                    $product_supplier = new ErpProductSupplier($nbProducts['id_product_supplier']);
-                                    $product_supplier->product_supplier_price_te = $wholesale_price;
-                                    $product_supplier->save();
-				}
-
-				/*  Sinon maj globale du produit dans tous les cas */
-				/*  Produit */
-				if ($id_product_attribute == '0')
-				{
-                                    $product = new Product($id_product);
-                                    $product->wholesale_price = $wholesale_price;
-                                    $product->save();
-				}
-				/*  Déclinaison */
-				else
-				{
-                                    $combination = new Combination($id_product_attribute);
-                                    $combination->id_product = $id_product;
-                                    $combination->wholesale_price = $wholesale_price;
-                                    $combination->save();
-				}
-
-				$update = DB::getInstance(_PS_USE_SQL_SLAVE_)->execute($query);
-
-				echo $update;
-			}
-
-			/*  MAJ réception ou ANNULATION réception */
-			elseif (Tools::getValue('action') == 'receipt_update' || Tools::getValue('action') == 'receipt_cancel')
-			{
-				$is_canceled = (Tools::getValue('action') == 'receipt_update') ? 0 : 1;
-
-				/*  MAJ table ps_supply_order_receipt_history */
-				$supply_order_receipt_history = new SupplyOrderReceiptHistory();
-				$supply_order_receipt_history->id_supply_order_receipt_history = (int)Tools::getValue('id_supply_order_receipt_history');
-				$supply_order_receipt_history->id = (int)Tools::getValue('id_supply_order_receipt_history');
-				$supply_order_receipt_history->id_supply_order_detail = Tools::getValue('id_supply_order_detail');
-				$supply_order_receipt_history->id_employee = Tools::getValue('id_employee');
-				$supply_order_receipt_history->employee_firstname = Tools::getValue('employee_firstname');
-				$supply_order_receipt_history->employee_lastname = Tools::getValue('employee_lastname');
-				$supply_order_receipt_history->id_supply_order_state = Tools::getValue('id_supply_order_state');
-				$supply_order_receipt_history->quantity = Tools::getValue('quantity');
-				$supply_order_receipt_history->date_add = Date('Y-m-d h:s:i');
-
-				/*  MAJ prix d'achat etr quantité dans le mouvement de stock */
-				if ($supply_order_receipt_history->update())
-				{
-
-					/*--ERP information */
-					// updates/creates ErpSupplyOrderReceiptHistory if it does not exist
-					require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpSupplyOrderReceiptHistory.php';
-
-					if (Tools::isSubmit('id_erpip_supply_order_receipt_history') && (int)Tools::getValue('id_erpip_supply_order_receipt_history') > 0)
-                                            $erp_supply_order_receipt_history = new ErpSupplyOrderReceiptHistory((int)Tools::getValue('id_erpip_supply_order_receipt_history'));
-					else
-                                            $erp_supply_order_receipt_history = new ErpSupplyOrderReceiptHistory(); // creates erp_supplier_order_detail
-
-					$erp_supply_order_receipt_history->id_supply_order_receipt_history = $supply_order_receipt_history->id;
-					$erp_supply_order_receipt_history->unit_price = Tools::getValue('wholesale_price');
-					$erp_supply_order_receipt_history->discount_rate = Tools::getValue('discount_rate');
-					$erp_supply_order_receipt_history->is_canceled = $is_canceled;
-
-					$validation_esorh = $erp_supply_order_receipt_history->validateController();
-					// checks erp_supplier_receipt_history validity
-					if (count($validation_esorh) > 0)
+				/*  Update wholesaleprice */
+				case 'majWholesalePrice':
+					if(Tools::isSubmit('id_product') && Tools::isSubmit('id_product_attribute') && Tools::isSubmit('wholesale_price') && Tools::isSubmit('id_supplier'))
 					{
-                                            echo $erpip->l('The ErpIllicopresta Supplier Receipt History is not correct. Please make sure all of the required fields are completed.');
-                                            echo '<ul>';
-                                                foreach ($validation_esorh as $item)
-                                                    echo '<li>'.$item.'</li>';
-                                            echo '</ul>';
+						require_once (_PS_MODULE_DIR_.'erpillicopresta/classes/ErpProductSupplier.php');
+						$id_product = Tools::getValue('id_product');
+						$id_product_attribute = Tools::getValue('id_product_attribute');
+						$wholesale_price = Tools::getValue('wholesale_price');
+						$id_supplier = Tools::getValue('id_supplier');
+
+						/* If we have a price for this supplier update for the supplier
+						 * At any case we update principal price for product or attribute
+						 */
+
+						$query = 'SELECT COUNT(id_product_supplier) as nb_products, id_product_supplier
+		                                            FROM '._DB_PREFIX_.'product_supplier
+		                                            WHERE id_product = '.(int)$id_product.' AND id_product_attribute = '.(int)$id_product_attribute
+		                                            .' '. 'AND id_supplier = '.(int)$id_supplier.' AND product_supplier_price_te >0.000000';
+
+						$nbProducts = DB::getInstance(_PS_USE_SQL_SLAVE_)->getRow($query);
+
+						/* If price for this supplier, update */
+						if ((int)$nbProducts['nb_products'] > 0)
+						{
+		                                    $product_supplier = new ErpProductSupplier($nbProducts['id_product_supplier']);
+		                                    $product_supplier->product_supplier_price_te = $wholesale_price;
+		                                    $product_supplier->save();
+						}
+
+						/* If not global update of the product in any case */
+						/*  Product */
+						if ($id_product_attribute == '0')
+						{
+		                                    $product = new Product($id_product);
+		                                    $product->wholesale_price = $wholesale_price;
+		                                    $product->save();
+						}
+						/*  Attribute */
+						else
+						{
+		                                    $combination = new Combination($id_product_attribute);
+		                                    $combination->id_product = $id_product;
+		                                    $combination->wholesale_price = $wholesale_price;
+		                                    $combination->save();
+						}
+
+						$update = DB::getInstance(_PS_USE_SQL_SLAVE_)->execute($query);
+
+						echo $update;
 					}
-					else
+				break;
+
+				/*  update delivery or cancel delivery  */
+				case 'receipt_update':
+				case 'receipt_cancel':
+					$is_canceled = (Tools::getValue('action') == 'receipt_update') ? 0 : 1;
+
+					/*  update table ps_supply_order_receipt_history */
+					$supply_order_receipt_history = new SupplyOrderReceiptHistory();
+					$supply_order_receipt_history->id_supply_order_receipt_history = (int)Tools::getValue('id_supply_order_receipt_history');
+					$supply_order_receipt_history->id = (int)Tools::getValue('id_supply_order_receipt_history');
+					$supply_order_receipt_history->id_supply_order_detail = Tools::getValue('id_supply_order_detail');
+					$supply_order_receipt_history->id_employee = Tools::getValue('id_employee');
+					$supply_order_receipt_history->employee_firstname = Tools::getValue('employee_firstname');
+					$supply_order_receipt_history->employee_lastname = Tools::getValue('employee_lastname');
+					$supply_order_receipt_history->id_supply_order_state = Tools::getValue('id_supply_order_state');
+					$supply_order_receipt_history->quantity = Tools::getValue('quantity');
+					$supply_order_receipt_history->date_add = Date('Y-m-d h:s:i');
+
+					/*  UPdate purchase price and quantity in the stock mvt */
+					if ($supply_order_receipt_history->update())
 					{
-                                            if (Tools::isSubmit('id_erpip_supply_order_receipt_history') && Tools::getValue('id_erpip_supply_order_receipt_history') > 0)
-                                                $erp_supply_order_receipt_history->update();
-                                            else
-                                                $erp_supply_order_receipt_history->save();
-					}
 
-					/*  Dans le cas d'une annulation,
-					*   on doit modifier la quantité reçue et générer un mouvement de stock inverse
-					*/
-					if ($is_canceled)
-					{
-						/* Récup info mvt_stock initial */
-						$query = 'SELECT * FROM '._DB_PREFIX_.'stock_mvt WHERE id_stock_mvt = '.(int)Tools::getValue('id_stock_mvt');
-						$initial_stock_mvt = DB::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
-                                                                                                        
-						/*  Si on a les infos du mouvement a annuler .. */
-						if (count($initial_stock_mvt) > 0 )
-						{                                                            
-							/* MAJ quantité supply_order_detail */
-							$query = 'UPDATE '._DB_PREFIX_.'supply_order_detail
-									 SET quantity_received = (quantity_received - '.intval(Tools::getValue('quantity')).')
-									 WHERE id_supply_order_detail = '.intval(Tools::getValue('id_supply_order_detail'));
+						/*--ERP information */
+						// updates/creates ErpSupplyOrderReceiptHistory if it does not exist
+						require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpSupplyOrderReceiptHistory.php';
 
-							$update_supply_order = DB::getInstance(_PS_USE_SQL_SLAVE_)->execute($query);
+						if (Tools::isSubmit('id_erpip_supply_order_receipt_history') && (int)Tools::getValue('id_erpip_supply_order_receipt_history') > 0)
+	                                            $erp_supply_order_receipt_history = new ErpSupplyOrderReceiptHistory((int)Tools::getValue('id_erpip_supply_order_receipt_history'));
+						else
+	                                            $erp_supply_order_receipt_history = new ErpSupplyOrderReceiptHistory(); // creates erp_supplier_order_detail
 
-							/* Si supply_order_detail correctement MAJ */
-							if ($update_supply_order)
-							{
-								/* Mise à jour du stock */
-								$stock = new ErpStock($initial_stock_mvt[0]['id_stock']);
-								$stock->physical_quantity -= Tools::getValue('quantity');
-								$stock->usable_quantity -= Tools::getValue('quantity');
+						$erp_supply_order_receipt_history->id_supply_order_receipt_history = $supply_order_receipt_history->id;
+						$erp_supply_order_receipt_history->unit_price = Tools::getValue('wholesale_price');
+						$erp_supply_order_receipt_history->discount_rate = Tools::getValue('discount_rate');
+						$erp_supply_order_receipt_history->is_canceled = $is_canceled;
 
-								/* Si MAJ du stock ok .. */
-								if ($stock->update())
+						$validation_esorh = $erp_supply_order_receipt_history->validateController();
+						// checks erp_supplier_receipt_history validity
+						if (count($validation_esorh) > 0)
+						{
+	                                            echo $erpip->l('The ErpIllicopresta Supplier Receipt History is not correct. Please make sure all of the required fields are completed.');
+	                                            echo '<ul>';
+	                                                foreach ($validation_esorh as $item)
+	                                                    echo '<li>'.$item.'</li>';
+	                                            echo '</ul>';
+						}
+						else
+						{
+	                                            if (Tools::isSubmit('id_erpip_supply_order_receipt_history') && Tools::getValue('id_erpip_supply_order_receipt_history') > 0)
+	                                                $erp_supply_order_receipt_history->save();
+						}
+
+						/*  In cancel case 
+						*   We need to update received quantity and generate stock mvt opposite
+						*/
+						if ($is_canceled)
+						{
+							/* Get info mvt_stock initial */
+							$query = 'SELECT * FROM '._DB_PREFIX_.'stock_mvt WHERE id_stock_mvt = '.(int)Tools::getValue('id_stock_mvt');
+							$initial_stock_mvt = DB::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
+	                                                                                                        
+							/*  If we have informations about the wtock mvt to cancel */
+							if (count($initial_stock_mvt) > 0 )
+							{                                                            
+								/* Update Quantity  supply_order_detail */
+								$query = 'UPDATE '._DB_PREFIX_.'supply_order_detail
+										 SET quantity_received = (quantity_received - '.intval(Tools::getValue('quantity')).')
+										 WHERE id_supply_order_detail = '.intval(Tools::getValue('id_supply_order_detail'));
+
+								$update_supply_order = DB::getInstance(_PS_USE_SQL_SLAVE_)->execute($query);
+
+								/* If supply_order_detail successfully updated */
+								if ($update_supply_order)
 								{
-									/*  Synchro des stocks */
-									StockAvailable::synchronize($stock->id_product);
+									/* stock update */
+									$stock = new ErpStock($initial_stock_mvt[0]['id_stock']);
+									$stock->physical_quantity -= Tools::getValue('quantity');
+									$stock->usable_quantity -= Tools::getValue('quantity');
 
-									/*  Ajout d'un stock mvt reason s'il n'existe pas (langue non installée à l'installation du module) */
-									$query = 'SELECT * FROM '._DB_PREFIX_.'stock_mvt_reason_lang WHERE id_stock_mvt_reason = '.(int)Configuration::get('ERP_RECEPTION_CANCELING_ID').' AND id_lang = '.(int)Context::getContext()->language->id;
-									$results = Db::getInstance()->ExecuteS($query);
-									if ($results <= 0)
-										Db::getInstance()->insert(_DB_PREFIX_.'stock_mvt_reason_lang', array('id_stock_mvt_reason' => Configuration::get('ERP_RECEPTION_CANCELING_ID'), 'id_lang' => (int)Context::getContext()->language->id, 'name' => $erpip->l('Reception cancelling')));
+									/* If stock  update ok .. */
+									if ($stock->update())
+									{
+										/*  Synchro of stocks */
+										StockAvailable::synchronize($stock->id_product);
 
-									/*  Création mouvement de stock inverse */
-									$stock_mvt = new ErpStockMvt();
-									$stock_mvt->id_stock = $initial_stock_mvt[0]['id_stock'];
-									$stock_mvt->id_order = 0;
-									$stock_mvt->id_supply_order = $initial_stock_mvt[0]['id_supply_order'];
-									$stock_mvt->id_stock_mvt_reason = Configuration::get('ERP_RECEPTION_CANCELING_ID');
-									$stock_mvt->id_employee = Tools::getValue('id_employee');;
-									$stock_mvt->employee_lastname = Tools::getValue('employee_lastname');
-									$stock_mvt->employee_firstname = Tools::getValue('employee_firstname');
-									$stock_mvt->physical_quantity = Tools::getValue('quantity');
-									$stock_mvt->date_add = Date('Y-m-d h:s:i');
-									$stock_mvt->sign = -1;
-									$stock_mvt->price_te = $initial_stock_mvt[0]['price_te'];
-									$stock_mvt->last_wa = $initial_stock_mvt[0]['last_wa'];
-									$stock_mvt->current_wa = $initial_stock_mvt[0]['current_wa'];
-									$stock_mvt->referer = 0;
-									if ($stock_mvt->add())
-										echo '1';
-									else
-										echo $erpip->l('Error while saving reverse stock movement.');
+										/*  Add stock mvt reason if not exists (lang non installed at the module installation) */
+										$query = 'SELECT * FROM '._DB_PREFIX_.'stock_mvt_reason_lang WHERE id_stock_mvt_reason = '.(int)Configuration::get('ERP_RECEPTION_CANCELING_ID').' AND id_lang = '.(int)Context::getContext()->language->id;
+										$results = Db::getInstance()->ExecuteS($query);
+										if ($results <= 0)
+											Db::getInstance()->insert(_DB_PREFIX_.'stock_mvt_reason_lang', array('id_stock_mvt_reason' => Configuration::get('ERP_RECEPTION_CANCELING_ID'), 'id_lang' => (int)Context::getContext()->language->id, 'name' => $erpip->l('Reception cancelling')));
+
+										/* Opposite stock Mvt creation */
+										$stock_mvt = new ErpStockMvt();
+										$stock_mvt->id_stock = $initial_stock_mvt[0]['id_stock'];
+										$stock_mvt->id_order = 0;
+										$stock_mvt->id_supply_order = $initial_stock_mvt[0]['id_supply_order'];
+										$stock_mvt->id_stock_mvt_reason = Configuration::get('ERP_RECEPTION_CANCELING_ID');
+										$stock_mvt->id_employee = Tools::getValue('id_employee');;
+										$stock_mvt->employee_lastname = Tools::getValue('employee_lastname');
+										$stock_mvt->employee_firstname = Tools::getValue('employee_firstname');
+										$stock_mvt->physical_quantity = Tools::getValue('quantity');
+										$stock_mvt->date_add = Date('Y-m-d h:s:i');
+										$stock_mvt->sign = -1;
+										$stock_mvt->price_te = $initial_stock_mvt[0]['price_te'];
+										$stock_mvt->last_wa = $initial_stock_mvt[0]['last_wa'];
+										$stock_mvt->current_wa = $initial_stock_mvt[0]['current_wa'];
+										$stock_mvt->referer = 0;
+										if ($stock_mvt->add())
+											echo '1';
+										else
+											echo $erpip->l('Error while saving reverse stock movement.');
+									}
 								}
+							}
+							else
+								echo $erpip->l('Error while getting id_supply_order or id_stock');
+						}
+						else
+							echo '1';
+					}
+					else
+						echo $erpip->l('Error saving receipt history : ');
+				break;
+
+				/* get total price of the products received in supply order*/
+				case 'getTotalPrice':
+					$id_supply_order = (int)Tools::getValue('id_supply_order');
+
+					/*  With order Id, we get all the product id of the order */
+					$query = 'SELECT id_supply_order_detail FROM '._DB_PREFIX_.'supply_order_detail '
+							.'WHERE id_supply_order = '.(int)$id_supply_order;
+
+					$idsTab = DB::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
+
+					$idTab = array();
+
+					/*  reading this list */
+					if (count($idsTab) > 0)
+					{
+						foreach ($idsTab as $id)
+							$idTab[] = (int)$id['id_supply_order_detail'];
+
+						$ids = implode(',', $idTab);
+
+						/*  We get receipt historic for each product (receipt not deleted) */
+						$query = 'SELECT sorh.id_supply_order_detail, sorh.quantity, esorh.unit_price, esorh.discount_rate
+									FROM '._DB_PREFIX_.'supply_order_receipt_history sorh
+									LEFT JOIN '._DB_PREFIX_.'erpip_supply_order_receipt_history esorh ON esorh.id_supply_order_receipt_history = sorh.id_supply_order_receipt_history
+									WHERE sorh.id_supply_order_detail IN ('.$ids.') AND ( esorh.is_canceled = 0 OR esorh.is_canceled IS NULL) ';
+
+						$res = DB::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
+
+						$total = 0;
+						if (count($res) > 0)
+						{
+							/* We read the list and sum prices */
+							foreach ($res as $row)
+							{
+								if ($row['unit_price'] == NULL || $row['discount_rate'] == NULL)
+								{
+									$query = 'SELECT unit_price_te, discount_rate FROM '._DB_PREFIX_.'supply_order_detail '
+											. 'WHERE id_supply_order_detail = '.(int)$row['id_supply_order_detail'];
+
+									$price_discount = DB::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
+
+									$row['unit_price'] = $price_discount[0]['unit_price_te'];
+									$row['discount_rate'] = $price_discount[0]['discount_rate'];
+								}
+								$total += $row['quantity'] * ($row['unit_price'] - ($row['unit_price'] * $row['discount_rate'] / 100));
 							}
 						}
 						else
-							echo $erpip->l('Error while getting id_supply_order or id_stock');
-					}
-					else
-						echo '1';
-				}
-				else
-					echo $erpip->l('Error saving receipt history : ');
-			}
-
-			/* get total price of the products received in supply order*/
-			else if (Tools::getValue('action') == 'getTotalPrice')
-			{
-
-				$id_supply_order = (int)Tools::getValue('id_supply_order');
-
-				/*  Avec l'id de la commande, on récupère toutes les ids des produits de la commande */
-				$query = 'SELECT id_supply_order_detail FROM '._DB_PREFIX_.'supply_order_detail '
-						.'WHERE id_supply_order = '.(int)$id_supply_order;
-
-				$idsTab = DB::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
-
-				$idTab = array();
-
-				/*  On parcours cette liste */
-				if (count($idsTab) > 0)
-				{
-					foreach ($idsTab as $id)
-						$idTab[] = (int)$id['id_supply_order_detail'];
-
-					$ids = implode(',', $idTab);
-
-					/*  On récupère l'historique de réception de chaque produit (réception non supprimée) */
-					$query = 'SELECT sorh.id_supply_order_detail, sorh.quantity, esorh.unit_price, esorh.discount_rate
-								FROM '._DB_PREFIX_.'supply_order_receipt_history sorh
-								LEFT JOIN '._DB_PREFIX_.'erpip_supply_order_receipt_history esorh ON esorh.id_supply_order_receipt_history = sorh.id_supply_order_receipt_history
-								WHERE sorh.id_supply_order_detail IN ('.$ids.') AND ( esorh.is_canceled = 0 OR esorh.is_canceled IS NULL) ';
-
-					$res = DB::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
-
-					$total = 0;
-					if (count($res) > 0)
-					{
-						/*  On parcourt la liste et on fait la somme des prix */
-						foreach ($res as $row)
-						{
-							if ($row['unit_price'] == NULL || $row['discount_rate'] == NULL)
-							{
-								$query = 'SELECT unit_price_te, discount_rate FROM '._DB_PREFIX_.'supply_order_detail '
-										. 'WHERE id_supply_order_detail = '.(int)$row['id_supply_order_detail'];
-
-								$price_discount = DB::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
-
-								$row['unit_price'] = $price_discount[0]['unit_price_te'];
-								$row['discount_rate'] = $price_discount[0]['discount_rate'];
-							}
-							$total += $row['quantity'] * ($row['unit_price'] - ($row['unit_price'] * $row['discount_rate'] / 100));
-						}
+							$total = '0';
 					}
 					else
 						$total = '0';
-				}
-				else
-					$total = '0';
 
-				$total = number_format($total, 2, '.', ' ');
-				$total = str_replace(',', '', $total);
-				echo $total;
-			}
+					$total = number_format($total, 2, '.', ' ');
+					$total = str_replace(',', '', $total);
+					echo $total;
+				break;
 
-			/*  Facturation groupée */
-			elseif (Tools::getValue('action') == 'billing')
-			{
-				$orders = Tools::getValue('orders');
-				$invoice_number = Tools::getValue('invoice_number');
-				$date_to_invoice = Tools::getValue('date_to_invoice');
+				/*  Group facturation */
+				case 'billing':
+					$orders = Tools::getValue('orders');
+					$invoice_number = Tools::getValue('invoice_number');
+					$date_to_invoice = Tools::getValue('date_to_invoice');
 
-				foreach ($orders as $id_supply_order)
-				{
-					$order = new SupplyOrder($id_supply_order);
-					$order->invoice_number = $invoice_number;
-					$order->date_to_invoice = $date_to_invoice;
-					$order->id_supply_order_state = 5;
-
-					$order->save();
-				}
-			}
-
-						/* change supply order state */
-			else if (Tools::getValue('action') == 'updateSupplyOrderStatus')
-			{
-				// get state ID
-				$id_state = (int)Tools::getValue('id_supply_order_state', 0);
-				if ($id_state <= 0)
-				{
-					echo Tools::jsonEncode(array('error' => $erpip->l('The selected supply order status is not valid.')));
-					exit();
-				}
-
-				// get supply order ID
-				$id_supply_order = (int)Tools::getValue('id_supply_order', 0);
-				if ($id_supply_order <= 0)
-				{
-					echo Tools::jsonEncode(array('error' => $erpip->l('The supply order ID is not valid.')));
-					exit();
-				}
-
-				// try to load supply order
-				$supply_order = new SupplyOrder($id_supply_order);
-
-				if (Validate::isLoadedObject($supply_order))
-				{
-					// get valid available possible states for this order
-					$states = SupplyOrderState::getSupplyOrderStates($supply_order->id_supply_order_state);
-
-					foreach ($states as $state)
+					foreach ($orders as $id_supply_order)
 					{
-						// if state is valid, change it in the order
-						if ($id_state == $state['id_supply_order_state'])
-						{
-							$new_state = new SupplyOrderState($id_state);
-							$old_state = new SupplyOrderState($supply_order->id_supply_order_state);
-                                                        
-							// special case of validate state - check if there are products in the order and the required state is not an enclosed state
-							if ($supply_order->isEditable() && !$supply_order->hasEntries() && !$new_state->enclosed)
-								echo Tools::jsonEncode(array('error' => $erpip->l('It is not possible to change the status of this order because you did not order any product.','erpillicopresta')));
-							else
-							{
-								$supply_order->id_supply_order_state = $state['id_supply_order_state'];
-								if ($supply_order->save())
-								{
-									// if pending_receipt,
-									// or if the order is being canceled,
-									// synchronizes StockAvailable
-									if (($new_state->pending_receipt && !$new_state->receipt_state) ||
-											($old_state->receipt_state && $new_state->enclosed && !$new_state->receipt_state))
-									{
-											$supply_order_details = $supply_order->getEntries();
-											$products_done = array();
-											foreach ($supply_order_details as $supply_order_detail)
-											{
-													if (!in_array($supply_order_detail['id_product'], $products_done))
-													{
-															StockAvailable::synchronize($supply_order_detail['id_product']);
-															$products_done[] = $supply_order_detail['id_product'];
-													}
-											}
-									}
+						$order = new SupplyOrder($id_supply_order);
+						$order->invoice_number = $invoice_number;
+						$order->date_to_invoice = $date_to_invoice;
+						$order->id_supply_order_state = 5;
 
-									echo Tools::jsonEncode(array('message' => $erpip->l('Supply order state updated successfully !')));
+						$order->save();
+					}
+				break;
+
+				/* change supply order state */
+				case 'updateSupplyOrderStatus':
+					// get state ID
+					$id_state = (int)Tools::getValue('id_supply_order_state', 0);
+					if ($id_state <= 0)
+					{
+						echo Tools::jsonEncode(array('error' => $erpip->l('The selected supply order status is not valid.')));
+						exit();
+					}
+
+					// get supply order ID
+					$id_supply_order = (int)Tools::getValue('id_supply_order', 0);
+					if ($id_supply_order <= 0)
+					{
+						echo Tools::jsonEncode(array('error' => $erpip->l('The supply order ID is not valid.')));
+						exit();
+					}
+
+					// try to load supply order
+					$supply_order = new SupplyOrder($id_supply_order);
+
+					if (Validate::isLoadedObject($supply_order))
+					{
+						// get valid available possible states for this order
+						$states = SupplyOrderState::getSupplyOrderStates($supply_order->id_supply_order_state);
+
+						foreach ($states as $state)
+						{
+							// if state is valid, change it in the order
+							if ($id_state == $state['id_supply_order_state'])
+							{
+								$new_state = new SupplyOrderState($id_state);
+								$old_state = new SupplyOrderState($supply_order->id_supply_order_state);
+	                                                        
+								// special case of validate state - check if there are products in the order and the required state is not an enclosed state
+								if ($supply_order->isEditable() && !$supply_order->hasEntries() && !$new_state->enclosed)
+									echo Tools::jsonEncode(array('error' => $erpip->l('It is not possible to change the status of this order because you did not order any product.','erpillicopresta')));
+								else
+								{
+									$supply_order->id_supply_order_state = $state['id_supply_order_state'];
+									if ($supply_order->save())
+									{
+										// if pending_receipt,
+										// or if the order is being canceled,
+										// synchronizes StockAvailable
+										if (($new_state->pending_receipt && !$new_state->receipt_state) ||
+												($old_state->receipt_state && $new_state->enclosed && !$new_state->receipt_state))
+										{
+												$supply_order_details = $supply_order->getEntries();
+												$products_done = array();
+												foreach ($supply_order_details as $supply_order_detail)
+												{
+														if (!in_array($supply_order_detail['id_product'], $products_done))
+														{
+																StockAvailable::synchronize($supply_order_detail['id_product']);
+																$products_done[] = $supply_order_detail['id_product'];
+														}
+												}
+										}
+
+										echo Tools::jsonEncode(array('message' => $erpip->l('Supply order state updated successfully !')));
+									}
 								}
 							}
 						}
 					}
-				}
+				break;
+
+				default:
+					echo $erpip->l('Error : the requested action does not exist (parameter "action" is invalide) : ').Tools::getValue('action');
+				break;
+
 			}
-			else
-				echo $erpip->l('Error : the requested action does not exist (parameter "action" is invalide) : ').Tools::getValue('action');
 		}
 		else
 			echo Tools::jsonEncode(array('error' => $erpip->l('Error : no action found (parameter "action" missing) !')));
 
-			break;
+	break;
 }
 die(1);

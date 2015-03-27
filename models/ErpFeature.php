@@ -19,7 +19,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -63,10 +63,10 @@ class ErpFeature extends ObjectModel
 	*/
 	public static function isPro($status)
 	{
-		if ($status == md5('pro'))
-			return 1;
+            if ($status == md5('pro'))
+                    return 1;
 
-		return 0;
+            return 0;
 	}
 
         /*
@@ -100,24 +100,22 @@ class ErpFeature extends ObjectModel
 	*/
 	public static function getFeatures($iso_code)
 	{
-                //VERRUE : on n'autorise que les iso_code fr ou en (par défaut)
-                if ($iso_code != "fr")
-                {
-                    $iso_code = "en";
-                }
-            
-		//Query
-		$sql = 'SELECT ef.id_erpip_feature, ef.controller, ef.picture, ef.status, efl.name';
-                $sql .= ' FROM '._DB_PREFIX_.'erpip_feature ef ';
-                $sql .= ' INNER JOIN '._DB_PREFIX_.'erpip_feature_language efl ON ef.id_erpip_feature = efl.id_erpip_feature ';
-				$sql .=' AND efl.iso_code = "'. $iso_code.'"';
+            //HACK : fr or en iso_code only are allowed (default)
+            if ($iso_code != "fr")
+                $iso_code = "en";
 
-		$res = Db::getInstance()->executeS($sql);
+            //Query
+            $sql = 'SELECT ef.id_erpip_feature, ef.controller, ef.picture, ef.status, efl.name';
+            $sql .= ' FROM '._DB_PREFIX_.'erpip_feature ef ';
+            $sql .= ' INNER JOIN '._DB_PREFIX_.'erpip_feature_language efl ON ef.id_erpip_feature = efl.id_erpip_feature ';
+            $sql .=' AND efl.iso_code = "'. $iso_code.'"';
 
-		if (!empty($res))
-			return $res;
+            $res = Db::getInstance()->executeS($sql);
 
-		return false;
+            if (!empty($res))
+                    return $res;
+
+            return array();
 	}
         
         /*
@@ -147,7 +145,7 @@ class ErpFeature extends ObjectModel
 	*/
 	public static function getFeaturesWithToken($iso_code)
 	{
-                //VERRUE : on n'autorise que les iso_code fr ou en (par défaut)
+                //HACK : fr or en iso_code only are allowed (default)
                 if ($iso_code != "fr")
                 {
                     $iso_code = "en";

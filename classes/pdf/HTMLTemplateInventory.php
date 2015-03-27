@@ -19,7 +19,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -113,7 +113,7 @@ class HTMLTemplateInventory extends HTMLTemplate
 	}
 
 
-	// Retourne le template HTML
+	// Returns the HTML template
 	public function getContent()
 	{
 
@@ -122,20 +122,20 @@ class HTMLTemplateInventory extends HTMLTemplate
 		$areas = array();
 		$subareas = array();
 
-		// Assignation valeurs Smarty
-		// Si il y a des produit dans l'entrepot
+		// Assigning Smarty values 
+		// If there are products in warehouse
 		if (count($this->products) > 0)
 		{
-			// On tri par zone, sous-zone, emplacement puis id et id_product attribute en PDF avance
+			// Sort by area, subzone, location then id and id_product attribute in advanced PDF
 			if (Tools::getValue('advanced') == 'true')
 				usort($this->products, array($this, 'productAscSort'));
-			else // On tri par fabricant id et id_attribute si on est en PDF simple
+			else // Sort by manufacturer id and id_attribute if simple PDF
 				usort($this->products, array($this, 'manufacturerAscSort'));
 
 
 			if (Tools::getValue('advanced') == 'true' && $this->checkSubareaEmpty() == true)
 			{
-				// Si on est en PDF avance et qu'il existe des produits avec une area mais sans subarea
+				// If advanced PDF and qu'il existe des produits avec une area mais sans subarea
 				$this->smarty->assign('subareaError', 1);
 				$this->smarty->assign('empty', 0);
 			}
@@ -157,7 +157,7 @@ class HTMLTemplateInventory extends HTMLTemplate
 			$this->smarty->assign('subareaError', 0);
 		}
 
-		// Ajout de la fonction de vérification du nombre de produit dans une zone complète, dans smarty
+		// Adding the audit function of the number of product in an area, into smarty
 		$callback = array(&$this, 'countProductInFullArea');
 		$this->smarty->registerPlugin('function', 'countProductInFullArea', $callback);
 
@@ -167,7 +167,7 @@ class HTMLTemplateInventory extends HTMLTemplate
 			return $this->smarty->fetch(_PS_MODULE_DIR_.'erpillicopresta/views/templates/admin/inventory/simple-inventory.tpl');
 	}
 
-	// Redefinition de la methode pour bon fonctionnement en 1.5.4
+	// Redefining the method for proper functioning in 1.5.4
 	public function getHeader()
 	{
 		$shop_name = Configuration::get('PS_SHOP_NAME');
@@ -192,7 +192,7 @@ class HTMLTemplateInventory extends HTMLTemplate
 		return $this->smarty->fetch($this->getTemplate('header'));
 	}
 
-	// Redefinition de la methode pour bon fonctionnement en 1.5.4
+	// Redefining the method for proper functioning in 1.5.4
 	public function getLogo() {
 		$logo = '';
 
@@ -205,7 +205,7 @@ class HTMLTemplateInventory extends HTMLTemplate
 		return $logo;
 	}
 
-	// Aucun footer
+	// No footer
 	public function getFooter()
 	{
 		return false;
@@ -221,7 +221,7 @@ class HTMLTemplateInventory extends HTMLTemplate
 		return 'inventory.pdf';
 	}
 
-	// Retourne le nombre de produits dans une zone complète (area / subarea)
+	// Returns the number of products in a complete area (area / subarea)
 	public function countProductInFullArea($params)
 	{
 		if (!empty($params))

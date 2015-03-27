@@ -18,7 +18,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -44,17 +44,17 @@
 		$('input.name_or_ean').val($(this).val());
 	})
 
-	// Transfert de stock, calcul auto de la quantité restant après transfert
+	// Stock transfer, Auto calculation of the quantity remaining after transfer
 	$('.qte_transfer').keyup(function()
 	{
 		if ($(this).val() != '')
 		{
-			// Quantité à transférer
+			// Quantity to transfer
 			var qte_transfer = parseInt(trim($(this).val()));
 			
 			var tr_parent = $(this).parent().parent();
 			
-			// Quantité actuelle stock A
+			// Current quantity stock A
 			var Aphysical_quantity = tr_parent.find('td.physical_quantity').text();
 			
 			// Id(s) stock A
@@ -89,37 +89,37 @@
 				return;
 			}
 			
-			// Quantité après transfert stock A
+			// Quantity after transfer stock A
 			var Aquantity_after = Aphysical_quantity - qte_transfer;
 
-			// Celulle quantité après
+			// Cell quantity after
 			var container_qte_after = tr_parent.find('td.quantity_after')
 			
-			// Si futur stock A positif
+			// If positive future stock A
 			if (Aquantity_after >= 0)
 			{
-				// Application de la nouvelle quantité dans le stock A
+				// Apply new quantity into stock A
 				container_qte_after.text(Aquantity_after);
 				container_qte_after.addClass('stockAImpact');
 		
-				// Quantité actuelle stock B
+				// Current quantity stock B
                                 var Bphysical_quantity = 0;
 				if (trim(tr_parent.find('td.physical_quantity2').text()) != '--')
                                     Bphysical_quantity = parseInt(tr_parent.find('td.physical_quantity2').text());
 
-				// Quantité après transfert stock B
+				// Quantity after transfer stock B
 				var Bquantity_after = parseInt(Bphysical_quantity) + parseInt(qte_transfer);
 
-				// Application de la nouvelle quantité dans le stock B
+				// Apply new quantity into le stock B
 				tr_parent.find('td.new_stock').text(Bquantity_after);
 				tr_parent.find('td.new_stock').addClass('stocBAImpact');
 				
-				// Enregistrement de la valeur pour le cas du rechargement de page (filtre ou pagination)
+				// Saving value in case of reloading page (filter or pagination)
 				$('.transfers').val($('.transfers').val() + '_' + trim(Aids) + '|' + qte_transfer + '|' + id_stock_s1 + '|' + id_stock_s2);
                                 
 				$(this).val(qte_transfer);
 				
-				// Mise à jour liste transfert
+				// Updating transfer list
 				createListeTranfert();
 			}
 			else
@@ -145,11 +145,11 @@
 	// Validation des transferts de stock
 	$('#validate_transfer').click(function()
 	{
-		// Seulement si au moins une quantité a été saisie
+		// Only if a quantity at least is filled
 		if ($('.transfers').val().length > 0)
 		{
 			
-			// Initialisation des variables
+			// Initialization variables
 			var id_stockA = $('#warehouse_id_stockA').val();
 			var id_stockB = $('#warehouse_id_stockB').val();
 			var lastname = $('#lastname').val();
@@ -157,7 +157,7 @@
 			var id_employee = $('#id_employee').val();
 			var ids_mvt = '';
                         
-                        // Valeurs de stock déjà enregistrées
+                        // Stock values already stored
 			var values = $('.transfers').val();
                         
                         $('#submitTransfers #id_stockA').val(id_stockA);
@@ -179,10 +179,10 @@
 		
 	});
 
-	// Affichage tableau de stock source, ajout des valeurs déjà traitée avant un rechargement (filtre ou pagination)
+	// Displaying source stock table, adding values already processed before reloading (filtee or pagination)
 	$('#stockA').ready(function()
 	{
-		// Grise chaque produit du stock A non présent dans le stock B
+		// Each stock A product not in stock B will be in gray
 		$('#stockA tbody > tr').each(function()
 		{
 			// Id warehouse entrepot B
@@ -203,7 +203,7 @@
 			else
 				id_product = trim(Aids);
 				
-			// Par défaut on grise tout
+			// Gray default
 			_this.find('td input.qte_transfer').prop('disabled', true);
 
 			$.ajax({
@@ -212,15 +212,15 @@
 					id_product:id_product,
 					id_product_attribute:id_product_attribute,
 					id_warehouse:etpB,
-					token:token,
-					task:'getPresenceWarehouseB'
+					//token:token,
+					//task:'getPresenceWarehouseB'
 					},
 				cache:false,
 				async: true,
-				url: '../modules/erpillicopresta/ajax/ajax.php',
+				url: 'index.php?controller=AdminStockTransfer&ajax=1&task=getPresenceWarehouseB&token='+token,
 				success: function(data)
 				{
-					// SI produit non trouvé ds stock B, on grise
+					// If product not found in stock B, gray
 					if (data == 'true')
 						_this.find('td input.qte_transfer').prop('disabled', false);
 				}
@@ -228,33 +228,33 @@
 
 		});
 
-		// Valeurs de stock déjà enregistrées
+		// Stock values already stored
 		if ($('.transfers').val() != '' && $('.transfers').val() != undefined)
 		{
 			var values = $('.transfers').val().split("_");
 
-			// MAJ STOCK A
+			// UPDATING STOCK A
 			$('#stockA tbody > tr').each(function()
 			{
-				// Id ligne
+				// Id line
 				var Aids =  trim($(this).find('td.ids').text());
 
-				// Valeur arès mise à jour de stock
+				// Value after updating stock
 				var container_qte_after =  $(this).find('td.quantity_after');
 
-				// Quantité physique avt mise a jour
+				// Physical quantity before update
 				var Aphysical_quantity =  trim($(this).find('td.physical_quantity').text());
 
-				// Parcours des valeurs enregistrées
+				// Browse stored values
 				for(var i=0;i<=values.length-1;i++)
 				{
-					// Récup id et valeur de stock
+					// Get id and values about stock
 					var value = values[i].split("|");
 
-					// Si on a une égalité d'id, on rempli le stock
+					// If same id, fill up stock
 					if (Aids == value[0])
 					{
-						// Application valeur saisie
+						// Apply filled values 
 						$(this).find('td input.qte_transfer').val(value[1]);
 
 						// Application de la nouvelle quantité dans le stock A
@@ -262,17 +262,17 @@
 						container_qte_after.text(Aquantity_after);
 						container_qte_after.addClass('stockAImpact');
 
-						// MAJ STOCK B
+						// UPDATING STOCK B
 				
 						$(this).find('td.new_stock').text(value[1]);
 
-						// Quantité actuelle stock B
+						// Current quantity stock  B
 						var Bphysical_quantity = $(this).find('td.physical_quantity2').text();
 
-						// Quantité après transfert stock B
+						// Quantity after stock B
 						var Bquantity_after = parseInt(Bphysical_quantity) + parseInt(value[1]);
 
-						// Application de la nouvelle quantité dans le stock B
+						// Apply new quantity into stock B
 						$(this).find('td.new_stock').text(Bquantity_after);
 						$(this).find('td.new_stock').addClass('stocBAImpact');
 	
@@ -291,7 +291,7 @@
                     var toRemove = $(this).find('input[type=hidden]').val();  	
 
                     setToZero(toRemove);
-                    // Mise à jour de la liste
+                    // Updating list
                     createListeTranfert();
             });
 
@@ -307,14 +307,14 @@
 
             var values = $('.transfers').val();
 
-            // Mise à jour du champ transfert en enlevant la chaine correspondant au transfert à supprimer
+            // Updationg transfer field minus string corresponding to the transfer to be deleted
             $('.transfers').val(values.replace(reg, ''));
 
-            // Attention le champ comprenant les ids (id avec eventuellement id_attribute concaténé avec un ;) : replace de ';' par '_' car ';' n'est pas licite dans un
-            // nom de classe (il est remplacé à l'affichage dans le template de la même manière pour idenitifer la balise TR)
+            // Beware field including ids (id optionally with id_attribute concatenated with an ;) : replace of ';' by a '_' because ';' is not allowed in
+            // a class name (it is replaced on display in the template in the same way to identify the TR tag)
             var ligne = $('input#products_ids_' + toRemove.replace(';','_')).parent().parent();
 
-            // Reset valeurs
+            // Reset values
             ligne.find('.qte_transfer').val('0');
             ligne.find('td.quantity_after').removeClass('stockAImpact');
             ligne.find('td.quantity_after').text(trim(ligne.find('td.physical_quantity').text()));    	
@@ -325,7 +325,7 @@
 
 	function createListeTranfert()
 	{
-            // Valeurs de stock déjà enregistrées
+            // Stock values already stored
             var values = $('.transfers').val();
 
             // display/hide process button 
@@ -337,17 +337,17 @@
             if (values == undefined)
                     return;
 
-            // Requête
+            // Request
             $.ajax({
                     type: 'GET',
                     data: {
                         values:values ,
-                        token:token,
-                        task: 'updateListeTransfert'
+                        //token:token,
+                        //task: 'updateListeTransfert'
                     },
                     cache:false,
                     async: false,
-                    url: '../modules/erpillicopresta/ajax/ajax.php',
+                    url: 'index.php?controller=AdminStockTransfer&ajax=1&task=updateListeTransfert&token='+token,
                     success: function(data) {
 
                             if (data != 'false')

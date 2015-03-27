@@ -19,7 +19,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -45,7 +45,7 @@ class ErpWarehouseProductLocationClass extends WarehouseProductLocationCore
 	/**/
 	static public function getWarehouseProductLocationId($id_product, $id_product_attribute)
 	{
-		// Récupération valeurs
+		// Fecth values
 		$query = new DbQuery();
 		$query->select('id_warehouse_product_location');
 		$query->from('warehouse_product_location');
@@ -54,7 +54,7 @@ class ErpWarehouseProductLocationClass extends WarehouseProductLocationCore
 		return (int)Db::getInstance()->getValue($query);
 	}
 
-	/* Retourne la liste des zones */
+	/* Returns areas list */
 	/*public static function getZoneByName($zone)
 	{
 		// build query
@@ -67,7 +67,7 @@ class ErpWarehouseProductLocationClass extends WarehouseProductLocationCore
 		return Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
 	}*/
 
-	/* Retourne la liste des sous zones */
+	/* Returns sub-areas list */
 	/*public static function getSousZoneByName($zone)
 	{
 		// build query
@@ -80,7 +80,7 @@ class ErpWarehouseProductLocationClass extends WarehouseProductLocationCore
 		return Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
 	}*/
 
-	/* Retourne la zone, sous zone et emplacement d'un produit */
+	/* Returns product's area, sub-area and location */
 	public static function getCompleteLocation($id_product, $id_product_attribute, $id_warehouse)
 	{
 		// build query
@@ -97,7 +97,7 @@ class ErpWarehouseProductLocationClass extends WarehouseProductLocationCore
                 return Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($query);
 	}
 
-	/* Retourne la liste des zones */
+	/* Returns areas list */
 	/*public static function getAreas()
 	{
 		// build query
@@ -111,7 +111,7 @@ class ErpWarehouseProductLocationClass extends WarehouseProductLocationCore
 		return Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
 	}*/
 
-	/* Retourne la liste des zones */
+	/* Returns areas list */
 	/*public static function getSubAreas()
 	{
 		// build query
@@ -125,7 +125,7 @@ class ErpWarehouseProductLocationClass extends WarehouseProductLocationCore
 		return Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
 	}*/
 
-	/* Retourne la liste des zones pour un entrepôt */
+	/* Returns areas list about a wharehouse */
 	/*public static function getAreasByWarehouseId($id_warehouse)
 	{
 		// build query
@@ -139,7 +139,7 @@ class ErpWarehouseProductLocationClass extends WarehouseProductLocationCore
 		return Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
 	}*/
 
-	/* Retourne la liste des zones pour un entrepôt */
+	/* Returns areas list about a wharehouse */
 	/*public static function getSubAreasByWarehouseId($id_warehouse)
 	{
 		// build query
@@ -153,7 +153,7 @@ class ErpWarehouseProductLocationClass extends WarehouseProductLocationCore
 		return Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
 	}*/
 
-	/* Retourne le nombre de produit dans une zone complète */
+	/* Returns the number of products in a complete area */
 	/*public static function countProductInFullArea($area, $subarea)
 	{
 		// build query
@@ -171,7 +171,7 @@ class ErpWarehouseProductLocationClass extends WarehouseProductLocationCore
 			$query = new DbQuery();
 			$query->select('count(*)');
 			$query->from('warehouse_product_location', 'wpl');
-			$query->where("zone = '".pSQL($area)."' AND sous_zone = '".pSQL($subarea)."' AND location='".pSQL($location)."'");
+			$query->where("zone = '".pSQL($area)."' AND sous_zone = '".pSQL($subarea)."' AND location=".pSQL($location));
 
 			echo Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($query);
 		}
@@ -192,7 +192,7 @@ class ErpWarehouseProductLocationClass extends WarehouseProductLocationCore
 							LEFT JOIN `'._DB_PREFIX_.'attribute` atr ON (atr.id_attribute = pac.id_attribute)
 							LEFT JOIN `'._DB_PREFIX_.'attribute_lang` al ON (al.id_attribute = pac.id_attribute AND al.id_lang = '.(int)Context::getContext()->language->id.')
 							LEFT JOIN `'._DB_PREFIX_.'attribute_group_lang` agl ON (agl.id_attribute_group = atr.id_attribute_group AND agl.id_lang = '.(int)Context::getContext()->language->id.')');
-			$query->where("wpl.zone = '".pSQL($area)."' AND wpl.sous_zone = '".pSQL($subarea)."' AND wpl.location='".pSQL($location)."'");
+			$query->where("wpl.zone = '".pSQL($area)."' AND wpl.sous_zone = '".pSQL($subarea)."' AND wpl.location=".pSQL($location));
 
 			$row = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($query);
 

@@ -19,7 +19,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -55,6 +55,7 @@ class InventoryProduct extends ObjectModel
 			'id_erpip_inventory_product' => array('type' => ObjectModel::TYPE_INT),
 			'id_erpip_inventory' => array('type' => ObjectModel::TYPE_INT),
 			'id_product' => array('type' => ObjectModel::TYPE_INT, 'required' => true),
+			'id_product_attribute' => array('type' => ObjectModel::TYPE_INT, 'required' => true),
 			'id_mvt_reason' => array('type' => ObjectModel::TYPE_INT, 'required' => true),
 			'qte_before' => array('type' => ObjectModel::TYPE_INT, 'required' => true),
 			'qte_after' => array('type' => ObjectModel::TYPE_INT, 'required' => true),
@@ -63,15 +64,15 @@ class InventoryProduct extends ObjectModel
 	);
 
 	/*
-	* Retourne les produits de la grille d'inventaire prenant en compte les filtres actifs
+	* Returns Products from Inventory grid taking active filters
 	*/
 	public function getInventoryGrid($id_warehouse, $id_category, $id_supplier, $id_manufacturer, $area, $subarea)
 	{
-		// Si gestion de stock avancé et pas d'entrepot, on sélectionne le premier (sélection par défaut dans l'IHM)
+		// If advanced stock management and no wharehouse, taking the first one (default in IHM)
 		if ($this->advanced_stock_management)
 			$id_warehouse = ($id_warehouse == '') ? 1 : $id_warehouse;
 
-		// Récupération produits
+		// Getting products
 		if ($this->advanced_stock_management)
 		{
 			$query = 'SELECT
@@ -105,13 +106,13 @@ class InventoryProduct extends ObjectModel
 					AND cl.id_lang = '.(int)Context::getContext()->language->id.')
 					LEFT JOIN '._DB_PREFIX_.'manufacturer m ON p.id_manufacturer = m.id_manufacturer ';
 
-		// Stock avancé, filtre entrepot
+		// Advanced stock, wharehouse filter
 		if ($this->advanced_stock_management)
 		{
 			$query .= 'LEFT JOIN '._DB_PREFIX_.'warehouse_product_location wpl ON wpl.id_product = p.id_product ';
 			$query .= 'WHERE wpl.id_warehouse = '.intval($id_warehouse).' ';
 
-			// Filtre zone, sous zone, emplacement
+			// area filter, sub-area, location
 			if (!$area && $subarea != '')
 				$query .= 'AND'.$this->getSubQuery (intval($id_warehouse), '0', 'subarea').' = "'.intval($subarea).'"';
 			elseif ($area != '' && $subarea != '')
@@ -129,12 +130,12 @@ class InventoryProduct extends ObjectModel
 
 		$query .= ('p.id_product NOT IN (SELECT pa.id_product FROM '._DB_PREFIX_.'product_attribute pa) ');
 
-		// Ajout des autres filtres
+		// Adding other filters
 		$query .= $this->getFiltersQueries($id_category, $id_supplier, $id_manufacturer);
 
 		$query .= ' UNION ';
 
-		// Récupération des déclinaisons
+		// Getting variations
 		if ($this->advanced_stock_management)
 		{
 			$query .= 'SELECT IFNULL(CONCAT(pl.name, \' : \', GROUP_CONCAT(DISTINCT agl.`name`, \' - \',
@@ -165,7 +166,7 @@ class InventoryProduct extends ObjectModel
 				'
 				);
 
-		// Stock avancé, filtre entrepot
+		// Advanced stock, wharehouse filter
 		if ($this->advanced_stock_management)
 		{
 			$query .= 'INNER JOIN '._DB_PREFIX_.'warehouse_product_location wpl ON wpl.id_product = p.id_product AND wpl.id_product_attribute = pa.id_product_attribute ';
@@ -176,7 +177,7 @@ class InventoryProduct extends ObjectModel
 
                         $query .= 'WHERE wpl.id_warehouse = '.(int)$id_warehouse.' ';
                         
-			// Filtre zone, sous zone, emplacement
+			// Area filter, sub-area, location
 			if ($area == '' && $subarea != '')
 				$query .= 'AND '.$this->getSubQuery (intval($id_warehouse), 'pa.id_product_attribute', 'subarea').' = "'.intval($subarea).'"';
 			elseif ($area != '' && $subarea != '')
@@ -189,55 +190,55 @@ class InventoryProduct extends ObjectModel
 				 
 		}
 
-		// Ajout des autres filtres
+		// Adding other filters
 		$query .= $this->getFiltersQueries($id_category, $id_supplier, $id_manufacturer);
 
 		$query .= ' GROUP BY pa.id_product_attribute ';
 		$query .= ' ORDER BY manufacturer_name ';
 
                 
-		// Execution de la requête
+		// Query exec
 		$products = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
 
-		// Ajout de la quantity en stock
+		// Adding quantity in stock
 		$products_return = array();
 
 		foreach ($products as $product)
 		{
 			$query = new DbQuery();
 
-			// Si gestion de stock avancé inactive, on affiche seulement la quantité
+			// if advanced stock management inactive, only quantity is displayed
 			if (!$this->advanced_stock_management)
 			{
-				// Sélectionne quantité
+				// Quantity select
 				$query->select('IFNULL(quantity, "0") as quantity');
 				$query->from('stock_available');
 				$query->where('id_product = '.(int)$product['id_product'].' AND id_product_attribute = '.(int)$product['id_product_attribute']);
 			}
 			else
 			{
-				 // Sélectionne quantité physique
+				 // Physical quantity select
 				$query->select('IFNULL(physical_quantity, "0") as quantity');
 				$query->from('stock');
-				$query->where('id_product = '.(int)$product['id_product'].' AND id_product_attribute = '.(int)$product['id_product_attribute'].' AND id_warehouse = '.(int)$id_warehouse);
+				$query->where('id_product = '.(int)$product['id_product'].' AND id_product_attribute = '.(int)$product['id_product_attribute'].' AND id_warehouse = '.$id_warehouse);
 			}
 
-			// Execute la requête
+			// Query exec
 			$res = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($query);
 
-			// Ajoute les colonnes au tableau
+			// Adding columns to the table
 			$product['quantity'] = $res['quantity'];
 
-			// Récupération de l'id image du produit
+			// Recovering product image id
 			$id_image = Product::getCover((int)$product['id_product']);
 
-			// Si on a une image pour le produit on la récupère
+			// If we have an image for the product it is recovered
 			if ($id_image != false)
 			{
 				$image = new Image($id_image['id_image']);
 				$product['image'] = _PS_BASE_URL_._THEME_PROD_DIR_.$image->getExistingImgPath().'-large_default.jpg';
 			}
-			// Sion on affiche aucune image disponible dans la bonne langue
+			// Else displaying "no image available" in the right language
 			else
 				$product['image'] = _PS_IMG_DIR_.'l/'.Context::getContext()->language->iso_code.'-default-home_default.jpg';
 
@@ -249,7 +250,7 @@ class InventoryProduct extends ObjectModel
 
 
 	/*
-	* Requêts imbriquées : récupération des zones, sous zone et emplacement pour produit et déclinaison
+	* nested queries : recovering areas, sub-areas and location for products ans variatons
 	*
 	*/
 	private function getSubQuery($id_warehouse, $id_product_attribute, $return)
@@ -304,7 +305,7 @@ class InventoryProduct extends ObjectModel
 	private function getFiltersQueries($id_category, $id_supplier, $id_manufacturer)
 	{
 		$query = '';
-		//Filtre catégorie
+		// Category filter
 		if ($id_category != '')
 		{
 			$query .= ' AND p.id_product IN (
@@ -314,7 +315,7 @@ class InventoryProduct extends ObjectModel
 				)';
 		}
 
-		// Filtre fournisseur
+		// Supplier filter
 		if ($id_supplier != '')
 		{
 			$query .= ' AND p.id_product IN (
@@ -324,9 +325,9 @@ class InventoryProduct extends ObjectModel
 						)';
 		}
 
-		// Filtre Marque
+		// Manufacturer filter
 		if ($id_manufacturer != false)
-			$query .= ' AND p.id_manufacturer = '.(int)$id_manufacturer.' ';
+			$query .= ' AND p.id_manufacturer = '.$id_manufacturer.' ';
 
 		return $query;
 	}
@@ -362,19 +363,19 @@ class InventoryProduct extends ObjectModel
 	*/
 	public static function getWholesalePrice($id_product, $id_product_attribute = 0, $id_supplier = 0)
 	{
-		//S'il y a fournisseur
+		// If there's a supplier
                 if (!empty($id_supplier))
                 {
-                        //On récupère tout d'abord le prix du fournisseur
+                        // Getting supplier's price first
                         $prices = ErpProductSupplier::getProductSupplierPrice($id_product, $id_product_attribute, $id_supplier, true);
                         $price = $prices['product_supplier_price_te'];
                 }
 
-                // Si pas de prix pour ce fournisseur, ou prix fournisseur nul, on cherche le prix du produit ou de la déclinaison
+                // If no supplier's price, or supplier's price null, we look for the price of the product or variation
                 if (empty($price) || $price == '0.000000')
                 {
 
-                        // pas de décliaison, on cherche le prix du produit
+                        // No variation, looking for product's price
                         if ($id_product_attribute == 0)
                         {
                                 $query = new DbQuery();
@@ -383,7 +384,7 @@ class InventoryProduct extends ObjectModel
                                 $query->where('id_product = '.(int)$id_product);
                                 $price = Db::getInstance()->getValue($query);
                         }
-                        // Prix déclinaison
+                        // Variation price
                         else
                         {
                                 $query = new DbQuery();
@@ -394,15 +395,15 @@ class InventoryProduct extends ObjectModel
                                 $query->innerJoin('product', 'p', ' p.id_product = pa.id_product');
                                 $prices = Db::getInstance()->getRow($query);
 
-                                //si la déclinaison à un prix
+                                // if variation's price
                                 if (!empty($prices['wholesale_price_product_attribute']) && $prices['wholesale_price_product_attribute'] != '0.000000')
                                         $price = $prices['wholesale_price_product_attribute'];
 
-                                //sinon, on prend le prix du produit
+                                // else, getting product's price
                                 elseif (!empty($prices['wholesale_price_product']) && $prices['wholesale_price_product'] != '0.000000')
                                         $price = $prices['wholesale_price_product'];
 
-                                //Sinon zero
+                                // Else zero
                                 else
                                         $price = '0.00000';
                         }

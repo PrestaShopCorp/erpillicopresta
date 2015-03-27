@@ -18,18 +18,18 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
-// Récupération du Token pour sécuriser les requetes AJAX
+// Recovery Token to secure AJAX queries
 var token = document.location.href.split("token=");
 token = token[1].split("#");
 token = token[0].split("&");
 token = token[0];
 
-// Variables globales
+// Global variables
 var quantity_changed = false;
 var submited = false;
 var error = '';
@@ -37,7 +37,7 @@ var values;
 var localStore = new Array();
 var csv = false;
 
-// Affichage des dÃ©clinaisons d'un produit
+// Viewing variations of a product
 function expandAll()
 {
     $('.product tbody > tr').each(function()
@@ -46,7 +46,7 @@ function expandAll()
         var id_product = trim($(this).find('td.id_product').text());
         var token = $('#token').val();
 
-        // Uniquement au premier clic
+        // Only the first click
         if (!submited) 
         {   
             if (getPrestashopMailVersion() == '1.6')
@@ -57,10 +57,10 @@ function expandAll()
     });
 }
 
-// Enregistre les valeurs saisie pour un produit
+// Saves values entered for a product
 function saveValues(product)
 {
-    // RECUPERATION DES DERNIERES VALEURS A JOUR DE LA LIGNE MODIFIEE
+    // RECOVERY OF LATEST UPDATE VALUES OF THE MODIFIED LINE
     var currentValues = $('input[name=inventory_values]');
 
     var id_product = 0;
@@ -68,10 +68,10 @@ function saveValues(product)
     var physical_quantity = 0;
     var prefix = '';
 
-    // RÃ©cupÃ©ration type de gestion de stock
+    // Retrieving type of inventory management
     var advanced_stock_management = $('#advanced_stock_management').val();
 
-    // Ajout du prefix si stock avancÃ©
+    // Adding prefix if advanced stock management
     if (advanced_stock_management == 1)
         prefix = 'physical_';
 
@@ -85,10 +85,10 @@ function saveValues(product)
         physical_quantity = trim(product.find('td span.' + prefix + 'quantity').text());
     }
 
-    // QuantitÃ© saisie
+    // Filled quantity
     var found_quantity = product.find('td input.filled_quantity').val();
 
-    // Si ';' --> id produit & declinaison
+    // If ';' --> id product & variations
     if (ids.indexOf(';') != -1)
     {
         ids = ids.split(';');
@@ -104,7 +104,7 @@ function saveValues(product)
     var subarea = product.find('select[name="subarea"] option:selected').html();
     var location = product.find('input[name="location"]').val();
 
-    // Si aucune raison choisie, on applique celle par dÃ©faut en fonction de la valeur saisie (+ ou -)
+    // If no reason chosen, default is applied depending on the input value (+ or -)
     if (id_reason == -1)
     {
         if (parseInt(trim(found_quantity)) >= parseInt(trim(physical_quantity)))
@@ -113,24 +113,24 @@ function saveValues(product)
             id_reason = $('#reason_decrease').val();
     }
 
-    // Dans le cas d'un display produit / dÃ©clinaison, on ne traite pas les produits avec dÃ©clinaisons
+    // In the case of a display product / variations, we do not treat the products with variations
     if (id_reason != undefined)
         var productLine = 'idproduct==' + id_product + '|' + 'idproductattribute==' + id_product_attribute + '|' +
             'idreason==' + id_reason + '|' + 'area==' + area + '|' + 'subarea==' +  subarea + '|' + 'location==' + location + '|' +
             'physicalquantity==' + physical_quantity + '|' + 'foundquantity==' + found_quantity + '_';
 
-    // Maj values
+    // Updating values
     currentValues.val(currentValues.val() + productLine);
     currentValues.val(currentValues.val().replace('undefined',''));
 }
 
-// Retourne les valeurs enregistrÃ©es pour un id produit
+// Returns values recorded for a product id
 function getSavedValues(productLine, id_product, id_product_attribute)
 {
     if (id_product_attribute == '')
         id_product_attribute = 0;
 
-    // Parcours des valeurs enregistrÃ©es pour trouver une Ã©quivalence
+    // browsing recorded values to find an equivalence
     for(var k=0; k<=values.length; k++)
     {
         var loop = false;
@@ -140,35 +140,35 @@ function getSavedValues(productLine, id_product, id_product_attribute)
             //alert(id_product +'=='+ values[k]["idproduct"] + '&&' + id_product_attribute +'=='+ values[k]["idproductattribute"]);
             if (id_product == values[k]["idproduct"] && id_product_attribute == values[k]["idproductattribute"])
             {
-                // Si dÃ©jÃ  traitÃ© une maj de valeur plus rÃ©cente, on passe
+                // If most recent value updated, skip
                 for(var l=0; l<=localStore.length; l++)
                 {
                     if (id_product + ';' +id_product_attribute == localStore[l])
                         loop = true;
                 }
 
-                // Seulement si on a pas dÃ©jÃ  traitÃ© cette ligne
+                // Only if already proccessed this line
                 if (loop == false)
                 {
-                    // QuantitÃ©
+                    // Quantity
                     productLine.find('td input.filled_quantity').val(values[k]["foundquantity"]);
 
-                    // Emplacement
+                    // Location
                     productLine.find('td input[name=location]').val(values[k]["location"]);
 
-                    // Zone
+                    // Area
                     productLine.find('td select[name=area] option')
                         .removeAttr('selected')
                         .filter('[value='+values[k]["area"]+']')
                         .attr('selected', true)
 
-                    // Sous zone
+                    // Sub-area
                     productLine.find('td select[name=subarea] option')
                         .removeAttr('selected')
                         .filter('[value='+values[k]["subarea"]+']')
                         .attr('selected', true)
 
-                    // Ajout de la ligne au tableau des lignes traitÃ©es
+                    // Add the row to the table of processed rows
                     localStore.push(id_product + ';' +id_product_attribute);
                 }
             }
@@ -176,18 +176,18 @@ function getSavedValues(productLine, id_product, id_product_attribute)
     }
 }
 
-// Supprime une valeur gap stock en hidden
+// Removes a gap stock value into hidden
 function deleteGapValue(ids, name)
 {
     $('#gap_values').val($('#gap_values').val().replace(ids+'|', ''));
     $('#gap_values').val($('#gap_values').val().replace(name+'__', ''));
 }
 
-// Inventaire des donnÃ©es enregistrÃ©es
+// Inventory of recorded data
 function makeInventory()
 {
 
-    // Recuperation des valeurs necessaires
+    // Recovery values needed
     var directory = $('input[name=id_inventory]:checked').val().split("_");
     var id_inventory = directory[0];
 
@@ -217,20 +217,20 @@ function makeInventory()
 
 $('document').ready(function()
 {
-    // Sur le passage de la souris sur une ligne de produit, on stock l'id produit ciblÃ© dans un hidden
+    // Hover on a product line, selected product id is stored into a hidden
     $('.row_hover').mouseover(function()
     {
         var id_product = $($(this).find('td.id_product')).text();
         $('#selectedProductId').val(id_product);
 
-        // RAZ id dÃ©clinaison
+        // Reset id variation
         $('#selectedProductAttributeId').val('0');
     });
 
-    // Sur le passage de la souris sur une ligne de dÃ©clinaison, on stock l'id dÃ©clinaison (id_product) ciblÃ© dans un hidden
+    // Hover on a variation line, selected product variation id is stored into a hidden
     $(".action_details").live('mouseover', function()
     {
-        // RÃ©cupÃ©ration des id produit & dÃ©clinaison puis split
+        // Retrieving product id & variation id then split
         var ids = $($(this).find('td span.id_product')).text().split(';');
 
         var id_product = ids[0];
@@ -252,7 +252,7 @@ $('document').ready(function()
 
     $('img.cluetip').cluetip({splitTitle: '|',  showTitle:false, width:'330'});
     
-    // Passage de la souris sur une ref fournisseur principale, on affiche la liste de TOUTES les ref four du produit -- PRODUIT PRINCIPAL
+    // Hover on a main reference supplier, displaying all product references into a list -- MAIN PRODUCT
     $("a.supplier_ref").live('mouseover', function()
     {
         $(this).cluetip(
@@ -268,40 +268,40 @@ $('document').ready(function()
         })
     });
 
-    // Application de la quantitÃ© en masse
+    // Massive quantity application
     $('#desc-product-duplicate,#page-header-desc-product-duplicate').click(function()
     {
         var advanced_stock_management = $('#advanced_stock_management').val();
         var jstring = (advanced_stock_management == 1) ? $("#trad_confirm").val() + '<br />' + $("#trad_advancedstock_warning").val() : $("#trad_confirm").val() + '<br />' + $("#trad_classic_warning").val();
         
-        // Confirmation avant action
+        // Confirm before action
         jConfirm(jstring, 'Attention', function(event)
         {
-            // Si Ok..
+            // if Ok..
             if(event)
             {
-                // Application de la quantitÃ©
+                // Quantity applied
                 if (!quantity_changed)
                 {
-                    // Affiche les dÃ©clinaisons
+                    // Displaying variations
                     expandAll();
 
                     $('.product tbody > tr').each(function()
                     {
-                        // On ignore les lignes de sÃ©pÃ©rations vides ..
+                        // Ignoring empty separation lines ..
                         if ($(this).find('td').length > 1)
                         {
-                            // Application quantitÃ©
+                            // Quantity applied
                             var prefix = '';
 
-                            // Si stock avancÃ©, on rÃ©cupÃ¨re la quantitÃ© physique
+                            // If advanced stock management, the physical quantity is recovered
                             if (advanced_stock_management == 1)
                                 prefix = 'physical_';
 
                             var physical_quantity = trim($(this).find('td.' + prefix + 'quantity').text());
                             var found_quantity = $(this).find('td input.filled_quantity');
 
-                            // Si on trouve '', on est peut Ãªtre sur une dÃ©clinaison : on cherche dans un span
+                            // If '' is found, maybe a variation : searching into a span
                             if (physical_quantity == '')
                                     physical_quantity = trim($(this).find('td span.' + prefix + 'quantity').text());
 
@@ -310,7 +310,7 @@ $('document').ready(function()
                             if(physical_quantity != '')
                                 found_quantity.val((physical_quantity !='--') ? physical_quantity : '0');
 
-                            // Sauvegarde valeur
+                            // Save values
                             saveValues($(this));
                         }
                     });
@@ -329,7 +329,7 @@ $('document').ready(function()
         });
     });
 
-    // CrÃ©ation  et gestion de la dialog popup de sÃ©lection d'un container
+    // Creation and management of dialog popup for selecting a container
     $("#dialog-select_container").dialog({
         autoOpen: false,
         show: "clip",
@@ -338,7 +338,7 @@ $('document').ready(function()
         position: ['center', 'center'],
         buttons:
             [
-                // Annulation
+                // Cancel
                 {
                     text: $("#trad_cancel").val(),
                     click: function() {
@@ -348,10 +348,10 @@ $('document').ready(function()
 
                 {
                         text: $("#trad_validate").val(),
-                        // Nouvel inventaire
+                        // New inventory
                         click: function()
                         {
-                            // Si inventaire classique
+                            // If classical inventory
                             if (!csv)
                             {
                                 if (($('.selected td.name input').val() == undefined || $('.selected td.name input').val() == "") && $('.selected td.name').text() == "")
@@ -361,21 +361,21 @@ $('document').ready(function()
                                 else
                                 {
                                         var gap_values = $('#gap_values');
-                                        // Over gap! on demande confirmation
+                                        // Over gap! confirm ?
                                         if (gap_values.val() != '_')
                                         {
-                                            // RAZ la liste des produits en depassement
+                                            // Reset over gap products list
                                             $("#dialog-confirm_inventory ul").empty();
 
-                                            // On récupère le tableau des id|name
+                                            // Recovering id|name table
                                             gap_values = gap_values.val().split('_');
-                                            //Pour chaque couple id|name
+                                            // for each id|name couple
                                             for(var i = 0; i<= gap_values.length; i++)
                                             {
-                                                //On vérifie que le couple n'est pas vide
+                                                // If values != empty
                                                 if (gap_values[i] != undefined && gap_values[i] != '')
                                                 {
-                                                     //On récupère le tableau id, name
+                                                     // Recovering id|name table
                                                      var gap_values_id = gap_values[i].split('|');
                                                      $("#dialog-confirm_inventory ul").append('<li>ID : '+ gap_values_id[0]+'&nbsp&nbsp&nbsp&nbsp' + gap_values_id[1] + '</li>');
                                                  }
@@ -387,7 +387,7 @@ $('document').ready(function()
                                         }
                                         else
                                         {
-                                            // Au moins un produit Ã  modifier
+                                            // On product to modify at least
                                             if ($('#inventory_values').val() != '')
                                                     makeInventory();
                                             else
@@ -405,7 +405,7 @@ $('document').ready(function()
             ]
     });
 
-    // CrÃ©ation  et gestion de la dialog popup de confirmation d'inventaire'
+    // Creation and management of dialog popup for inventory confirmation
     $("#dialog-confirm_inventory").dialog({
         autoOpen: false,
         show: "clip",
@@ -414,7 +414,7 @@ $('document').ready(function()
         buttons:
             [
 				{
-                // Annulation
+                // Cancel
 					text: $("#trad_cancel").val(),
 					click: function()
 					{
@@ -422,7 +422,7 @@ $('document').ready(function()
 					}
 				},
 
-                // Confirmation
+                // Confirm
 				{
 					text: "OK",
 					click: function()
@@ -434,10 +434,10 @@ $('document').ready(function()
             ]
     });
 
-    // Nouvel inventaire
+    // New inventory
     $('#desc-product-save, #desc-product-save-and-stay, #page-header-desc-product-save, #page-header-desc-product-save-and-stay').click(function(e)
     {
-        // Affichage de la box de sÃ©lection d'un nouveau container
+        // Displaying box for selecting a new container
         $("#dialog-select_container").dialog("open");
 
         // upload csv file
@@ -457,44 +457,44 @@ $('document').ready(function()
         }
     });
 
-    // SÃ©lection d'un inventaire, ajoute la classe 'selected' sur la ligne pour le repÃ©rer
+    // Selecting an inventory, adding the class 'selected' on the line to locate it
     $('input[name=id_inventory]').click(function()
     {
-        // Parcours de la table et suppression des class selected
+        // Browse table and deleting class selected
         $('#tbl_container tbody > tr').each(function()
         {
             $(this).removeClass('selected');
         });
 
-        // Ajout de la classe sur celui sÃ©lectionnÃ©
+        // Adding class on selected one
         $(this).parent().parent().addClass('selected');
     });
 
-    // VÃ©rification de l'Ã©cart de stock et enresitrement des valeurs saisies
+    // Checking gap inventory and recording filled values
     $(".filled_quantity").live(
     {
         focusout:function()
         {
-            // Initialisation
+            // Initialization
             var prefix = '';
             var physical_quantity = 0;
              var name = '';
 
-            // RÃ©cupÃ©ration type de gestion de stock
+            // Retrieving type of inventory management
             var advanced_stock_management = $('#advanced_stock_management').val();
 
-            // Ajout du prefix si stock avancÃ©
+            // Adding the prefix if advanced stock
             if (advanced_stock_management == 1)
                 prefix = 'physical_';
 
-            // Valeur d'Ã©cart de stock max en conf
+            // Maximum stock gap values in conf
             var gap_stock = $('#gap_stock').val();
 
-            // QuantitÃ© saisie
+            // Quantity filled
             var found_quantity = $(this).parent().parent().find('td input.filled_quantity').val();
 
-            // RÃ©cupÃ©ration quantitÃ© physique
-            // Si pas d'id produit trouvÃ©, on est sur une dÃ©clinaison'
+            // Physical quantity recovery
+            // If no product id found, it's a variation
             var ids = trim($(this).parent().parent().find('td.id_product').text());
             if (ids != '')
             {
@@ -508,14 +508,14 @@ $('document').ready(function()
                 name = trim($(this).parent().parent().find('td span.product_name').text());
             }
             
-            // VERIRICATION DE L'ECART DE STOCK
-            // Si entier
+            // CHECKING THE STOCK GAP
+            // if integer
             if (isInt(found_quantity) && Number(found_quantity) >= 0)
             {
-                // Si Ã©cart plus important que celui parametrÃ©, enregistrement, encadrÃ© rouge et  alert
+                // If larger gap than parametered, saving, red box then alert
 				if (gap_stock != '' && gap_stock != 0)
 				{
-					if (Math.abs((found_quantity - physical_quantity)) >= gap_stock)
+					if (Math.abs((found_quantity - physical_quantity)) > gap_stock)
 					{
 						jAlert($('#trad_quantityerror').val() + ' ' + gap_stock);
 						
@@ -524,7 +524,7 @@ $('document').ready(function()
 						deleteGapValue(ids, name);
 						$('#gap_values').val($('#gap_values').val() + ids + '|' + name + '__');
 					}
-					else // Sinon suppression valeur et retrait class encadrÃ© rouge
+					else // Else erase value then withdraw class red box
 					{
 						deleteGapValue(ids, name);
 						$(this).removeClass('overGap');
@@ -533,12 +533,12 @@ $('document').ready(function()
             }
             else
             {
-				// => y a des lettres
+				// => There's some letters
                 if (found_quantity != '')
                     jAlert($("#trad_onlyinteger").val());
 				else // => c'est vide
 				{
-                                            // On recupere l'id produit et l'id declinaison s'il y en a une
+                                            // Get product id and variation id if exists
 
                                             var ids = trim($(this).parent().parent().find('td.id_product').text());
 					    if (ids == '')
@@ -555,23 +555,23 @@ $('document').ready(function()
 							id_product_attribute = -1;
 						}
 
-						// On recupere "l'historique" de inventory_values pour supprimer les entrees de l'id product et id product atribute concernes
+						// Get "History" of inventory_values to delete entrie of id product and id product atribute in question
 						values  = $('#inventory_values').val().split("_");
 						
-						// Creation du tableau qui va contenir les chaines
+						// Creating table that will contain the strings
 						last_values = new Array();
 						for(var i=0; i <= values.length; i++)
 						{
 							if (values[i] != undefined && values[i] != '')
-								if (id_product_attribute != -1 && values[i].indexOf('idproduct=='+id_product+'|idproductattribute=='+id_product_attribute) == -1) // Si ce n'est pas la bonne declinaison du bon produit
-									last_values.push(values[i]); // On peut garder cette chaine
-								else if (id_product_attribute == -1 && values[i].indexOf('idproduct=='+id_product+'|idproductattribute==0') == -1) // Si ce n'est pas le bon produit
+								if (id_product_attribute != -1 && values[i].indexOf('idproduct=='+id_product+'|idproductattribute=='+id_product_attribute) == -1) // If this is not the right variation about the right product
+									last_values.push(values[i]); // We can keep this string
+								else if (id_product_attribute == -1 && values[i].indexOf('idproduct=='+id_product+'|idproductattribute==0') == -1) // If this is not the right product
 									last_values.push(values[i]);
 						}
 						
-						// Retourne la chaine complete separeee par des "/"
+						// Returns the complete string separated by "/"
 						last_values = last_values.join('_');
-						// On ne garde donc que les chaines de valeur des autres produits et on remplace ce qui se trouvait la avant
+						// So we only keep the string values about other products and replace what was there before
 						$('#inventory_values').val(last_values);
 						
 						deleteGapValue(ids, name);
@@ -580,7 +580,7 @@ $('document').ready(function()
 				$(this).parent().parent().find('td input.filled_quantity').val('')
             }
 
-            // ENREGISTREMENT DE LA VALEUR SAISIE
+            // Saving value filled
             if (found_quantity != '')
             {
                 saveValues($(this).parent().parent());
@@ -589,7 +589,7 @@ $('document').ready(function()
 
     });
 
-    // Changement de l'emplacement : vÃ©rification qu'il ne soit pas dÃ©jÃ  pris
+    // Changing location : Check if this is not already taken
     $('td input[name=location], td select[name="area"], td select[name="subarea"]').live("change", function()
     {
         var area = $(this).parent().find('select[name="area"] option:selected').html();
@@ -617,46 +617,46 @@ $('document').ready(function()
             }
         });
 
-        // ENREGISTREMENT DE LA VALEUR SAISIE
+        // Saving value filled
         saveValues($(this).parent().parent());
     });
 
-    // Changement de raison de mouvement : on save
+    // Changing move reason : on save
     $('td select[name=reason]').live("change", function()
     {
         saveValues($(this).parent().parent());
     });
 
-    // Affichage des dÃ©clinaisons d'un produits, rÃ©cupÃ©ration des valeurs dÃ©jÃ  enregistrÃ©s
+    // Displaying product's variation, get already saved values
     $('a[id^="details_details_"]').click(function()
     {
         var id_product = trim($(this).parent().parent().find('td.id_product').text());
 
-        // Recherche de toutes les lignes de dÃ©clinaisons
+        // Looking for every line of variations
         $('table.product tbody > tr.details_details_'+id_product).each(function()
         {
-            // On ne prends pas en compte les lignes de sÃ©paration
+            // We do not take separation lines
             if ($(this).find('td').length > 1)
             {
                 var ids = $(this).find('td span.id_product').text();
                 var id_product_attribute = ids.split(';')[1];
 
-                // Si on a une valeur de gap enregistrÃ©, on encadre le champs quanitÃ© en rouge
+                // If there is a gap value recorded, framing Quantity field in red
                 var gap_values = $('#gap_values').val();
 
                 if (gap_values.indexOf(ids) != -1)
                     $(this).find('td input.filled_quantity').addClass('overGap');
 
-                // Enregistrement des valeurs saisis sur le produit
+                // Saving filled product values
                 getSavedValues($(this), id_product, id_product_attribute);
             }
         });
     });
 
-    // AprÃ¨s filtre ou pagination, rÃ©cupÃ©ration des valeurs saisies et enregistrÃ©es
+    // After filter or pagination, recovery values entered and recorded
     $('table.product').ready(function()
     {
-        // RÃ©cupÃ©ration des lignes d'inventaires
+        // Recovery of inventory lines
         values  = $('#inventory_values').val().split("_");
         values = values.reverse();
 
@@ -664,24 +664,24 @@ $('document').ready(function()
         {
             if (values[i] != '' && values[i] != undefined)
             {
-                // RÃ©cupÃ©ration des colonnes
+                // Recovery column
                 values[i] = values[i].split("|");
 
                 for(var j=0; j<=values[i].length; j++)
                 {
                     if (values[i][j] != '' && values[i][j] != undefined)
                     {
-                        // RÃ©cupÃ©ration du contenu de chaque celulle
+                        // Recovery contents of each cell
                         var attributes = values[i][j].split("==");
 
-                        // values[ligne][colonnes] = valeur
+                        // values[line][column] = value
                         values[i][attributes[0]] = attributes[1];
                     }
                 }
             }
         }
 
-        // Parcours du tableau pour afficher les valeurs enregistrÃ©es
+        // Browse table to display saved values
         $('table.product tbody > tr').each(function()
         {
             var ids = trim($(this).find('td.id_product').text());
@@ -689,7 +689,7 @@ $('document').ready(function()
             var id_product = 0;
             var id_product_attribute = 0;
 
-            // Si ';' --> id produit & declinaison
+            // if ';' --> id product & variation
             if (ids.indexOf(';') != -1)
             {
                 ids = ids.split(';');
@@ -701,11 +701,11 @@ $('document').ready(function()
 
             var gap_values = $('#gap_values').val();
 
-            // Si on a une valeur de gap enregistrÃ©, on encadre le champs quanitÃ© en rouge
+            // If there's a gap value recorded, framing Quantity field in red
             if (gap_values.indexOf('_' + trim($(this).find('td.id_product').text()) + '|') != -1)
                 $(this).find('td input.filled_quantity').addClass('overGap');
 
-            // Enregistrement des valeurs saisis sur le produit
+            // Check values entered on the product
             getSavedValues($(this), id_product, id_product_attribute);
         });
     });

@@ -19,11 +19,12 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
+require_once _PS_MODULE_DIR_.'erpillicopresta/controllers/admin/IPAdminController.php';
 require_once(_PS_MODULE_DIR_.'erpillicopresta/erpillicopresta.php');
 require_once(_PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpStock.php');
 require_once(_PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpStockMvt.php');
@@ -32,7 +33,7 @@ require_once(_PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpWarehouseProductL
 require_once(_PS_MODULE_DIR_.'erpillicopresta/models/ErpZone.php');
 //require_once _PS_MODULE_DIR_.'erpillicopresta/config/control.php';
 
-class AdminInventoryController extends ModuleAdminController
+class AdminInventoryController extends IPAdminController
 {
 	private $advanced_stock_management = false;
 	private $controller_status = 0;
@@ -49,7 +50,7 @@ class AdminInventoryController extends ModuleAdminController
         public static $id_erpip_inventory_static = -1;
 	private static $local_store = array();
 
-	/*  ETAPE 1 : Construction du tableau de produits */
+        // Step 1 : Build and array of products
 	public function __construct()
 	{
 		$this->bootstrap = true;
@@ -62,7 +63,7 @@ class AdminInventoryController extends ModuleAdminController
 
 		parent::__construct();
 
-		// Récupération du type de gestion de stock actif et envoi au tpl
+                // Get the stock manager type and send it to template
 		$this->advanced_stock_management = $this->tpl_list_vars['advanced_stock_management'] = Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT');
 
 		// get controller status
@@ -77,7 +78,7 @@ class AdminInventoryController extends ModuleAdminController
                 $this->toolbar_title = $this->l('1 Click ERP ILLICOPRESTA');
                 
 		// JMA
-		// Sauvegarde cookie des variables GET id_warehouse, areaFilter et subareaFilter pour l'affichage AJAX
+                // Record get variables cookies id_warehouse, areaFilter and subareaFilter for Ajax
 		if (!Tools::isSubmit('ajax'))
 		{
                     $this->setCookie('id_warehouse', (Tools::isSubmit('id_warehouse')) ? Tools::getValue('id_warehouse') : self::getFirstWarehouse());
@@ -85,7 +86,7 @@ class AdminInventoryController extends ModuleAdminController
                     $this->setCookie('subareaFilter', Tools::getValue('subareaFilter'));
 		}
 
-		// Construction du tableau de produits
+                // Buidl product array
 		$global = array
 		(
                     'id_product' => array(
@@ -124,7 +125,7 @@ class AdminInventoryController extends ModuleAdminController
                     )
 		);
 
-		// Si gestion de stock avancée inactive, on affiche juste la quantité utilisable en boutique
+                // if advanced stock manager is inactif, only show the usable quantity in shop
 		if (!$this->advanced_stock_management)
 		{
                     $quantity = array (
@@ -138,7 +139,7 @@ class AdminInventoryController extends ModuleAdminController
                     );
                     $global = array_merge((array)$global, (array)$quantity);
 		}
-		else // Sinon, on affiche le stock physique
+		else // else show the pysical stock
 		{
                     $quantity = array
                     (
@@ -183,20 +184,37 @@ class AdminInventoryController extends ModuleAdminController
 
 		$this->fields_list = array_merge((array)$global, (array)$edit);
 
-		// Si on a des valeurs d'inventaire déjà enregistrés on les envoi (pagination & filtre)
+                // if we already have inventory values recorded, send them (pagination & filters)
 		if (Tools::isSubmit('inventory_values') && Tools::getValue('inventory_values') != '')
 			$this->context->smarty->assign(array('inventory_values' => Tools::getValue('inventory_values')));
 		else
 			$this->context->smarty->assign(array('inventory_values' => ''));
 
-		// Si on a des valeurs de gap de stock déjà enregistrés on les envoi (pagination & filtre)
+                // if we get stock gap values already recorded, send them (pagination & filters)
 		if (Tools::isSubmit('gap_values') && Tools::getValue('gap_values') != '')
 			$this->context->smarty->assign(array('gap_values' => Tools::getValue('gap_values')));
 		else
 			$this->context->smarty->assign(array('gap_values' => ''));
 	}
+        
+        public function initContent()
+	{
+           if( $this->controller_status == STATUS1)
+            {
+                $this->informations[] = '<a href="?controller=AdminModules&configure=erpillicopresta&token='.Tools::getAdminTokenLite('AdminModules').'">'.$this->l('Do not limit yourself to a batch of 10 products, take advantage of the Light version of the Stock Management area for €79.99 before tax or €8.00/month before tax. Go to your back-office, under the module tab, page 1-Click ERP!').'</a>';
+            } else if( $this->controller_status == STATUS2)
+            {
+                $this->informations[] = '<a href="?controller=AdminModules&configure=erpillicopresta&token='.Tools::getAdminTokenLite('AdminModules').'">'.$this->l('Run your inventory by zone and/or in offline mode and perform a visual export of your stock for just €20.00 before tax or €1.00/month before tax. Go to your back-office, under the module tab, page 1-Click ERP!').'</a>';
+            } else if( $this->controller_status == STATUS3)
+            {
+                $this->informations[] = '<a href="?controller=AdminModules&configure=erpillicopresta&token='.Tools::getAdminTokenLite('AdminModules').'">'.$this->l('Activate additional features in your TIME SAVER module in the Module section of your back-office! Go to your back-office, under the module tab, page 1-Click ERP!').'</a>';
+            }
+	
+            parent::initContent();
+            
+	}
 
-	/*  ETAPE 2 : Surcharge du rendu */
+        // Step 2 : override render
 	public function renderList()
 	{
             $this->toolbar_title = $this->l('Products list');
@@ -222,10 +240,10 @@ class AdminInventoryController extends ModuleAdminController
                if (Tools::isSubmit('id_manufacturer') && Tools::getValue('id_manufacturer') != '-1')
                        self::$currentIndex .= '&id_manufacturer='.(int)Tools::getValue('id_manufacturer');
 
-		// Récupération du type d'affichage
+                // Get display type
 		$id_display = $this->getCurrentValue('id_display');
 
-		// qubquery : retourne la première référence fournisseur d'un produit principal
+                // qubquery : return the first provider reference for principal product
 		$this->_select = '
 				cl.name as category_name,
 				i.id_image,
@@ -257,7 +275,7 @@ class AdminInventoryController extends ModuleAdminController
                 $this->_join .= ' LEFT JOIN '._DB_PREFIX_.'erpip_zone area ON area.id_erpip_zone = ewpl.id_zone_parent ';
                 $this->_join .= ' LEFT JOIN '._DB_PREFIX_.'erpip_zone sub_area ON sub_area.id_erpip_zone = ewpl.id_zone ';
                 
-                // Affichage 1 : on mélange les produit et les déclianisons pour un tri par zone 
+                // Render 1 : mix products and declination to sort by area
 		if ($id_display == 1)
                 {
                     $this->_select .= 'IFNULL(CONCAT(pl.name, \' : \', GROUP_CONCAT(DISTINCT agl.`name`, \' - \', al.name SEPARATOR \', \')),pl.name) as product_name,
@@ -269,7 +287,7 @@ class AdminInventoryController extends ModuleAdminController
                             LEFT JOIN `'._DB_PREFIX_.'attribute_group_lang` agl ON (agl.id_attribute_group = atr.id_attribute_group AND agl.id_lang = '.(int)$this->context->language->id.')
                             ';
                 }
-                // Affichage 2 : UNIQUEMENT les produits, avec un détails par déclinaisons via ajaxProcess
+                // Render 2 : ONLY products, with details by declensions by ajaxProcess
                 else
                 {
                     $this->_select .= 'pl.name as product_name,';   
@@ -278,9 +296,9 @@ class AdminInventoryController extends ModuleAdminController
 
                 $this->tpl_list_vars['advanced_stock_token'] = $this->advanced_stock_token;
 
-		// FILTRES
+		// FILTERS
 
-		// Initialisation des variables de filtre
+                // Init filters variables
 		$this->tpl_list_vars['id_category'] = -1;
 		$this->tpl_list_vars['id_supplier'] = -1;
 		$this->tpl_list_vars['id_manufacturer'] = -1;
@@ -289,24 +307,24 @@ class AdminInventoryController extends ModuleAdminController
 		$this->tpl_list_vars['subareaFilter'] = -1;
 		$this->tpl_list_vars['id_display'] = 0;
 
-		// Ajout des filtres supplémentaires
+                // Add additional filters
 		$this->tpl_list_vars['warehouses'] = Warehouse::getWarehouses();
 		$this->tpl_list_vars['categories'] = Category::getSimpleCategories((int)$this->context->language->id);
 		$this->tpl_list_vars['suppliers'] = Supplier::getSuppliers();
 		$this->tpl_list_vars['manufacturers'] = Manufacturer::getManufacturers();
 		$this->tpl_list_vars['controller_status'] = $this->controller_status;
 
-		// Récupération des containers d'inventaire
-		$this->tpl_list_vars['containers'] = Inventory::getContainers();
+                // Get inventory containers
+		$this->tpl_list_vars['containers'] = ErpInventory::getContainers();
 
-		// Récupération conf écart de stock
+                // get conf stock gap
 		$this->tpl_list_vars['gap_stock'] = Configuration::getGlobalValue('ERP_GAP_STOCK');
 
                 require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpFeature.php';
                 $this->tpl_list_vars['erp_feature'] = ErpFeature::getFeaturesWithToken($this->context->language->iso_code);
                 $this->tpl_list_vars['template_path'] = $this->template_path;
 
-		// Récupération id raisons d'inventaire par défaut
+                // get default inventory reasons
 		if ($this->context->language->iso_code == 'fr')
 		{
                     $this->tpl_list_vars['reason_increase'] = ErpStockMvtReason::existsByName('Augmentation d\'inventaire');
@@ -318,24 +336,24 @@ class AdminInventoryController extends ModuleAdminController
                     $this->tpl_list_vars['reason_decrease'] = ErpStockMvtReason::existsByName('Decrease of inventory');
 		}
 
-		// Spécifique gestion de stock avancé ou non
+                // specify advanced stock manager or not
 		if ($this->advanced_stock_management)
 		{
-			// Détermination de l'entrepot. Si aucun sélectionné, on force la sélection du premier
+                        // Get the selected warehouse, if there's not, get the first one 
                         if (($id_warehouse = $this->getCurrentValue('id_warehouse')) == false)
                         {
                             $id_warehouse = $this->getCookie('id_warehouse');
                             $this->tpl_list_vars['id_warehouse'] = $id_warehouse;
                         }
                         
-			//Filtre emplacement dans l'entrepôt
+                        // filters warehouse location
 			$area = $this->getCurrentValue('areaFilter');
 			$subarea = $this->getCurrentValue('subareaFilter');
 
                         $this->tpl_list_vars['areas'] = ErpZone::getZonesName($id_warehouse);
 			$this->tpl_list_vars['sub_areas'] = $area ? ErpZone::getZonesName($id_warehouse, 'sub_area', $area) : array();
                         
-			// Si on a spécifié une zone ET sous zone, on filtre pour l'entrepôt, la zone et la sous zone spécifiée
+                        // if an area AND an under area are specified, we filter the area and the under area for the specified area
 			if ($area != false && $subarea != false)
 			{
                             $this->_where .= ' AND wpl.id_warehouse = '.(int)$id_warehouse.'
@@ -343,7 +361,7 @@ class AdminInventoryController extends ModuleAdminController
                              
                             $this->_group = 'GROUP BY a.id_product';
 			}
-                        // Si on a juste spécifié une zone, on filtre pour l'entrepôt, la zone sépcifiée
+                        // if we just specify one area, we filter for the warehouse the specified area
 			elseif ($area != false)
 			{
                             $this->_where .= ' AND wpl.id_warehouse='.(int)$id_warehouse.' AND area.id_erpip_zone = '.(int)$area; 
@@ -356,7 +374,7 @@ class AdminInventoryController extends ModuleAdminController
                                     $this->_group = 'GROUP BY a.id_product';
 			}
 
-			// Sinon, on filtre juste sur l'entrepôt
+                        // Else we filter by the warehouse
 			else
 			{
                             $this->_where .= ' AND wpl.id_warehouse = '.(int)$id_warehouse;
@@ -374,10 +392,10 @@ class AdminInventoryController extends ModuleAdminController
                             else
                                 $this->_group = 'GROUP BY a.id_product';
 
-		// Filtrage de la requête en fonction des filtres appliqués
+                // filter the query with applied filters
 
 
-		//Filtre catégorie
+		//category filter
 		if (($id_category = $this->getCurrentValue('id_category')) != false)
 		{
 			$this->_where .= ' AND a.id_product IN (
@@ -387,8 +405,8 @@ class AdminInventoryController extends ModuleAdminController
                             )';
 		}
 
-		// Filtre fournisseur
-		if (($id_supplier = $this->getCurrentValue('id_supplier')) != false)
+		// provider filter
+                if (($id_supplier = $this->getCurrentValue('id_supplier')) != false)
 		{
 			$this->_where .= ' AND a.id_product IN (
                                 SELECT ps.id_product
@@ -397,14 +415,14 @@ class AdminInventoryController extends ModuleAdminController
                         )';
 		}
 
-		// Filtre Marque
+		// Brand filter
 		if (($id_manufacturer = $this->getCurrentValue('id_manufacturer')) != false)
 			$this->_where .= ' AND a.id_manufacturer = '.(int)$id_manufacturer;
 
 		$this->displayInformation($this->l('Be careful, if you are using advanced [respectively simple] stock management, only products using advanced [respectively simple] stock management will be exported.'));
                 $this->displayInformation($this->l('In advanced sotck managment, products that are not stocked in a warehouse will not appear.'));
 
-		// Affichage de l'information ou du message de confirmation / erreur de fin d'inventaire
+                // Show information or confirm message / error at the end of the inventory
 		/*switch(Tools::getValue('submitFilterproduct'))
 		{
 			case 0:
@@ -421,20 +439,20 @@ class AdminInventoryController extends ModuleAdminController
 			break;
 		}*/
 
-		// Ajout du plugin simple tooltip
+                // Add plugin simple tooltip
 		$this->addJqueryPlugin('cluetip', _MODULE_DIR_.'erpillicopresta/js/cluetip/');
 
 		// add jquery dialog
 		$this->addJqueryUI('ui.dialog');
 
-		// ajout du plugin validity
+		// add plugin validity
 		$this->addJqueryPlugin('validity.min', _MODULE_DIR_.'erpillicopresta/js/validity/');
 
-		// Charge les JS
+		// Load JS
 		$this->addJS(_MODULE_DIR_.'erpillicopresta/js/inventory_tools.js');
 		$this->addJS(_MODULE_DIR_.'erpillicopresta/js/inventory.js');
 
-		// Charge les CSS
+		// Load CSS
 		$this->addCSS(_MODULE_DIR_.'erpillicopresta/css/jquery.validity.css');
 		$this->addCSS(_MODULE_DIR_.'erpillicopresta/css/jquery.cluetip.css');
 
@@ -443,21 +461,26 @@ class AdminInventoryController extends ModuleAdminController
 		return $list;
 	}
 
-	/*  ETAPE 3 : dernière possibilité de modifier l'affichage (ajout de champs en fonction de ceux déjà en place */
+        // Step 3 : Last possibility to update render (add field according of those already exists)
 	public function getList($id_lang, $order_by = null, $order_way = null, $start = 0, $limit = null, $id_lang_shop = false)
 	{
+            if( $this->controller_status == STATUS1)
+            {
+                $limit = ERP_IVTFR;
+                $this->informations[] = sprintf($this->l('You are using the free version of 1-Click ERP which limits the display to %d products'), $limit);
+            }
 		parent::getList($id_lang, $order_by, $order_way, $start, $limit, $id_lang_shop);
 
-		// Récupération du type d'affichage
+                // Get the render type
 		$id_display = $this->getCurrentValue('id_display');
 
-		// Récupération de l'entrepôt courrant
+		// Get the current warehouse
 		$id_warehouse = $this->getCurrentValue('id_warehouse');
 		if ($id_warehouse == '')
 			$id_warehouse = $this->getCookie('id_warehouse');
 
 
-		// Envoi du nombre de produits au tpl pour afficher / masquer la div-popup
+                // Send number products to template to show/hide div-popup
 		$nb_items = count($this->_list);
 		$this->tpl_list_vars['nb_items'] = $nb_items;
 
@@ -468,7 +491,7 @@ class AdminInventoryController extends ModuleAdminController
                         if (!isset($item['product_name']) && isset($item['name']))
                             $item['product_name'] = $item['name'];
                         
-			// Détermination des Ids en fonction de l'affichage courant
+                        // set Ids depends of the current render
 			if (strrpos($item['id_product'], ';') > 0)
 			{
 				$ids = explode(";", $item['id_product']);
@@ -483,58 +506,58 @@ class AdminInventoryController extends ModuleAdminController
 
 			$query = new DbQuery();
 
-			// Déclinaisons d'un produit (si affichage mélangé on force sur un tableau vide)
+                        // Products declensions (if render is mixed, force on an empty array)
 			$attributes_ids = ($id_display == 1) ? array() : Product::getProductAttributesIds((int)$id_product);
 
                         $item['have_attribute'] = false;
 
-			// On ajoute des colonne supplémentaire que si on est sur un produit sans déclinaison.
-                        // Sinon elles seront affiché sur la déclinaison
+                        // add additional column only if we re on a product without declension
+                        // else they will be shown on declension
 			if (count($attributes_ids) == 0)
 			{
-				// Ajout de la quantité constatée
+                                // add quantity noted
 
-				// Si gestion de stock avancé inactive, on affiche seulement la quantité
+                                // If advanced stock manager is inactif, only show quantity
 				if (!$this->advanced_stock_management)
 				{
-                                        // Sélectionne quantité
+                                        // get the quantity
                                         $query->select('quantity');
                                         $query->from('stock_available');
                                         $query->where('id_product = '.(int)$id_product.' AND id_product_attribute = '.(int)$id_product_attribute);
                                         $query->orderBy('id_stock_available DESC');
 
-                                        // Execute la requête
+                                        // execute query
                                         $res = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($query);
 
-                                        // Ajoute les colonnes au tableau
+                                        // Add column to array
                                         $item['quantity'] = $res['quantity'];
                                         
 				}
 				else
 				{
-                                        // Sélectionne quantité physique et utilisable
+                                    // get the physical and usable quantity
                                         $query->select('physical_quantity');
                                         $query->select('usable_quantity');
                                         $query->from('stock');
                                         $query->where('id_product = '.(int)$id_product.' AND id_product_attribute = '.(int)$id_product_attribute.
                                                                         ' AND id_warehouse ='.(int)$id_warehouse);
 
-                                        // Execute la requête
+                                        // Execute query
                                         $res = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($query);
 
-                                        // Ajoute les colonnes au tableau
+                                        // Add column to array
                                         $item['physical_quantity'] = $res['physical_quantity'];
                                         $item['usable_quantity'] = $res['usable_quantity'];
 
 
-                                        // La quantité réelle dépend de l'entrepot
+                                        // the real quantity depends of the warehouse
                                         $manager = StockManagerFactory::getManager();
                                         $item['real_quantity'] = $manager->getProductRealQuantities($id_product,
                                                                 $id_product_attribute,
                                                                 ($this->getCookie('id_warehouse') == -1 ? null : array($this->getCookie('id_warehouse'))),
                                                                 true);
 
-                                        // Ajout de l'emplacement
+                                        // add location
                                         $location = ErpWarehouseProductLocationClass::getCompleteLocation($id_product, $id_product_attribute,
                                                                         ($this->getCookie('id_warehouse') == -1 ? 1 : $this->getCookie('id_warehouse')));
 
@@ -550,25 +573,25 @@ class AdminInventoryController extends ModuleAdminController
                             
 		}
                
-		// Affichage 0 : Ajout de la colonne de détail +-
+                // display 0: add detail column +-
 		if ($id_display == 0)
 			$this->addRowAction('details');
 
-		// Affichage 1 : tri des produits par emplacment
+		// display 1 : sort products by location
 		/*else
                    usort($this->_list, array('AdminInventoryController', 'cmp'));*/
 	}
 
-	/*  ETAPE 4 : Construction du tableau de déclinaison pour le produit choisi */
+        // Step 4: Build declension array for a chosen product
 	public function ajaxProcess()
 	{
-		// Si on a sélectionné un produit
+                // if a product is selected
 		if (Tools::isSubmit('id'))
 		{
 			$id_product = (int)Tools::getValue('id');
 			$token = Tools::getValue('token');
 
-			// Récupération déclinaisons
+                        // Get declensions
 			$datas = $this->getCombinations($id_product);
 
 			$i = 0;
@@ -576,13 +599,13 @@ class AdminInventoryController extends ModuleAdminController
                         // get html of new quantity column accorging to advanced stock statut
                         $html_new_quantity = $this->renderColumnNewQuantity($id_product, array('have_attribute' => true));
 
-			// Ajout d'une class et d'une action JS sur les données affichées
+                        // Add class and js action on displayed datas
 			foreach ($datas as $ligne)
 			{
-				// Pour chaque produit
+				// foreach product
 				foreach ($ligne as $key => $data)
 				{
-					// On ajoute une class sur chaque colonne et on ajoute un lien sur la référence fournisseur pour la tooltip
+                                        // Add a class on each column and add a link on the provider reference for the tooltip
 					if ($key == 'product_name' || $key == 'name')
 						$datas[$i]['product_name'] = '<span class="product_name">'.$data.'</span>';
 
@@ -590,7 +613,7 @@ class AdminInventoryController extends ModuleAdminController
 						if (!empty($data))
                                                 {
                                                     
-                                                    $datas[$i]['first_supplier_ref'] = '<a href="#" class="supplier_ref" rel="../modules/erpillicopresta/ajax/ajax.php?';
+                                                    $datas[$i]['first_supplier_ref'] = '<a href="#" class="supplier_ref" rel="index.php?controller=AdminInventory&ajax=1';
                                                     $datas[$i]['first_supplier_ref'] .= 'id_product='.$datas[$i]['id_product'].'&task=getSupplierReference';
                                                     $datas[$i]['first_supplier_ref'] .= '&token='.$token.'">'.$data.'&nbsp';
                                                     $datas[$i]['first_supplier_ref'] .= '<img src="themes/default/img/icon-search.png" /></a>';
@@ -604,33 +627,33 @@ class AdminInventoryController extends ModuleAdminController
 
 				$query = new DbQuery();
 
-				// Récupération des id_product et id_product_attribute
+                                // get id_product and id_product_attribute
 				$ids = explode(';', $ligne['id_product']);
 				$id_product = (int)$ids[0];
 				$id_product_attribute = (int)$ids[1];
 
 				$is_selected = '';
 
-				// Récupération de l'entrepôt courrant
+                                // get the current warehouse
 				$id_warehouse = $this->getCookie('id_warehouse');
 
-				// On ajoute les colonnes de quantité
-				// Si gestion de stock avancée inactive, on retourne juste la quantité utilisable en boutique
+                                // add quantity columns
+                                // if advanced stock manager inactive, only return the usable quantity in shop
 				if (!$this->advanced_stock_management)
 				{
 					$query->select('quantity');
 					$query->from('stock_available');
-					$query->where('id_product = '.$id_product.' AND id_product_attribute = '.$id_product_attribute);
+					$query->where('id_product = '.(int)$id_product.' AND id_product_attribute = '.(int)$id_product_attribute);
 
-					// Execute la requête
+					// execute query
 					$res = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($query);
 
-					// Ajoute les colonnes au tableau
+					// add columns to array
 					$datas[$i]['quantity'] = '<span class="quantity">'.(int)$res['quantity'].'</span>';
 				}
 				else
 				{
-					// Sélectionne quantité physique et utilisable
+                                        // get the physical and usable quantity
 					$query = new DbQuery();
 					$query->select('physical_quantity');
 					$query->select('usable_quantity ');
@@ -638,27 +661,28 @@ class AdminInventoryController extends ModuleAdminController
 					$query->where('id_product = '.(int)$id_product.' AND id_product_attribute = '.(int)$id_product_attribute.
 							' AND id_warehouse ='.(int)$id_warehouse);
 
-					// Execute la requête
+					// Execute query
 					$res = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($query);
 
-					// Ajoute les colonnes au tableau si on a bien du stock
+                                        // Add columns to array if stock exists
 					if ($res != false)
 					{
 						$datas[$i]['physical_quantity'] = '<span class="physical_quantity">'.$res['physical_quantity'].'</span>';
 						$datas[$i]['usable_quantity'] = $res['usable_quantity'];
 
 						// La quantité réelle dépend de l'entrepot
+                                                // the real quantity depends of the warehouse
 						$manager = StockManagerFactory::getManager();
 						$datas[$i]['real_quantity'] = $manager->getProductRealQuantities($id_product,
 												$id_product_attribute,
 												($this->getCookie('id_warehouse') == -1 ? null : array($this->getCookie('id_warehouse'))),
 												true);
 					}
-					else // Sinon stock 0
+					else // else stock 0
 						$datas[$i]['physical_quantity'] = $datas[$i]['usable_quantity'] = $datas[$i]['real_quantity'] = 0;
 
 					// JMA
-					// Utilisation du cookie de l'entrepot pour recuperer les emplacements
+                                        // use warehouse cookie to get locations
 					if ($this->getCookie('id_warehouse') != '')
 					{
                                             $location = ErpWarehouseProductLocationClass::getCompleteLocation($id_product, $id_product_attribute,
@@ -672,7 +696,7 @@ class AdminInventoryController extends ModuleAdminController
                                         
                                         if (!empty($location['CompleteArea']))
                                         {
-                                            // Split pour récupérer zone, sous zone et emplacement
+                                            // split to get area, sub area and location
                                             $location = explode(';', $location['CompleteArea']);
 
                                             if (count($location)>0)
@@ -689,7 +713,7 @@ class AdminInventoryController extends ModuleAdminController
                                             $datas[$i]['location'] = '--';                                        
 				}
 
-				// Ajout des raisons d'ajustement
+                                // add ajustment reason
 				$array_reason = ErpStockMvtReason::getStockMvtReasons((int)$this->context->language->id);
 				$datas[$i]['mvt_reason'] = '<select name="reason" class="table_select">';
 				$datas[$i]['mvt_reason'] .= '<option value="-1" '.$is_selected.'>--</option>';
@@ -698,11 +722,11 @@ class AdminInventoryController extends ModuleAdminController
 					$id_reason = $reason['id_stock_mvt_reason'];
 					$name_reason = $reason['name'];
 
-					$datas[$i]['mvt_reason'] .= '<option value="'.$id_reason.'">'.$name_reason.'</option>';
+					$datas[$i]['mvt_reason'] .= '<option value="'.(int)$id_reason.'">'.$name_reason.'</option>';
 				}
 				$datas[$i]['mvt_reason'] .= '</select>';
 
-				// Ajout de la quantité constatée
+                                // get the found quantity
 				$datas[$i]['new_quantity'] = $html_new_quantity;
 				$i++;
 			}
@@ -717,9 +741,11 @@ class AdminInventoryController extends ModuleAdminController
 			echo $json;
 			die();
 		}
+                 elseif(Tools::isSubmit('task') && Tools::getValue('task') == 'getSupplierReference')
+                        include_once(_PS_MODULE_DIR_.'erpillicopresta/ajax/ajax.php');
 	}
 
-	/*  Retourne l'entrepot courant */
+	/*  get the current warehouse */
 	protected function getCurrentCoverageWarehouse()
 	{
             static $warehouse = 0;
@@ -733,7 +759,7 @@ class AdminInventoryController extends ModuleAdminController
             return $warehouse;
 	}
 
-	/*  Retourne une valeur en get/post */
+        // Get a value in get/post
 	protected function getCurrentValue($var)
 	{
             if (Tools::isSubmit($var))
@@ -751,10 +777,10 @@ class AdminInventoryController extends ModuleAdminController
 	 */
 	private function getCombinations($id_product = null)
 	{
-            // Récupération des déclinaisons
+            // Get declensions
             $query = new DbQuery();
 
-            // qubquery : retourne la première référence fournisseur des déclinaisons
+            // qubquery : get the first provider reference for declensions
             $query->select(
             'IFNULL(CONCAT(pl.name, \' : \', GROUP_CONCAT(DISTINCT agl.`name`, \' - \', al.name SEPARATOR \', \')),pl.name) as name,
             if (i.id_image = 0, ii.id_image, i.id_image) as id_image,
@@ -784,41 +810,41 @@ class AdminInventoryController extends ModuleAdminController
                             LEFT JOIN '._DB_PREFIX_.'erpip_zone area ON area.id_erpip_zone = ewpl.id_zone_parent
                             LEFT JOIN '._DB_PREFIX_.'erpip_zone sub_area ON sub_area.id_erpip_zone = ewpl.id_zone');
 
-            // Si gestion de stock avancé, on filtre par entrepôt
+            // if advanced stock manager, filter by warehouse
             if ($this->advanced_stock_management)
                            $query = $this->filterByWarehouse($query);
 
-            // Si on appel juste pour les déclinaisons d'un produit : display 0
+            // If we just call for a declensions product : display 0
             if ($id_product != null)
-                            $query->where('a.id_product = '.$id_product);
+                            $query->where('a.id_product = '.(int)$id_product);
 
-            // Si on appel pour affichage de toutes les déclinaisons : display 1, on applique les fitlres
+            // if we call for all declensions: display 1, apply filters
             else
             {
-                // Filtrage de la requête en fonction des filtres appliqués
+                // query filter by applied filters
 
-                //Filtre catégorie
+                // category filter
                 if (Tools::isSubmit('id_category') && Tools::getValue('id_category') != -1)
                                 $query->where('a.id_product IN (
                                                                         SELECT cp.id_product
                                                                         FROM '._DB_PREFIX_.'category_product cp
                                                                         WHERE cp.id_category = '.intval(Tools::getValue('id_category')).')');
 
-                // Filtre fournisseur
+                // Provider filter
                 if (Tools::isSubmit('id_supplier') && Tools::getValue('id_supplier') != -1)
                                 $query->where('(a.id_product, a.id_product_attribute) IN (
                                                                         SELECT ps.id_product, ps.id_product_attribute
                                                                         FROM '._DB_PREFIX_.'product_supplier ps
                                                                         WHERE ps.id_supplier = '.intval(Tools::getValue('id_supplier')).')');
 
-                // Filtre Marque
+                // Brand filter
                 if (Tools::isSubmit('id_manufacturer') && Tools::getValue('id_manufacturer') != -1)
                                 $query->where('p.id_manufacturer = '.intval(Tools::getValue('id_manufacturer')));
 
             }
             $query->groupBy('a.id_product, a.id_product_attribute');
 
-            // Reconstruction du LIMIT
+            // Re-construct LIMIT
             $product_pagination = (int)$this->context->cookie->product_pagination;
             $currentPage = ($this->context->cookie->submitFilterproduct == false) ? 1 : $this->context->cookie->submitFilterproduct;
             $max = $product_pagination * $currentPage;
@@ -827,69 +853,69 @@ class AdminInventoryController extends ModuleAdminController
             if ($this->getCurrentValue('id_display') == 1)
                             $query->orderBy("a.id_product, a.id_product_attribute ASC LIMIT $min, $max");
 
-            // Execution de la requête
+            // Execute query
             return Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
             
             
             
 	}
 
-	/*  Filtre la requete pour n'afficher que les produits d'un entrepot, zone et sous zone sélectionnés */
+        // Filter query to only show warehouse products, area and sub area selected
 	public function filterByWarehouse($query)
         {
                 // JMA
-                // Verif si id entrepot dispo dans url, si pas le cas, on le recupere dans le cookie
+                // Try to get url warehouse id, else get in the cookie
                 if (Tools::isSubmit('id_warehouse') == false)
                                 $id_warehouse = $this->getCookie('id_warehouse');
                 else
                                 $id_warehouse = Tools::getValue('id_warehouse');
 
                 // JMA
-                // Verif si areaFilter dispo dans url, si pas le cas, on le recupere dans le cookie
+                // try to get area filter in url, else get in the cookie
                 if (Tools::isSubmit('areaFilter') == false)
                 {
                         if ($this->getCookie('areaFilter') != "-1" && $this->getCookie('areaFilter') != '')
                             $area = $this->getCookie('areaFilter');
-                        else // si c'est la premiere fois quon arrive sur la page
+                        else // if first time on page
                             $area = false;
                 }
                 else
                         $area = $this->getCurrentValue('areaFilter');
 
                 // JMA
-                // Verif si subareaFilter dispo dans url, si pas le cas, on le recupere dans le cookie
+                // try to get subarea filter in url, else get in the cookie
                 if (Tools::isSubmit('subareaFilter') == false)
                 {
                         if ($this->getCookie('subareaFilter') != "-1" && $this->getCookie('subareaFilter') != '')
                             $subarea = $this->getCookie('subareaFilter');
-                        else // si c'est la premiere fois quon arrive sur la page
+                        else // if first time on page
                             $subarea = false;
                 }
                 else
                         $subarea = $this->getCurrentValue('subareaFilter');
 
-                // Si on a spécifié une zone ET une sous zone, on filtre pour l'entrepôt, la zone et la sous zone
+                // if an area and a sub area are specified, filters on the warehouse on area and sub area
                 if ($area != false && $subarea != false)
                 {
-                    $query->where('wpl.id_warehouse = '.$id_warehouse.' 
+                    $query->where('wpl.id_warehouse = '.(int)$id_warehouse.' 
                                     AND area.id_erpip_zone = '.(int)$area.' AND sub_area.id_erpip_zone = '.(int)$subarea );        
                 }
                 
-                // Si on a juste spécifié une zone, on filtre pour l'entrepôt et la zone
+                // if we only specified and area, filter on warehouse and area
                 elseif ($area != false) {
-                    $query->where('wpl.id_warehouse = '.$id_warehouse.' AND area.id_erpip_zone = '.(int)$area);
+                    $query->where('wpl.id_warehouse = '.(int)$id_warehouse.' AND area.id_erpip_zone = '.(int)$area);
                 }
-                // Sinon, on filtre juste sur l'entrepôt
+                // else filter on warehouse
                 else
-                        $query->where('wpl.id_warehouse = '.$id_warehouse);
+                        $query->where('wpl.id_warehouse = '.(int)$id_warehouse);
                 
                 return $query;
 	}
 
-	/*  Contenu de la barre d'outils */
+	/*  content of the toolbar */
 	public function initToolbar()
 	{
-		// Construction lien export grille PDF : récupération des filtres
+                // build link export grid PDF : get filters
 		$link = (Tools::isSubmit('id_warehouse') && Tools::getValue('id_warehouse') != -1) ? '&id_warehouse='.Tools::getValue('id_warehouse') : '';
 		$link .= (Tools::isSubmit('id_category') && Tools::getValue('id_category') !=-1) ? '&id_category='.Tools::getValue('id_category') : '';
 		$link .= (Tools::isSubmit('id_supplier') && Tools::getValue('id_supplier') != -1) ? '&id_supplier='.Tools::getValue('id_supplier') : '';
@@ -909,7 +935,7 @@ class AdminInventoryController extends ModuleAdminController
 				);
                         }
 
-			// Export grille PDF seulement si affichage zone / sous zone
+                        // export grid pdf only if area/sub area are shown
 			if ($this->getCurrentValue('id_display') == '1')
 			{
 						$this->toolbar_btn['save-calendar'] = array(
@@ -921,17 +947,12 @@ class AdminInventoryController extends ModuleAdminController
 						);
 			}
 
-			// Export grille PDF
-			$this->toolbar_btn['preview'] = array(
-						'short' => $this->l('Print the simple inventory grid'),
-						'href' => $this->context->link->getAdminLink('AdminInventory').'&submitAction=generateInventoryPDF&advanced=false'.$link,
-						'target' => 'blank',
-						'desc' => $this->l('Export simple grid'),
-					);
+			
 
 			if ($this->controller_status)
 			{
-				// Application de la quantité en masse
+                           if($this->controller_status == STATUS3){
+				// Application quantity in mass
 				$this->toolbar_btn['duplicate'] = array(
 											'short' => $this->l('Apply the found quantity as the physical quantity'),
 											'href' => 'javascript:void(0)',
@@ -951,9 +972,47 @@ class AdminInventoryController extends ModuleAdminController
 											'href' => 'javascript:void(0)',
 											'desc' => $this->l('Import CSV file'),
 							);
+                                // Export PDF grid
+                                $this->toolbar_btn['preview'] = array(
+						'short' => $this->l('Print the simple inventory grid'),
+						'href' => $this->context->link->getAdminLink('AdminInventory').'&submitAction=generateInventoryPDF&advanced=false'.$link,
+						'target' => 'blank',
+						'desc' => $this->l('Export simple grid'),
+					);
+                           }
+                           else
+                           {
+                               $text = addslashes($this->l('Tu use this functionnality please switch to the PRO Version.'));
+                               // Application quantity in mass
+				$this->toolbar_btn['duplicate'] = array(
+											'short' => $this->l('Apply the found quantity as the physical quantity'),
+											'js' => 'cancelBubble(event, \''.$text.'\');',
+											'desc' => $this->l('Copy quantities'),
+							);
+
+				// EXPORT CSV
+				$this->toolbar_btn['export-csv-orders'] = array(
+											'short' => $this->l('Export CSV file'),
+											'js' => 'cancelBubble(event, \''.$text.'\');',
+											'desc' => $this->l('Offline inventory (CSV file)'),
+							);
+
+				// IMPORT CSV
+				$this->toolbar_btn['save-and-stay'] = array(
+											'short' => $this->l('New inventory with file'),
+											'js' => 'cancelBubble(event, \''.$text.'\');',
+											'desc' => $this->l('Import CSV file'),
+							);
+                                // Export PDF grid
+                                $this->toolbar_btn['preview'] = array(
+						'short' => $this->l('Print the simple inventory grid'),
+						'js' => 'cancelBubble(event, \''.$text.'\');',
+						'desc' => $this->l('Export simple grid'),
+					);
+                           }
 			}
 
-			// Sélection d'un container d'inventaire et enregistrement
+                        // select an inventory container and record
 			$this->toolbar_btn['save'] = array(
 							'short' => $this->l('Save inventory'),
 							'href' => 'javascript:void(0)',
@@ -966,7 +1025,7 @@ class AdminInventoryController extends ModuleAdminController
 
 	public function initPageHeaderToolbar()
 	{
-                // Construction lien export grille PDF : récupération des filtres
+                // build export link grid PDF: get filters
 		$link = (Tools::isSubmit('id_warehouse') && Tools::getValue('id_warehouse') != -1) ? '&id_warehouse='.Tools::getValue('id_warehouse') : '';
 		$link .= (Tools::isSubmit('id_category') && Tools::getValue('id_category') !=-1) ? '&id_category='.Tools::getValue('id_category') : '';
 		$link .= (Tools::isSubmit('id_supplier') && Tools::getValue('id_supplier') != -1) ? '&id_supplier='.Tools::getValue('id_supplier') : '';
@@ -975,7 +1034,7 @@ class AdminInventoryController extends ModuleAdminController
 		$link .= (Tools::isSubmit('subareaFilter') && Tools::getValue('subareaFilter') != -1) ? '&subarea='.Tools::getValue('subareaFilter') : '';
 
 		parent::initPageHeaderToolbar();
-		// Ecarts de stocks
+		// stocks gap
                 
                 if ($this->controller_status)
                 {
@@ -986,19 +1045,8 @@ class AdminInventoryController extends ModuleAdminController
                     );
                 }
 
-		// Export grille PDF seulement si affichage zone / sous zone
-		if ($this->getCurrentValue('id_display') == '1')
-		{
-                    $this->page_header_toolbar_btn['save-calendar'] = array(
-                            'short' => $this->l('Print the advanced inventory grid'),
-                            //'href' => $this->context->link->getAdminLink('AdminInventory').'&submitAction=generateInventoryPDF&advanced=true'.$link,
-                            'href' => 'javascript:jAlert(\'Cette fonctionnalité sera activée prochainement\');',	
-                            'target' => 'blank',
-                            'desc' => $this->l('Export advanced grid'),
-                    );
-		}
 
-		// Export grille PDF
+		// Export PDF grid
 		$this->page_header_toolbar_btn['preview'] = array(
                     'short' => $this->l('Print the simple inventory grid'),
                     'href' => $this->context->link->getAdminLink('AdminInventory').'&submitAction=generateInventoryPDF&advanced=false'.$link,
@@ -1008,14 +1056,15 @@ class AdminInventoryController extends ModuleAdminController
 
 		if ($this->controller_status)
 		{
-			// Application de la quantité en masse
+
+                    if($this->controller_status == STATUS3){
+                        // Apply mass quantity
 			$this->page_header_toolbar_btn['duplicate'] = array(
 										'short' => $this->l('Apply the same quantity as the physical quantity'),
 										'href' => 'javascript:void(0)',
 										'desc' => $this->l('Copy quantities'),
 						);
-
-			// EXPORT CSV
+                        // EXPORT CSV
 			$this->page_header_toolbar_btn['download'] = array(
 										'short' => $this->l('Export CSV file'),
 										'href' => $this->context->link->getAdminLink('AdminInventory').'&export_csv'.$link,
@@ -1028,9 +1077,54 @@ class AdminInventoryController extends ModuleAdminController
 										'href' => 'javascript:void(0)',
 										'desc' => $this->l('Import CSV file'),
 						);
+                        // export grid pdf only if display area / sub area
+                        if ($this->getCurrentValue('id_display') == '1')
+                        {
+                            $this->page_header_toolbar_btn['save-calendar'] = array(
+                                    'short' => $this->l('Print the advanced inventory grid'),
+                                    //'href' => $this->context->link->getAdminLink('AdminInventory').'&submitAction=generateInventoryPDF&advanced=true'.$link,
+                                    'href' => 'javascript:jAlert("'.$this->l('This functionnality would be released soon.').'");',	
+                                    'target' => 'blank',
+                                    'desc' => $this->l('Export advanced grid'),
+                            );
+                        }
+                     }
+                     else
+                     {
+                         $text = addslashes($this->l('To use this functionnality switch to PRO Version.'));
+                        // Apply mass quantity
+			$this->page_header_toolbar_btn['duplicate'] = array(
+										'short' => $this->l('Apply the same quantity as the physical quantity'),
+										'js' => 'cancelBubble(event, \''.$text.'\');',
+										'desc' => $this->l('Copy quantities'),
+						);
+                        // EXPORT CSV
+			$this->page_header_toolbar_btn['download'] = array(
+										'short' => $this->l('Export CSV file'),
+										'js' => 'cancelBubble(event, \''.$text.'\');',
+										'desc' => $this->l('Offline inventory (CSV file)'),
+						);
+
+			// IMPORT CSV
+			$this->page_header_toolbar_btn['save-and-stay'] = array(
+										'short' => $this->l('New inventory with file'),
+										'js' => 'cancelBubble(event, \''.$text.'\');',
+										'desc' => $this->l('Import CSV file'),
+						);  
+                        // export grid pdf only if display area / sub area
+                        if ($this->getCurrentValue('id_display') == '1')
+                        {
+                            $this->page_header_toolbar_btn['save-calendar'] = array(
+                                    'short' => $this->l('Print the advanced inventory grid'),
+                                    //'js' => 'cancelBubble(event, \''.$text.'\');',
+                                    'href' => 'javascript:jAlert("'.$this->l('This functionnality would be released soon.').'");',	
+                                    'desc' => $this->l('Export advanced grid'),
+                            );
+                        }
+                     }
 		}
 
-		// Sélection d'un container d'inventaire et enregistrement
+                // Select inventory container and record
 		$this->page_header_toolbar_btn['save'] = array(
 						'short' => $this->l('New inventory'),
 						'href' => 'javascript:void(0)',
@@ -1044,7 +1138,7 @@ class AdminInventoryController extends ModuleAdminController
             return strcmp($a['location']['CompleteArea'], $b['location']['CompleteArea']);
 	}
 
-	/*  Traitement affichage controller */
+	/*  Treatment display controller */
 	public function postProcess()
 	{
 				//create manual inventory
@@ -1084,7 +1178,7 @@ class AdminInventoryController extends ModuleAdminController
                                 return;
                         }
 
-			// Si erreur
+			// if error
 			if (!empty($_FILES['file']['error']))
 			{
                             switch ($_FILES['file']['error'])
@@ -1108,25 +1202,27 @@ class AdminInventoryController extends ModuleAdminController
                             }
 			}
 
-                        // s'il n'y a pas d'erreur
+                        // if no error
                         if (count($this->errors) == 0 )
                         {
 
                                 //we format file name
-                                $file_name = strtr($file_name,
-                                         'ÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÝàáâãäåçèéêëìíîïðòóôõöùúûüýÿ',
-                                         'AAAAAACEEEEIIIIOOOOOUUUUYaaaaaaceeeeiiiioooooouuuuyy');
+                                // $file_name = strtr($file_name,
+                                         // 'ÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÝàáâãäåçèéêëìíîïðòóôõöùúûüýÿ',
+                                         // 'AAAAAACEEEEIIIIOOOOOUUUUYaaaaaaceeeeiiiioooooouuuuyy');
+										 
+								$file_name = Tools::replaceAccentedChars($file_name);
 
                                 $file_name = preg_replace('/([^.a-z0-9]+)/i', '-', $file_name);
                                 $file_name = str_replace('.csv', '-'.date('Y_m_d_his').'.csv', $file_name);
 
-                                // Sinon on test un upload
+                                // try to upload
                                 if (@move_uploaded_file($_FILES['file']['tmp_name'], _PS_MODULE_DIR_.'erpillicopresta/imports/'.$file_name))
                                 {
                                     $directory = explode("_", Tools::getValue('id_inventory'));
                                     $id_erpip_inventory = $directory[0];
 
-                                    // Si directory à un seul element, c'est un nouveau dossier et on récupère donc le nom dans le champ dédié.
+                                    // if directory has only one element, mean it s a new directory and we get the name in the dedicated field
                                     if (count($directory) > 1)
                                                     $name = $directory[1];
                                     else
@@ -1139,16 +1235,16 @@ class AdminInventoryController extends ModuleAdminController
 
                                     $inventory_values = '';
 
-                                    /* ------------------ TRAITMENT CSV ------------*/
+                                    /* ------------------ TREATMENT CSV ------------*/
 
-                                    // 2 - Ouverture du fichier
+                                    // 2 - open file
                                     $handle = $this->openCsvFile($file_name);
 
-                                    // 3 - Parcours du fichier
+                                    // 3 - Browse file
                                     $i = 0;
                                     while (($data = fgetcsv($handle, 0, ";")))
                                     {
-                                            // 4 - Reconstruction de inventory_values
+                                            // 4 - reconstruct inventory_values
                                             /*
                                             $id_product = $data[0];
                                             $id_product_attribute = $data[1];
@@ -1160,7 +1256,7 @@ class AdminInventoryController extends ModuleAdminController
                                             */
                                             //idproduct==6|idproductattribute==0|idreason==109|area==null|subarea==null|location==|physicalquantity==61|foundquantity==20_
 
-                                            // On ne prends pas en comtpe la première ligne : en-têtes
+                                            // don't use the first line : headers
                                             if ($i > 0)
                                             {
                                                     $inventory_values .= 'idproduct=='.$data[0].'|';
@@ -1180,7 +1276,7 @@ class AdminInventoryController extends ModuleAdminController
                                             $i++;
                                     }
 
-                                    // 5 - Préparation de l'inventaire
+                                    // 5 - prepare inventory
                                     $this->id_erpip_inventory = $id_erpip_inventory;
                                     $this->name = $name;
                                     $this->id_warehouse = $id_warehouse;
@@ -1214,7 +1310,7 @@ class AdminInventoryController extends ModuleAdminController
 		{
 			/* FILTRES */
 
-			// Filtre catégorie
+			// Category filter
 			$id_category = (Tools::isSubmit('id_category')) ? intval(Tools::getValue('id_category')) : -1;
 			$query = new DbQuery();
 			$query->select('id_product');
@@ -1232,13 +1328,13 @@ class AdminInventoryController extends ModuleAdminController
 			$categories = implode(',', $categories);
 			$query = null;
 
-			// Filtre fournisseur
+			// Provider filter
 			$id_supplier = (Tools::isSubmit('id_supplier')) ? Tools::getValue('id_supplier') : -1;
 
-			// Fitltre marque
+			// Brand filter
 			$id_manufacturer = (Tools::isSubmit('id_manufacturer')) ? Tools::getValue('id_manufacturer') : -1;
 
-			// Filtre emplacement
+			// Location filter
 			//$area = (Tools::isSubmit('area')) ? Tools::getValue('area') : -1;
 			//$subarea = (Tools::isSubmit('subarea')) ? Tools::getValue('subarea') : -1;
 
@@ -1250,7 +1346,7 @@ class AdminInventoryController extends ModuleAdminController
 			header('Cache-Control: no-store, no-cache');
 			header('Content-disposition: attachment; filename="inventory_grid.csv"');
 
-			// Récupération de la liste des produits
+                        // Get product list
 			$query = null;
 			$query = new DbQuery();
 			$query->select(
@@ -1270,7 +1366,7 @@ class AdminInventoryController extends ModuleAdminController
 			$query->leftjoin('attribute_group_lang', 'agl', '(agl.id_attribute_group= atr.id_attribute_group AND agl.id_lang='.(int)$this->context->language->id.')');
 			$query->leftjoin('product_lang', 'pl', '(p.id_product = pl.id_product AND pl.id_lang ='.(int)$this->context->language->id.')');
 
-			// Application des filtres
+			// Apply filters
 			if ($id_category != -1)
 				$query->where('p.id_product IN('.pSQL ($categories).')');
 			if ($id_supplier != -1)
@@ -1280,7 +1376,7 @@ class AdminInventoryController extends ModuleAdminController
 
 			$id_warehouse = $this->getCookie('id_warehouse');
 
-			// On applique les filtres entrepot, zone, sous zone que en cas de gestion de stock active
+                        // Apply warehouse filter, area, sub area only in active stock manager
 			if ($this->advanced_stock_management && $id_warehouse != -1)
 			{
                             $query->select('wpl.location, wpl.id_warehouse, z.name as area, sz.name as subarea');
@@ -1293,15 +1389,15 @@ class AdminInventoryController extends ModuleAdminController
                             $area = (Tools::getValue('area') == null) ? -1 : Tools::getValue('area');
                             $subarea = (Tools::getValue('subarea') == null) ? -1 : Tools::getValue('subarea');
                             
-                            // Filtre entrepôt
-                            $query->where("wpl.id_warehouse = ".(int)$id_warehouse);
+                            // Warehouse filter
+                            $query->where('wpl.id_warehouse = '.(int)$id_warehouse);
 
-                            // Filtre sur zone
+                            // Area filter
                             if ($area != -1 && $subarea == -1)
                                 $query->where('z.id_erpip_zone = '. (int)$area);
                             
                             
-                            // Filtre sur zone et sous zone
+                            // area and sub area filter
                             if ($area != -1 && $subarea != -1)
                             {
                                 $query->where('z.id_erpip_zone = '. (int)$area);
@@ -1312,7 +1408,7 @@ class AdminInventoryController extends ModuleAdminController
 			$query->groupBy('pa.id_product_attribute, p.id_product');
 			$products = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
 
-			// Récupère quantité physique
+			// Get the physical quantity
 			$nb_items = count($products);
 
 			for ($i = 0; $i < $nb_items; ++$i)
@@ -1326,17 +1422,17 @@ class AdminInventoryController extends ModuleAdminController
                                             $query->where('id_product = '.(int)$item[$i]['id_product'].' AND id_product_attribute = '.(int)$item[$i]['id_product_attribute'].
                                                                             ' AND id_warehouse ='.(int)$item[$i]['id_warehouse']);
 
-                                            // Execute la requête
+                                            // Execute query
                                             $res = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($query);
                                }
                                     else
                                             $res['physical_quantity'] = (int)Product::getQuantity($item[$i]['id_product'], (int)$item[$i]['id_product_attribute']);
 
-                               // Ajoute les colonnes au tableau
+                               // add column to array
                                $item[$i]['physical_quantity'] = $res['physical_quantity'];
 			}
 
-			// Ecriture des titres de colonnes
+			// write headers column
 			$keys = array(
                                 'id_product',
                                 'id_product_attribute',
@@ -1352,12 +1448,12 @@ class AdminInventoryController extends ModuleAdminController
 
 			echo sprintf("%s\n", implode(';', $keys));
 
-			// Ecritures des données
+			// write datas
 			foreach ($products as $product)
 			{
                             if ($this->advanced_stock_management)
                             {
-                                // Emplacement
+                                // Location
                                 $product['zone'] = $product['area'];
                                 $product['sous_zone'] = $product['subarea'];
                                 $product['location'] = $product['location'];
@@ -1371,7 +1467,7 @@ class AdminInventoryController extends ModuleAdminController
                                             continue;
                             }
 
-                            // Si on a pas encore de quantité, on la passe à 0
+                            // Still not have quantity, set 0
                             $physical_quantity = ($product['physical_quantity'] == '') ? 0 : (int)$product['physical_quantity'];
 
                             $content_csv = array( 
@@ -1381,7 +1477,7 @@ class AdminInventoryController extends ModuleAdminController
                                     $product['ean13'],
                                     self::transformText($product['name'])
                                 );
-                            // On définit un array optionnel pour y mettre les champs spécifiques à la gestion de stock avancée.
+                            // define optionnal array to set specific field to the advanced stock manager
                             $optional = array();
                             if($this->advanced_stock_management)
                             {
@@ -1396,7 +1492,7 @@ class AdminInventoryController extends ModuleAdminController
                                 $physical_quantity.'; '.PHP_EOL
                             );
                             
-                            //on merge $content_csv avec l'array de la gestion de stock avancée.
+                            // Merge $content_csv with advanced stock manager array
                             $content_csv = array_merge($content_csv, $optional, $end);
                             
                             echo implode(';', $content_csv);
@@ -1419,32 +1515,32 @@ class AdminInventoryController extends ModuleAdminController
 	}
 
 	/* JMA */
-	/* Rajout pour la traduction du controller AdminInventory */
+        // add translation for AdminInventory controller
 	protected function l($string, $class = 'AdminInventory', $addslashes = false, $htmlentities = false)
 	{
             if (!empty($class))
             {
-                    // Envoie du nom du controller a la methode statique de notre module
+                    // Send controller name to static method of our module
                     $str = erpillicopresta::findTranslation('erpillicopresta', $string, 'AdminInventory');
                     $str = $htmlentities ? htmlentities($str, ENT_QUOTES, 'utf-8') : $str;
                     return str_replace('"', '&quot;', ($addslashes ? addslashes($str) : Tools::stripslashes($str)));
             }
 	}
 
-	/*  Cree un cookie */
+	/*  create cookie */
 	private function setCookie($key, $val)
 	{
             $this->context->cookie->{$key} = $val;
 	}
 
-	/*  Recupere un cookie */
+	/*  get cookie */
 	private function getCookie($key)
 	{
             return $this->context->cookie->{$key};
 	}
 
 
-	/*  Génération du PDF de grille d'inventaire */
+	/*  generate PDF of inventory grid */
 	public function processGenerateInventoryPDF()
 	{
             require_once _PS_MODULE_DIR_.'erpillicopresta/models/InventoryProduct.php';
@@ -1456,25 +1552,44 @@ class AdminInventoryController extends ModuleAdminController
             $area = Tools::getValue('area');
             $subarea = Tools::getValue('subarea');
 
-            // Récupération des produits
+            // get products
             $inventoryProduct = new InventoryProduct();
             $inventoryGrid = $inventoryProduct->getInventoryGrid($id_warehouse, $id_category, $id_supplier, $id_manufacturer, $area, $subarea);
 
-            // Génération PDF --> go HTMLTemplateInventory.php (payasage ou portrait en fonction du template à afficher)
+            // Generate PDF --> Go HTMLTemplateInventory.php (landscape or portrait, depends of the template to display
             if (Tools::getValue('advanced') == 'true')
                     $orientation = 'L';
             else
                     $orientation = 'P';
 
             require_once (_PS_MODULE_DIR_.'erpillicopresta/classes/pdf/HTMLTemplateInventory.php');
+            
+             if( $this->controller_status == STATUS1)
+            {
+                $inventoryGrid = array_splice($inventoryGrid,0,ERP_IVTFR);
+                $inventoryGrid[] = array(
+                    'name' => sprintf($this->l('You are using the free version of 1-Click ERP which limits the display to %d products'),ERP_IVTFR) ,
+                    'reference' => '', 
+                    'ean' => '',
+                    'id_product' => '',
+                    'id_warehouse' => '',
+                    'id_product_attribute' => '',
+                    'manufacturer_name' => '',
+                    'zone' => '',
+                    'sous_zone' => '', 
+                    'location' =>  '',
+                    'quantity' => '',
+                    'image' => ''
+                );
+            }
 
-            $pdf = new PDF(array($inventoryGrid) , $this->l('Inventory'), Context::getContext()->smarty);
+            $pdf = new PDF(array($inventoryGrid) , 'Inventory', Context::getContext()->smarty);
             $pdf->render(true, $orientation);
 	}
 
 	/*
         * JMA
-	*  Fonction statique pour recuperer le premier entrepot non deleted
+         * Static function to get the first warehouse non deleted
         */
 	public static function getFirstWarehouse()
 	{
@@ -1491,7 +1606,7 @@ class AdminInventoryController extends ModuleAdminController
             if (Tools::isSubmit('id_inventory') && Tools::isSubmit('name') && Tools::isSubmit('inventory_values') && Tools::isSubmit('advanced_stock_management')
             && Tools::isSubmit('id_warehouse') && Tools::isSubmit('id_employee') && Tools::isSubmit('firstname') && Tools::isSubmit('lastname'))
             {
-                    require_once(_PS_MODULE_DIR_.'erpillicopresta/models/Inventory.php');
+                    require_once(_PS_MODULE_DIR_.'erpillicopresta/models/ErpInventory.php');
                     require_once(_PS_MODULE_DIR_.'erpillicopresta/models/InventoryProduct.php');
 
                     $this->id_erpip_inventory = (int)Tools::getValue('id_inventory');
@@ -1546,11 +1661,11 @@ class AdminInventoryController extends ModuleAdminController
 
 
         /*
-	* Création du container
+	* Create the container
 	*/
 	public function createContainer()
 	{
-		// Uniquement si on a bien toutes les valeurs obligatoires à l'inventaire
+                // only if we get all the necessary values to the inventory
 		if ($this->id_erpip_inventory != '' 
                         && $this->name != '' 
                         && $this->advanced_stock_management != '' 
@@ -1566,7 +1681,7 @@ class AdminInventoryController extends ModuleAdminController
 						// we create a new inventory
 			if ($this->id_erpip_inventory == '-1')
 			{
-                                $inventory = new Inventory();
+                                $inventory = new ErpInventory();
                                 $inventory->id_erpip_inventory = '';
                                 $inventory->name = $this->name;
                                 
@@ -1577,25 +1692,25 @@ class AdminInventoryController extends ModuleAdminController
 			else
 				self::$id_erpip_inventory_static  = $this->id_erpip_inventory;
 
-			//Création du container d'inventaire
+			// create inventory contanier
 			if ($create_container || $this->id_erpip_inventory != '-1')
 			{
-                            // Split pour récupérer les produits
+                            // Split to get products
                             $products = explode('_', $this->inventory_values);
 
-                            // Lecture inverse du tableau pour prendre que les dernières valeurs saisies
+                            // reverse array read to get last values
                             $products = array_reverse($products);
                             $array_products = array();
 
                             foreach ($products as $key => $product)
                             {
-                                    // Split pour récupérer les valeurs d'un produit
+                                    // Split to get product values
                                     $produc_line = explode('|', $product);
                                     if (count($produc_line) > 1)
                                     {
                                         foreach ($produc_line as $element)
                                         {
-                                                // Split pour récupérer la clef et la valeur
+                                                // Split to get key and value
                                                 $element = explode('==', $element);
                                                 if (isset($element[1]))
                                                                 $array_products[$key][$element[0]] = $element[1];
@@ -1603,15 +1718,15 @@ class AdminInventoryController extends ModuleAdminController
 
                                         $ids = $array_products[$key]['idproduct'].';'.$array_products[$key]['idproductattribute'];
 
-                                        // Si déjà traité une maj de valeur plus récente, on passe
+                                        // if already treat by update more recent, continue
                                         foreach (self::$local_store as $local_product)
                                                         if ($local_product == $ids)
                                                                         continue 2;
 
-                                        // Enregistrement du produit
+                                        // Record product
                                         $this->productHandler($array_products[$key]);
 
-                                        // On stock le produit traité pour ne traiter que sa DERNIERE mise a jour
+                                        // Store treated product, that only treat the LAST update
                                         array_push(self::$local_store, $ids);
                                     }
                             }
@@ -1628,7 +1743,7 @@ class AdminInventoryController extends ModuleAdminController
 	}
 
 	/*
-	* Traitement d'une ligne d'inventaire
+         * Treat one inventory line
 	*/
 	public function productHandler($product)
 	{
@@ -1646,7 +1761,7 @@ class AdminInventoryController extends ModuleAdminController
 		$inventory_product->qte_after = (!isset($product['foundquantity']) || $product['foundquantity'] == '') ? 0 : (int)$product['foundquantity'];
                 $inventory_product->id_warehouse = Tools::isSubmit('id_warehouse') ? (int)Tools::getValue('id_warehouse') : -1;
 
-		// Si pas de mvt reason choisi => selon quantites on choisi 'augmenter' ou 'diminuer'
+                // if not mvt reason chosen => depend of quanities, select increate or decrease
 		if (!isset($product['idreason']) || $product['idreason'] == '')
 		{
                     if ($inventory_product->qte_before <= $inventory_product->qte_after)
@@ -1657,17 +1772,17 @@ class AdminInventoryController extends ModuleAdminController
 		else
                     $inventory_product->id_mvt_reason = $product['idreason'];
                 
-                // Ajout par Gireg:
-                // On ne traite que les produits correspondant au mode de gestion des stocks choisi :
-                // les produits en gestion de stock avancée si on est en gestion de stock avancée
-                // ou les produits en gestion de stock non avancée si on est en gestion de stock non avancée
+                // Gireg:
+                // only treat products that match to stock manager selected :
+                // Products in advanced stock manager if we re in advanced stock manager
+                // Or product in non advanced stock manager, if we are in non advanced stock manager                
                 if ($this->advanced_stock_management == StockAvailable::dependsOnStock((int)$product['idproduct']))
                 {
                 
-                    // SI Enregistrement de la ligne d'inventaire --> mise à jour des stocks
+                    // If record inventory line --> update stock
                     if ($inventory_product->add())
                     {
-                            // Si gestion de stock avancé
+                            // if advanced stock manager
                             if ($this->advanced_stock_management == 1)
                             {
                                     $stock = new ErpStock();
@@ -1677,16 +1792,16 @@ class AdminInventoryController extends ModuleAdminController
                                     $stock->physical_quantity = (!isset($product['foundquantity']) || $product['foundquantity'] == '') ? 0 : (int)$product['foundquantity'];
                                     $stock->usable_quantity = (!isset($product['foundquantity']) || $product['foundquantity'] == '') ? 0 : (int)$product['foundquantity'];
 
-                                    // Récupération du prix de référence
+                                    // get reference price
                                     $price = $stock->getPriceTe();
 
-                                    // Si $price est false c'est qu'on a pas de stock sur ce produit. Si la qté constatée est inférieure que le stock, on passe le prix à 0
+                                    // if $price is false, we dont have stock for this product. si quantity is lower than stock, set price to 0
                                     if ((isset($product['foundquantity']) && (int)$product['foundquantity'] < $product['physicalquantity']) || $price = false)
                                                     $price = 0;
 
                                     $stock->price_te = $price;
 
-                                    // Si on a déjà une ligne de stock sur ce produit on maj, sinon on insert
+                                    // if we already have a stock line for this production, we update else we insert
                                     if (($stock->id = $stock->getStockId()))
                                                     $maj_stock = $stock->update();
                                     else
@@ -1700,12 +1815,11 @@ class AdminInventoryController extends ModuleAdminController
                                             $maj_stock = true;
                             }
 
-                            // Si MAJ stock ok --> MAJ emplacement
+                            // if update stock ok --> update location
                             if ($maj_stock)
                             {
-                                    //echo 'Maj stock OK';
 
-                                    // Pas de mouvement de stock si stock avancé désactivée
+                                    // no stock change if advanced stock inactive
                                     if ($this->advanced_stock_management == 1)
                                     {
                                             require_once(_PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpWarehouseProductLocation.php');
@@ -1723,12 +1837,12 @@ class AdminInventoryController extends ModuleAdminController
                                             $warehouse_location->location = $product['location'];
                                             $warehouse_location->id_warehouse_product_location = $wpl_id;
 
-                                            // Si MAJ emplacement ok & gestion de stock avancé --> Génération mouvement de stock
+                                            // if update location ok & advanced stock active -> generate stock movement
                                             if ($warehouse_location->update())
                                             {
                                                     //echo 'Maj location OK';
 
-                                                    // Pas de mouvement de stock si stock avancé désactivée
+                                                    // No stock movement if advanced stock inactive
                                                     if ($this->advanced_stock_management == 1)
                                                     {
                                                             $stock_mvt = new ErpStockMvt();
@@ -1736,7 +1850,7 @@ class AdminInventoryController extends ModuleAdminController
                                                             $stock_mvt->id_order = 0;
                                                             $stock_mvt->id_supply_order = 0;
 
-                                                            // Si pas de mvt reason choisi => selon quantites on choisi 'augmenter' ou 'diminuer'
+                                                            // if not mvt reason selected => depend of quantity to increase or decrease
                                                             if (!isset($product['idreason']) || $product['idreason'] == '')
                                                             {
                                                                     if ($inventory_product->qte_before <= $inventory_product->qte_after)
@@ -1754,20 +1868,21 @@ class AdminInventoryController extends ModuleAdminController
                                                             $stock_mvt->current_wa = $price;
 
                                                             // Récupération du sign (flèche up / down)
+                                                            // Get sign (arrow up/down)
                                                             if (isset($product['foundquantity'])
                                                                             && (((int)$product['foundquantity'] >= (int)$product['physicalquantity']) || (int)$product['foundquantity'] == 0))
                                                                     $stock_mvt->sign = 1;
                                                             else
                                                                     $stock_mvt->sign = -1;
 
-                                                            // Calcul de la quantité du mouvement de stock
+                                                            // calculate the quantity movement of stock
                                                             $foundquantity = (!isset($product['foundquantity']) || $product['foundquantity'] == '') ? 0 : (int)$product['foundquantity'];
                                                             $physicalquantity = (!isset($product['physicalquantity']) || $product['physicalquantity'] == '') ? 0 : (int)$product['physicalquantity'];
 
                                                             $mvt = abs($foundquantity - $physicalquantity);
                                                             $stock_mvt->physical_quantity = $mvt;
 
-                                                            // Synchronisation du stock available
+                                                            // Synchronise available stock 
                                                             if ($stock_mvt->add(true))
                                                                 StockAvailable::synchronize($product['idproduct']);
                                                             else
@@ -1805,7 +1920,7 @@ class AdminInventoryController extends ModuleAdminController
                 $html = '--';
                 if (!empty($first_supplier_ref))
                 {
-                        $html = '<a href="#" class="supplier_ref" title="'.$this->l('Suppliers references').'" rel="../modules/erpillicopresta/ajax/ajax.php?id_product='.(int)$data['id_product'].'&task=getSupplierReference&token='.$this->token.'">
+                        $html = '<a href="#" class="supplier_ref" title="'.$this->l('Suppliers references').'" rel="index.php?controller=AdminAdvancedStock&id_product='.(int)$data['id_product'].'&task=getSupplierReference&token='.$this->token.'">
                                         <img style="width: 16px; height: 16px;" alt="products" src="../img/admin/search.gif" class="icon-search" />
                                         '.$first_supplier_ref.'
                         </a> ';
@@ -1857,36 +1972,8 @@ class AdminInventoryController extends ModuleAdminController
                     $html .= '<br/><span><b>'.$this->l('Subarea').' :</b> </span>'.(empty($location[1]) ? '' : $location[1]);                    
                     $html .= '<br/><span><b>'.$this->l('Location').' :</b> </span>'.(empty($location[2]) ? '' : $location[2]);
                 }
-                else if (!$data['have_attribute'])
-                {
-                    /*$html = '<span>'.$this->l('Area').' : </span>'.(empty($data['area_name']) ? '' : $data['area_name']);
-                    $html .= '<br/><span>'.$this->l('Subarea').' : </span>'.(empty($data['sub_area_name']) ? '' : $data['sub_area_name']);                    
-                    $html .= '<br/><span>'.$this->l('Location').' : </span>'.(empty($data['location']) ? '' : $data['location']);*/
-                    $html = '--';
-                }
-                else
-                    $html = '--';
             }
-            else
-                $html = '--';
             
             return $html;
         }
-        
-        /**/
-	protected static function transformText($text)
-	{
-                //delete html tags
-		$text = strip_tags($text);
-                
-                // decode html specialchar 
-                $text = html_entity_decode($text);
-                $text = utf8_decode($text);
-                
-		$text = str_replace("\n", '.', $text);
-		$text = str_replace("\r", '.', $text);
-		$text = str_replace(";", ',', $text);
-                
-		return $text;
-	}
 }

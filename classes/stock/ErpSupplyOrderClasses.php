@@ -19,7 +19,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -59,7 +59,7 @@ class ErpSupplyOrderClasses extends SupplyOrder
 
                 
                 
-                //check si on a un num de commande issu d'un template
+                // Check if there's an order number from a template
                 if(count($explodeRef = explode(' ', $ref)) > 0)
                     $ref = $explodeRef[0];
                
@@ -104,7 +104,7 @@ class ErpSupplyOrderClasses extends SupplyOrder
 		// get lang from context
 		$id_lang = (int)Context::getContext()->language->id;
 
-				// recherche de la catégorie poubelle
+				// Get trash category
 				$trash_category_id = self::getTrashCategory();
 
 		$query = new DbQuery();
@@ -163,7 +163,7 @@ class ErpSupplyOrderClasses extends SupplyOrder
 		{
 			$ids = explode('_', $item['id']);
 
-						//New - on affiche le prix
+						//New - display prices
 						$prices = self::getWholesalePrice( $ids[0], $ids[1] , $id_supplier);
 
 						if (!empty($prices))
@@ -175,24 +175,24 @@ class ErpSupplyOrderClasses extends SupplyOrder
 					return $items;
 	}
 
-	/* Retourne le prix d'achat d'un produit ou d'une déclinaison */
+	/* Returns the purchase price of a product or a variation */
 	public static function getWholesalePrice($id_product, $id_product_attribute = 0, $id_supplier = 0)
 	{
 
-		//S'il y a fournisseur
+		// If there's a supplier
 		if (!empty($id_supplier))
 		{
-			//On récupère tout d'abord le prix du fournisseur
+			// Fetch supplier's price first
 			$prices = ProductSupplierCore::getProductSupplierPrice($id_product, $id_product_attribute, $id_supplier, true);
 			if (isset($prices['product_supplier_price_te']))
 				$price = $prices['product_supplier_price_te'];
 		}
 
-		// Si pas de prix pour ce fournisseur, ou prix fournisseur nul, on cherche le prix du produit ou de la déclinaison
+		// If no price for this supplier, or supplier's price null, we look for the price of the product or variation
 		if (empty($price) || $price == '0.000000')
 		{
 
-			// pas de décliaison, on cherche le prix du produit
+			// If no variation, look for product's price
 			if ($id_product_attribute == 0)
 			{
 				$query = new DbQuery();
@@ -201,7 +201,7 @@ class ErpSupplyOrderClasses extends SupplyOrder
 				$query->where('id_product = '.(int)$id_product);
 				$price = Db::getInstance()->getValue($query);
 			}
-			// Prix déclinaison
+			// Variation price
 			else
 			{
 				$query = new DbQuery();
@@ -212,15 +212,15 @@ class ErpSupplyOrderClasses extends SupplyOrder
 				$query->innerJoin('product', 'p', ' p.id_product = pa.id_product');
 				$prices = Db::getInstance()->getRow($query);
 
-				//si la déclinaison à un prix
+				// If variation's price
 				if (!empty($prices['wholesale_price_product_attribute']) AND $prices['wholesale_price_product_attribute'] != '0.000000')
 					$price = $prices['wholesale_price_product_attribute'];
 
-				//sinon, on prend le prix du produit
+				// Else product's price
 				elseif (!empty($prices['wholesale_price_product']) AND $prices['wholesale_price_product'] != '0.000000')
 					$price = $prices['wholesale_price_product'];
 
-				//Sinon zero
+				// Else ZERO
 				else
 					$price = '0.00000';
 			}
@@ -230,18 +230,18 @@ class ErpSupplyOrderClasses extends SupplyOrder
 	}
 
 	/*
-	 * Retourne la quantité vendue d'un produit entre deux dates (depuis x mois glissants)
+	 * Returns the quantity sold of a product between two dates (for x months rolling)
 	*/
 	static public function getQuantitySales($id_product, $id_product_attribute)
 	{
-				//nombre de mois glissant
+				// Number of months rolling
 				$rolling_months_nb = Configuration::get('ERP_ROLLING_MONTHS_NB_SO');
 
 				if (!empty($rolling_months_nb))
 				{
 					$date_to = date('Y-m-d 00:00:00');
 
-					//construction de la date en fonction du nombre de mois glissant
+					// Date construction according to the number of months rolling
 					$date_from = date('Y-m-d 00:00:00', self::getMonthsAgo(time(), $rolling_months_nb));
 				}
 				else
@@ -262,27 +262,27 @@ class ErpSupplyOrderClasses extends SupplyOrder
 
 	static public function getProductSalesForecasts($id_product, $id_product_attribute)
 	{
-		//Récupération de la configuration pour connaitre la pondération par M
+		// Recovering the configuration to know the weighting by M
 		//init prevision
 		$sales_forecasts = 0;
 		$coefficients = Configuration::get('ERP_COEFFICIENTS');
                 $coefs_sum = 0;
 
-		//Calcul du nombre de commande pour ce produit de M-1 à M-6
+		// calculating the number of order for this product from M-1 to M-6
 		for($i = 1; $i<= 6; $i++)
 		{
 			//M - $1
                         $date_from_m = date('Y-m-d 00:00:00', self::getMonthsAgo(time(), $i));
 			$date_to_m   = date('Y-m-d 00:00:00', self::getMonthsAgo(time(), $i - 1));
 
-			//Gestion des vente exeptionnelle
+			// Management harsh sales
 			$except_order_limit = Configuration::get('ERP_EXCEPTIONAL_ORDER_LIMIT');
 
 			if (!empty($except_order_limit))
 				$order_number = self::countProductsSales($id_product, $id_product_attribute, $date_from_m, $date_to_m, $except_order_limit);
 			else
 				$order_number = self::countProductsSales($id_product, $id_product_attribute, $date_from_m, $date_to_m);
-			//coefition de pondération
+			// weighting coefficient
 			$coef_pond = self::getCoefficient($i, $coefficients);
                         $coefs_sum += $coef_pond;
                         
@@ -296,7 +296,7 @@ class ErpSupplyOrderClasses extends SupplyOrder
 			echo 'Nombre de commande a pres ponderation '.$sales_forecasts_init.'<br/><br/>';*/
 		}
                 
-		//calcul de la valeur moyenne pondérée
+		// calculating the weighted average value
 		$sales_forecasts = $sales_forecasts / $coefs_sum;
                 
 		return $sales_forecasts;
@@ -305,15 +305,15 @@ class ErpSupplyOrderClasses extends SupplyOrder
 	static public function getProductSalesForecastsByPeriod($id_product, $id_product_attribute)
 	{
 
-		// Pour r�cup�rer la quantit� vendue � la m�me p�riode l'ann�e derni�re
+		// To recover the amount sold in the same period last year
 		$date_old_from = date('Y-m-d 00:00:00', self::getMonthsAgo(time(), 12));
 		$date_old_to   = date('Y-m-d 00:00:00', self::getMonthsAgo(time(), 12) + (Configuration::get('ERP_PROJECTED_PERIOD') * 24 * 60 * 60));
 
-		// Pour r�cup�rer la quantit� vendue les six mois glissants � la m�me p�riode l'ann�e derni�re
+		// To recover the amount sold six-month rolling in the same period last year
 		$date_old_from_m = date('Y-m-d 00:00:00', self::getMonthsAgo(time(), 12 + Configuration::get('ERP_COMPARISON_PERIOD')));
 		$date_old_to_m   = date('Y-m-d 00:00:00', self::getMonthsAgo(time(), 12));
 
-		// Pour r�cup�rer la quantit� vendue les six mois glissants de cette ann�e
+		// To recover the amount sold in the six-month rolling this year
 		$date_now_from_m = date('Y-m-d 00:00:00', self::getMonthsAgo(time(), Configuration::get('ERP_COMPARISON_PERIOD')));
 		$date_now_to_m   = date('Y-m-d 00:00:00', time());
 
@@ -324,25 +324,31 @@ class ErpSupplyOrderClasses extends SupplyOrder
 		$quantity_sold_new_m = 0;
 
 		if (!empty($except_order_limit))
-                {
+		{
 			$quantity_sold_old = self::countProductsSales($id_product, $id_product_attribute, $date_old_from, $date_old_to, $except_order_limit);
-                }else{
-			$quantity_sold_old = self::countProductsSales($id_product, $id_product_attribute, $date_old_from, $date_old_to);
-                }
-                
-		if (!empty($except_order_limit))
-                {
 			$quantity_sold_old_m = self::countProductsSales($id_product, $id_product_attribute, $date_old_from_m, $date_old_to_m, $except_order_limit);
-                }else{
-			$quantity_sold_old_m = self::countProductsSales($id_product, $id_product_attribute, $date_old_from_m, $date_old_to_m);
-                }
-                
-		if (!empty($except_order_limit))
-                {
 			$quantity_sold_new_m = self::countProductsSales($id_product, $id_product_attribute, $date_now_from_m, $date_now_to_m, $except_order_limit);
-                }else{
+		}
+		else
+		{
+			$quantity_sold_old = self::countProductsSales($id_product, $id_product_attribute, $date_old_from, $date_old_to);
+			$quantity_sold_old_m = self::countProductsSales($id_product, $id_product_attribute, $date_old_from_m, $date_old_to_m);
 			$quantity_sold_new_m = self::countProductsSales($id_product, $id_product_attribute, $date_now_from_m, $date_now_to_m);
-                }
+		}
+                
+		// if (!empty($except_order_limit))
+                // {
+			// $quantity_sold_old_m = self::countProductsSales($id_product, $id_product_attribute, $date_old_from_m, $date_old_to_m, $except_order_limit);
+                // }else{
+			// $quantity_sold_old_m = self::countProductsSales($id_product, $id_product_attribute, $date_old_from_m, $date_old_to_m);
+                // }
+                
+		// if (!empty($except_order_limit))
+                // {
+			// $quantity_sold_new_m = self::countProductsSales($id_product, $id_product_attribute, $date_now_from_m, $date_now_to_m, $except_order_limit);
+                // }else{
+			// $quantity_sold_new_m = self::countProductsSales($id_product, $id_product_attribute, $date_now_from_m, $date_now_to_m);
+                // }
                 
 		$quantity_forecast = $quantity_sold_old;
 		if ($quantity_sold_old_m > 0 && $quantity_sold_new_m > 0)
@@ -355,7 +361,7 @@ class ErpSupplyOrderClasses extends SupplyOrder
 	}
 
         /**
-	 * Retourne les progressions des ventes entre m et m-1
+	 * Returns progressions of sales between m and m-1
 	 *
 	 * @param int $id_product
 	 * @param int $id_product_attribute
@@ -369,7 +375,7 @@ class ErpSupplyOrderClasses extends SupplyOrder
 		//init
 		$sales_gains = 0;
 
-		//Quantité vendu dans le mois en cours
+		// Quantity sold in the current month
 		$query = '  SELECT SUM(product_quantity) as product_total_quantity
 		FROM '._DB_PREFIX_.'orders o
 		INNER JOIN '._DB_PREFIX_.'order_detail od ON o.id_order = od.id_order
@@ -379,10 +385,10 @@ class ErpSupplyOrderClasses extends SupplyOrder
 					GROUP BY od.product_id , od.product_attribute_id ';
 
 
-		//Récultat pour le moi courant
+		// Result for the current month
 		$result_curent_month =  Db::getInstance()->getValue($query);
 
-		//Quantité vendu dans le mois précedent
+		// Amount sold in the last month
 		$query = '  SELECT SUM(product_quantity) as product_total_quantity
 		FROM '._DB_PREFIX_.'orders o
 		INNER JOIN '._DB_PREFIX_.'order_detail od ON o.id_order = od.id_order
@@ -391,27 +397,27 @@ class ErpSupplyOrderClasses extends SupplyOrder
 					AND o.valid = 1
 					GROUP BY od.product_id , od.product_attribute_id  ';
 
-		//Résultat pour le precedent mois
+		// Result for the last month
 		$result_prev_month =  Db::getInstance()->getValue($query);
 
 		/*
-		 * Cacul des progression de ventes
-		 * ( QTE M  -  QTE M-1) / QTE M-1) * 100
+		 * Calculate sales growth
+		 * ( QTY M  -  QTY M-1) / QTY M-1) * 100
 		*/
 
 
-		//Si le résultat pour le precedent mois est n'est pas null
+		// If the result for the last month is not null
 		if (!empty($result_prev_month))
 			$sales_gains =  round(( ( ( $result_curent_month  - $result_prev_month) / $result_prev_month) * 100), 2). ' %';
 		else
 			$sales_gains =  'ND';
 
-		//Retourne la valeur
+		// Returns value
 		return $sales_gains;
 	}
 
 	/*
-	* Récupération de la catégorie poubelle
+	* Recovery of the trash category
 	*
 	*/
 	static public function getTrashCategory()
@@ -419,7 +425,7 @@ class ErpSupplyOrderClasses extends SupplyOrder
 		//init var
 		$trash_category_id = '';
 
-		//Cette catégorie se nomme "Divers"
+		// This category is called "Miscellaneous"
 		$category = Category::getCategories( false, false, false, " AND cl.name = 'Divers' ");;
 		if (!empty($category))
 			$trash_category_id = (int)$category[0]['id_category'];
@@ -428,22 +434,22 @@ class ErpSupplyOrderClasses extends SupplyOrder
 	}
 
 	/*
-	* Niveau de stock
-	* Retourne la couleur du niveau de stock d'un produit selon sa quantité réelle
+	* Stock level
+	* Returns the stock level clor of a product according to its real quantity
 	*
-	*	Surstock : violet
-	*	Normal : noir
-	*	Alerte : orange
-	*	Rupture : rouge
+	*	Overstock : violet
+	*	Normal : black
+	*	Warning : orange
+	*	Rupture : red
 	*
-	*	Aucun niveau enregistré : gris
+	*	No registered level : grey
 	*/
 	public static function getStockLevelColor($real_quantity)
 	{
 		  if ($real_quantity == '0')
 				return 'red';
 
-		  // récupération des niveau de stock
+		  // recovery stock level
 		 $level_alerte = (int)Configuration::get('ERP_LEVEL_STOCK_ALERT');
 		 $level_normal = (int)Configuration::get('ERP_LEVEL_STOCK_NORMAL');
 
@@ -482,11 +488,13 @@ class ErpSupplyOrderClasses extends SupplyOrder
 
         static public function countProductsSales($id_product, $id_product_attribute, $date_from, $date_to, $limit = 0)
         {
+            $id_state = Configuration::get('ERP_SO_STATE_TO_PRODUCT_SALES');
+            
             $query = '  SELECT SUM(product_quantity) as product_total_quantity 
                         FROM '._DB_PREFIX_.'orders o 
                         INNER JOIN '._DB_PREFIX_.'order_detail od ON o.id_order = od.id_order 
                         WHERE od.product_id = '.(int)$id_product.' AND od.`product_attribute_id` = '.(int)$id_product_attribute.' 
-                        AND o.date_add >= \''.pSQL($date_from).'\' AND o.date_add < \''.pSQL($date_to).'\' AND current_state = 5';
+                        AND o.date_add >= \''.pSQL($date_from).'\' AND o.date_add < \''.pSQL($date_to).'\' AND current_state = '.(int)$id_state;
             
                 if ($limit > 0)
                     $query .= ' AND od.product_quantity <= '.(int)$limit;
@@ -495,29 +503,29 @@ class ErpSupplyOrderClasses extends SupplyOrder
 
             $result =  Db::getInstance()->executeS($query);
 
-            // Seulement si on a des résultats sur ce produit entre les dates données
+            // Only if we have results on this product between the given dates
             $product_total_quantity = ($result[0]['product_total_quantity'] == NULL) ? 0 : $result[0]['product_total_quantity'];
 
             return $product_total_quantity;
         }
         
-        /*  Calcul des prévisions de vente
+        /*  Calculation of sales forecasts
          *
-         *  Pour un produit donné : id_product et/ou id_product_attribute
+         *  For a given product : id_product and/or id_product_attribute
          * 
-         *      1. on récupère pour chaque mois passé (M-1 M-2 M-3 M-4 M-5 M-6)
-         *          a) le nombre de commande dans lesquelles le produit se trouve
+         *      1. fetch for each past month (M-1 M-2 M-3 M-4 M-5 M-6)
+         *          a) Number of orders in winch the product is
          *      
-         *      2. pour chaque mois on calul les demandes réelles pondéré
+         *      2. for each month the weighted actual demand is calculated
          * 
          *                      M-6     M-5       M-4       M-3       M-2       M-1
-         *       Coef Pond       60%       80%       100%     100%     120%     140%
+         *       Coef weighted       60%       80%       100%     100%     120%     140%
          * 
-         *      3. après avoir obtenu les demandes réelles pondéré, on prend leurs valeur moyen
-         *          a) Sommes demandes réelles pondéré / 6
+         *      3. after obtaining weighted actual requests, taking their average values
+         *          a) Weighted real demands sums / 6
          *      
-         *     4. On calcule les prévisions de ventes sur 15 jours
-         *          a) prevision = ( Sommes demandes réelles pondéré / 6 ) / 2     
+         *     4. Sales forecast is calculated over 15 days
+         *          a) forecast = ( Weighted real demands sums / 6 ) / 2     
          * 
          **/
         
@@ -535,104 +543,102 @@ class ErpSupplyOrderClasses extends SupplyOrder
         
         
         /**
-        *Retourne le timestamp de la date donnée moins le nombre de mois donné.
-        *Cette fonction fait du date à date dans la mesure du possible : 10 mars - 1 mois = 10 février
-        *Sinon elle renvoie le dernier jour du mois
-        *Exemples : 31 mai - 1 mois = 30 avril
-        *	    31 mai - 2 mois = 31 mars
+        *Returns timestamp of the specified date minus the number of months.
+        *This function is making date to date in possible : march 10th - 1 month = february 10th
+        *Else retruns last month day
+        *Examples : May 31th - 1 month = April 30th
+        *	    May 31th - 2 month = March 31th
         *	    etc.
         *
-        *	    31 ou 30 mars - 1 mois = 28 février
-        *	    31 ou 30 mars - 2 mois = 31 ou 30 janvier
+        *	    March 31th or 30th - 1 mois = February 28th
+        *	    March 31th or 30th - 2 mois = January 31th or 30th
         *
-        * Ne gère pas les nombres de mois négatifs. Le résultat retourné est $initial_date.
+        * Can not handle negative numbers month. The result is returned est $initial_date.
         *
-        *Paramètres : $initial_date : timestamp
+        *Parameters : $initial_date : timestamp
         *             $nb_months : int
         */
         static public function getMonthsAgo ($initial_date, $nb_months)
         {
-                // Le numéro du jour de $initial_date : de 1 à 31
+                // day number of $initial_date : from 1 to 31
                 $day = date('j', $initial_date);
-                // Initialisation de la variable contenant le résultat
+                // Init variable containing the result
                 $final_date = $initial_date;
 
-                /* Gestion des changements d'heures */
+                /* Hours change management */
                 $heure_ete = date ('I', $initial_date);
 
-                // Si $day = 31, on ne peut pas vraiment faire de "date-à-date", donc on va chercher à chaque fois le dernier jour du mois précédent
+                // if $day = 31, can't have "date to date", so we will look on the last day of the previous month
                 if ($day == 31)
                 {
-                        // On parcours chaque mois un par un depuis la date initiale pour reculer la date finale
-                        // du nombre de secondes contenues dans le mois parcouru
+                        // Every month is get one by one since initial date to push the final date with the number of seconds contained in the month
                         for ($i = 1 ; $i <= $nb_months ; $i++)
                         {
-                                // Nombre de jours du mois parcouru * nombre de secondes d'une journée
+                                // Number of days covered in month * number of seconds in a day
                                 $final_date -= date('t', $final_date)*24*3600;
 
-                                /* Gestion des changements d'heures */
+                                /* Hours change management */
                                 if ($heure_ete == 1 && date('I', $final_date) == 0)
                                 {
-                                        // On rajoute une heure
+                                        // One hour is added
                                         $final_date += 3600;
                                         // On repasse en heure d'hiver
                                         $heure_ete = 0;
                                 }
                                 if ($heure_ete == 0 && date('I', $final_date) == 1)
                                 {
-                                        // On enlève une heure
+                                        // One hour is removed
                                         $final_date -= 3600;
-                                        // On repasse en heure d'été
+                                        // summer time
                                         $heure_ete = 1;
                                 }
                         }
                 }
-                // Sinon, on peut faire du "date-à-date"
+                // Else "date to date" is ok
                 else
                 {
-                        // On parcours chaque mois un par un depuis la date initiale pour reculer la date finale
-                        // du nombre de secondes contenues dans le mois parcouru
+                        // Every month is get one by one since initial date to push the final date with the number of seconds contained in the month
                         for ($i = 1 ; $i <= $nb_months; $i++)
                         {
-                                // On calcule le nombre de jours du mois précédent
+                                // Number of days covered in past month
                                 $nb_days = date('t', $final_date - $day*24*3600);
 
-                                // Si le mois qui nous intéresse maintenant est le mois de février,
-                                // et que le jour de la date initiale est un 30 (ou un 29 pour les années non bisextiles)
-                                // on ne peut pas enlever le nombre de jours du mois de février car on retomberait sur le 1er ou le 2 mars
-                                // ce qui décalerait le résultat...
+                                // If February,
+                                // and initial date is 30 (or 29 for non bisextiles years)
+                                // can't remove number of days in february month because March 1st or 2nd will be returned
+                                // This would shift the result ...
                                 if (date('n', $final_date - $day*24*3600) == 2 && $day > $nb_days)
                                 {
-                                        // On enlève autant de jours que nécessaire pour épuiser les jours du mois de mars
+                                        // Removing as many days as necessary to empty the days of March
                                         $final_date -= $day*24*3600;
-                                        // S'il reste encore des mois à traiter
+                                        //If there are still months to process
                                         if ($i < $nb_months)
                                         {
-                                                // On traite le mois de février
+                                                // February is processed
                                                 $final_date -= $nb_days*24*3600;
-                                                // Puis on continu le calcul en rappelant la fonction récursivement pour retomber sur le bon jour du mois
+                                                // Then we continue the calculation recalling the recursive function to get back on the right day of the month
                                                 return self::getMonthsAgo($final_date - (31 - $day)*24*3600, $nb_months - ($i+1));
                                         }
                                 }
                                 else
                                 {
-                                        // On ote de la date finale le nombre de jours du mois précédent le mois parcouru
+                                        // Removing the number of days of the final date of the previous month 
                                         $final_date -= date('t', $final_date - $day*24*3600)*24*3600;
                                 }
 
-                                /* Gestion des changements d'heures */
+                                /* Hours change management */
                                 if ($heure_ete == 1 && date('I', $final_date) == 0)
                                 {
-                                        // On rajoute une heure
+                                        // One hour is added
                                         $final_date += 3600;
-                                        // On repasse en heure d'hiver
+                                        // Winter time
                                         $heure_ete = 0;
                                 }
                                 if ($heure_ete == 0 && date('I', $final_date) == 1)
                                 {
-                                        // On enlève une heure
+                                        // One hour is removed
                                         $final_date -= 3600;
-                                        // On repasse en heure d'été
+                                        // Summer time
                                         $heure_ete = 1;
                                 }
                         }

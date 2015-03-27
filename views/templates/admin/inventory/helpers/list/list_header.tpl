@@ -18,7 +18,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 *}
@@ -64,7 +64,7 @@
                         <label for="id_display" class="control-label col-lg-3 col-lg-offset-1">{l s='Display type :' mod='erpillicopresta'}</label>
                         <div class="col-lg-3">
                             <select name="id_display" id="id_display" onchange="$('#filters').submit();">
-                                {if $controller_status == true}
+                                {if $controller_status == true && $controller_status == STATUS3}
                                     <option value="0" {if $id_display==0}selected=selected{/if}>{l s='Products and combinations' mod='erpillicopresta'}</option>
                                     <option value="1" {if $id_display==1}selected=selected{/if}>{l s='Area, subarea and location' mod='erpillicopresta'}</option>
                                 {else}
@@ -140,6 +140,7 @@
                     </h3>
                     <!-- Filtre par entrepôt seulement en gestion de stock avancée active -->
                     {if $advanced_stock_management && count($warehouses) > 0}
+                        {if $controller_status == $smarty.const.STATUS3}
                             <div id="warehouses_filter">
 
 
@@ -197,6 +198,9 @@
                                             </div>
                                     {/if}
                             </div>
+                        {else}
+                             <p>{l s='To use this functionnality, switch to PRO offer.' mod='erpillicopresta'}</p>
+                        {/if}
                     {/if}
         
                 </div>

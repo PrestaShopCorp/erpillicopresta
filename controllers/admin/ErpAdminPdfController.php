@@ -19,17 +19,18 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
 class ErpAdminPdfController extends AdminPdfControllerCore
 {
-	/* Génération du PDF rapport de transfert de stock */
+	/* Generate pdf reporting stock transfert */
+        // Generate pdf reporting stock transfert
 	public function processGenerateTransferPDF()
 	{
-		// Si on a bien des mouvements
+		// We get movments
 		if (Tools::isSubmit('ids_mvt'))
 		{
 			$ids_mvt = Tools::getValue('ids_mvt');
@@ -38,7 +39,7 @@ class ErpAdminPdfController extends AdminPdfControllerCore
 		}
 	}
 
-	// Surcharge pour ajout de l'orientation
+        // override to add orientation
 	public function generatePDF($object, $template, $orientation = 'P')
 	{
 		$pdf = new PDF($object, $template, Context::getContext()->smarty);

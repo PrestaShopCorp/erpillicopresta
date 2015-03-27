@@ -19,7 +19,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -34,7 +34,7 @@ class ErpStockMvt extends StockMvt
 		parent::__construct($id, $id_lang, $id_shop);
 	}
 
-	/* Retourne l'id du dernier mouvement de stock*/
+	/* Returns the id of the last stock movement */
 	public static function getLastId()
 	{
 		$query = new DbQuery();
@@ -45,10 +45,10 @@ class ErpStockMvt extends StockMvt
 		return Db::getInstance()->getValue($query);
 	}
 
-	/* Retourne la liste des mouvements correspondant aux Ids en paramètre --> génération PDF rapport de transfert de stock*/
+	/* Returns a list of movements corresponding to Ids in parameter --> Stock Transfer report PDF generation*/
 	public static function getMovementsByIds ($ids)
 	{
-		// Réformattage des données si plusieurs ID séparés par des '|' et protection
+		// Reformatting datas if multiple IDs separated by '|' and protection
 		if (strstr($ids, '|'))
 		{
 			$idsList = explode ('|', $ids);

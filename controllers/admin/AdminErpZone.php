@@ -19,17 +19,18 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
+require_once _PS_MODULE_DIR_.'erpillicopresta/controllers/admin/IPAdminController.php';
 require_once(_PS_MODULE_DIR_.'erpillicopresta/erpillicopresta.php');
 require_once(_PS_MODULE_DIR_.'erpillicopresta/models/ErpZone.php');
 require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpFeature.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/config/control.php';
 
-class AdminErpZoneController extends ModuleAdminController
+class AdminErpZoneController extends IPAdminController
 {
         public $bootstrap = true;
         private $id_current_zone = -1;
@@ -119,13 +120,20 @@ class AdminErpZoneController extends ModuleAdminController
                     'template_path' => $this->template_path,
                     'erp_feature' => ErpFeature::getFeaturesWithToken($this->context->language->iso_code)
             ));
+
+            // get controller status
+            $this->controller_status = Configuration::get(ErpIllicopresta::getControllerStatusName('AdminAdvancedOrder'));
              
             parent::__construct();
         }
         
-        // Non utilisable hors gestion de stock avancé
+        // Unusable out of advanced stock manager
         public function initContent()
 	{
+            if( $this->controller_status == STATUS3)
+            {
+                $this->informations[] = '<a href="?controller=AdminModules&configure=erpillicopresta&token='.Tools::getAdminTokenLite('AdminModules').'">'.$this->l('Activate the additional features in your TIME SAVER module in the Module section of your back-office! Go to your back-office, under the module tab, page 1-Click ERP!').'</a>';
+            }
             if (!Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT'))
             {
                 $this->warnings[md5('PS_ADVANCED_STOCK_MANAGEMENT')] = $this->l('You need to activate advanced stock management prior to using this feature. (Preferences/Products/Products Stock)');
@@ -135,17 +143,17 @@ class AdminErpZoneController extends ModuleAdminController
             return parent::initContent();
         }
         
-        // Surcharge bouton action VIEW
+        // Override view button action
         public function displayViewLink($token, $id)
         {
             $nb_items = count($this->_list);
 
-            // Pärcours de la liste des zones et récupération de la zone parent & warehouse pour la rajouter dans le lien
+            // Browse area list and get parent area & warehouse to add in link
             for ($i = 0; $i < $nb_items; ++$i)
             {
                 $item = &$this->_list[$i];
                 
-                // Si on est sur le bon id, on surcharge le bouton avec les infos (que sur les zones de nv1)
+                // if we re on the good id, override the button with data (only area level 1)
                 if($item['id_erpip_zone'] == $id && $item['id_parent'] == '0')
                 {
                     $tpl = $this->createTemplate('helpers/list/list_action_view.tpl');
@@ -162,17 +170,17 @@ class AdminErpZoneController extends ModuleAdminController
        
         }
         
-        // Surcharge bouton action EDIT
+        // override edit button action
         public function displayEditLink($token, $id)
         {
             $nb_items = count($this->_list);
 
-            // Pärcours de la liste des zones et récupération de la zone parent & warehouse pour la rajouter dans le lien
+            // Browse area list and get parent area & warehouse to add in link
             for ($i = 0; $i < $nb_items; ++$i)
             {
                 $item = &$this->_list[$i];
                 
-                // Si on est sur le bon id, on surcharge le bouton avec les infos
+                // if we re on the good id, override the button with data
                 if($item['id_erpip_zone'] == $id)
                 {
                     $tpl = $this->createTemplate('helpers/list/list_action_edit.tpl');
@@ -188,12 +196,12 @@ class AdminErpZoneController extends ModuleAdminController
         }
         
         public function renderForm()
-	{   
+	   {   
 		// loads current warehouse
 		if (!($this->loadObject(true)))
 			return;
                 
-                // Recupération des zones de l'entrepot en cours
+                // get the current warehouse areas 
                 $zones = ErpZone::getZonesByWarehouse(Tools::getValue('id_warehouse'));
                 
                 array_unshift($zones, array('name' => $this->l('Home'), 'id_erpip_zone' => 0));
@@ -205,7 +213,7 @@ class AdminErpZoneController extends ModuleAdminController
 		if (!$warehouses_add)
 			$this->displayWarning($this->l('You must choose a warehouse before adding areas. See Stock/Warehouses'));
                 
-                // Valeurs par défaut
+                // Default values
                 if(Tools::isSubmit('id_zone_parent') && Tools::getValue('id_zone_parent') != '')
                     $this->fields_value['id_parent'] = Tools::getValue('id_zone_parent');
                 
@@ -214,9 +222,9 @@ class AdminErpZoneController extends ModuleAdminController
                 
                 $this->fields_value['active'] = true;
                                
-                // -- Définition des champs du formulaire
+                // form fields définition
                 
-                // Nom
+                // Name
                 $base = array(
                             array(
                                     'type' => 'text',
@@ -228,8 +236,8 @@ class AdminErpZoneController extends ModuleAdminController
                             )
                     );
                 
-                // Entrepot
-                // Sélection d'un entrepot que si création d'une ZONE (nv 1)
+                // warehouse
+                // select warehouse only if create area level 1
                 if(Tools::getValue('id_zone_parent') == '' &&  Tools::getValue('id_warehouse') == '')
                 {
                     $warehouse = array(
@@ -267,8 +275,8 @@ class AdminErpZoneController extends ModuleAdminController
                     );
                 }
                 
-                // Affichage de la zone (nv1) et sélection actif / inactif
-                // Si on est sur une création de zone (nv1) --> on set les variables utilisés par le helperform sur l'accueil (on obglie a créer une ZONE)
+                // Show area (level1) and select active/inactive
+                // If we re on an create area (lvl1) --> set used variables by helperform on home (force to create a new area)
                 if(Tools::getValue('id_parent') == '' && Tools::getValue('id_zone_parent') == '')
                 {
                     $_GET['zone_name'] = 'Accueil';
@@ -310,7 +318,7 @@ class AdminErpZoneController extends ModuleAdminController
                                         )
                 );
                         
-                // Fomulaire complet
+                // full form
                 $this->fields_form = array(
 			'legend' => array(
 				'title' => $this->l('Add or edit an area'),
@@ -326,7 +334,7 @@ class AdminErpZoneController extends ModuleAdminController
                 return parent::renderForm();
         }
         
-        // Vérification que la zone n'existe pas déjà sur ce warehouse
+        // Verify that the area not already exists on the current warehouse
         public function beforeAdd($object)
 	{
             $area = ErpZone::getZoneByNameAndWarehouse($object->name, $object->id_warehouse);
@@ -339,7 +347,7 @@ class AdminErpZoneController extends ModuleAdminController
                 
         }
         
-        // ne pas rediriger dans la sous zone apres enregistrement
+        // Do not redirect on the under area after recording
         public function processSave()
 	{
             $url_redirect = self::$currentIndex.'&';
@@ -369,7 +377,11 @@ class AdminErpZoneController extends ModuleAdminController
                     $this->errors[] = Tools::displayError('You do not have permission to add zone.');
                     return parent::postProcess();
             }
-            
+
+            if(Tools::isSubmit('export_csv'))
+                $this->renderCSV();
+
+           
             return parent::postProcess();
         }
         
@@ -415,6 +427,11 @@ class AdminErpZoneController extends ModuleAdminController
                     'href' => self::$currentIndex.'&amp;token='.$this->token,
                     'desc' => $this->l('Back')
                 );
+
+                $this->toolbar_btn['save'] = array(
+                    'href' => self::$currentIndex.'&add'.$this->table.'&token='.$this->token.'&export_csv',
+                    'desc' => $this->l('Export')
+                );
             }
         }
         
@@ -438,6 +455,11 @@ class AdminErpZoneController extends ModuleAdminController
                     'href' => $url_add_zone,
                     'desc' => $this->l('Add new'),
                 );
+
+                $this->page_header_toolbar_btn['save'] = array(
+                    'href' => self::$currentIndex.'&add'.$this->table.'&token='.$this->token.'&export_csv',
+                    'desc' => $this->l('Export')
+                );
             }
             
             if(!empty($this->display) || Tools::isSubmit('id_erpip_zone'))
@@ -450,9 +472,9 @@ class AdminErpZoneController extends ModuleAdminController
             }
         }
                 
-        // Non utilisé dans ERP Zone mais dans gestion de stock : récupère les zones en AC.
+        // unused in ERP area but in stock manager : get area in AC
         public function ajaxProcessCheckAreaName()
-	{
+	   {
                 $result = array();
                 $limit = Tools::getValue('limit');
                 $search = Tools::getValue('q');
@@ -479,11 +501,58 @@ class AdminErpZoneController extends ModuleAdminController
                 }
                 
                 die(Tools::jsonEncode($result));
-	}
+	   }  
+
+       public function renderCSV()
+       {
+            if (Tools::isSubmit('export_csv'))
+            {
+                // header
+                header('Content-type: text/csv; charset=utf-8');
+                header('Cache-Control: no-store, no-cache');
+                header('Content-disposition: attachment; filename="areas.csv"');
+
+                // write headers column
+                $keys = array(
+                        'area_name',
+                        'parent_name',
+                        'warehouse',
+                        'active'
+                );
+
+                echo sprintf("%s\n", implode(';', $keys));
+
+                $query = null;
+                $query = new DbQuery();
+                $query->select('area.name as area_name, parent.name as parent_name, area.active, w.name as warehouse');
+
+                $query->from('erpip_zone', 'area');
+                $query->leftjoin('erpip_zone', 'parent', 'parent.id_erpip_zone = area.id_parent');
+                $query->leftjoin('warehouse', 'w', 'w.id_warehouse = area.id_warehouse');
+
+            
+                // Execute query
+                $res = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
+
+                // write datas
+                foreach ($res as $area)
+                {
+                    $content_csv = array( 
+                        self::transformText($area['area_name']),
+                        self::transformText($area['parent_name']),
+                        $area['warehouse'],
+                        $area['active'],
+                        PHP_EOL
+                    );
+                     echo implode(';', $content_csv);
+                }
+                die();
+            }
+       }
         
         
         /* RJMA
-	 * Rajout pour la traduction du controller AdminAdvancedStock
+         * Add to translate AdminAdvancedStock controller
 	*/
 	protected function l($string, $class = 'AdminErpZone', $addslashes = false, $htmlentities = false)
 	{

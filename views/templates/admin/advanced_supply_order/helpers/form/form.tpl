@@ -18,7 +18,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 *}
@@ -95,7 +95,7 @@
                                          {l s='Postage paid amount for the selected supplier' mod='erpillicopresta'} :
                                      </div>
                                      <div class="col-lg-6 text-right">
-                                        <span class="txt_franco_amount">{displayPrice price=$franco_amount}</span>
+                                        <span class="txt_franco_amount">{displayPrice price=$shipping_amount}</span>
                                      </div>
                                  </div>
 
@@ -206,7 +206,11 @@
                                             <div class="col-lg-3">
                                                 <br/>
 
-                                                <button type="button" class="btn btn-default multiple_selection">
+                                                {if $controller_status == $smarty.const.STATUS3}
+                                                    <button type="button" class="btn btn-default multiple_selection">
+                                                {else}
+                                                    <button type="button" class="btn btn-default multiple_selection" onclick="cancelBubble(event, '{l s="To use this functionnality switch to PRO offer."|escape:'htmlall'  mod='erpillicopresta'}');">
+                                                {/if}
                                                 <i class="icon-plus-sign"></i> {l s='Add multiple product to the supply order' mod='erpillicopresta'}</button>
 
                                                 <img class="multiple_selection_loder" alt="{l s='Supply Order Management' mod='erpillicopresta'}" src="../img/loader.gif"/>
@@ -573,8 +577,12 @@
                                                     </select>
                                             </td>
                                             <td>
+                                                {if $controller_status == $smarty.const.STATUS3}
                                                     <span class="multiple_selection" style="cursor: pointer;"> <img src="../img/admin/choose.gif"/> {l s='Multiple selection' mod='erpillicopresta'} </span>
-                                                    <img class="multiple_selection_loder" alt="{l s='Supply Order Management' mod='erpillicopresta'}" src="../img/loader.gif"/>
+                                                {else}
+                                                    <span class="multiple_selection" style="cursor: pointer;" onclick="cancelBubble(event, '{l s="To use this functionnality switch to PRO offer."|escape:'htmlall'  mod='erpillicopresta'}');"> <img src="../img/admin/choose.gif"/> {l s='Multiple selection' mod='erpillicopresta'} </span>
+                                                {/if}
+                                                <img class="multiple_selection_loder" alt="{l s='Supply Order Management' mod='erpillicopresta'}" src="../img/loader.gif"/>
                                             </td>
                                         </tr>
                                     </table>

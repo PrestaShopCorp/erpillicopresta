@@ -19,24 +19,20 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
+require_once _PS_MODULE_DIR_.'erpillicopresta/controllers/admin/IPAdminController.php';
 require_once(_PS_MODULE_DIR_.'erpillicopresta/erpillicopresta.php');
 require_once _PS_MODULE_DIR_.'erpillicopresta/classes/order/ErpOrder.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/classes/order/ErpOrderState.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpStock.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpSupplyOrderClasses.php';
-if (Module::isEnabled('tntcarrier'))
-{
-    //cette classe ne peut être appelée que si le module existe et est actif. Sinon, une erreur sera générée
-    require_once _PS_MODULE_DIR_.'erpillicopresta/classes/order/ErpTntCarrier.php';
-}
 require_once _PS_MODULE_DIR_.'erpillicopresta/config/control.php';
 
-class AdminAdvancedOrderController extends ModuleAdminController
+class AdminAdvancedOrderController extends IPAdminController
 {
 	public $bootstrap = true;
 	public function __construct()
@@ -49,11 +45,9 @@ class AdminAdvancedOrderController extends ModuleAdminController
 		$this->allow_export = true;
 		$this->deleted = false;
 		$this->context = Context::getContext();
-
-		$this->bulk_actions = array('multipleChangeStates' => array('text' => $this->l('Multiple change of status')));
-
-                // get controller status
                 $this->controller_status = Configuration::get(ErpIllicopresta::getControllerStatusName('AdminAdvancedOrder'));
+		$this->bulk_actions = array('-' => array('text' => $this->l('-')));
+
                 
 		// template path
 		$this->template_path = _PS_MODULE_DIR_.'erpillicopresta/views/templates/admin/';
@@ -99,14 +93,10 @@ class AdminAdvancedOrderController extends ModuleAdminController
 		// get carrier list
 		$carrier_array = $this->getListCarrier();
 
-        if(_PS_VERSION_ < 1.6)
-		{
-			$this->no_link = true;
-		}
-		else 
-		{
-			$this->list_no_link = true;
-		}	
+                if(_PS_VERSION_ < 1.6)
+                    $this->no_link = true;
+		else
+                    $this->list_no_link = true;	
                 
 		$this->fields_list = array(
 
@@ -232,17 +222,21 @@ class AdminAdvancedOrderController extends ModuleAdminController
 			$this->context->cart = new Cart($order->id_cart);
 			$this->context->customer = new Customer($order->id_customer);
 		}
+                
+                 // get controller status
+                $this->controller_status = Configuration::get(ErpIllicopresta::getControllerStatusName('AdminAdvancedOrder'));
 
 		parent::__construct();
 	}
 
-        // Ouverture détail commande en blank
+        // Open detail order in blank
         public function displayViewLink($token, $id)
         {
             $tpl = $this->createTemplate('helpers/list/list_action_view.tpl');
 
             $tpl->assign(array(
                 'href' => self::$currentIndex.'&token='.$this->token.'&'.$this->identifier.'='.$id.'&vieworder',
+                'controller_status' => $this->controller_status,
                 'action' => $this->l('View'),
 				'target' => '_blank'
             ));
@@ -267,6 +261,17 @@ class AdminAdvancedOrderController extends ModuleAdminController
 
 	public function initContent()
 	{
+
+             if( $this->controller_status == STATUS1)
+                {
+                    $this->informations[] = '<a href="?controller=AdminModules&configure=erpillicopresta&token='.Tools::getAdminTokenLite('AdminModules').'">'.$this->l('Do not limit yourself to 3 orders, take advantage of the Light version of the client order area for €44.99 before tax or €5.00/month before tax. Go to your back-office, under the module tab, page 1-Click ERP!').'</a>';
+                } else if( $this->controller_status == STATUS2)
+                {
+                    $this->informations[] = '<a href="?controller=AdminModules&configure=erpillicopresta&token='.Tools::getAdminTokenLite('AdminModules').'">'.$this->l('Optimise the management of your client orders with automatic sending for just €20 before tax or €2.00/month before tax. Go to your back-office, under the module tab, page 1-Click ERP!').'</a>';
+                } else if( $this->controller_status == STATUS3)
+                {
+                    $this->informations[] = '<a href="?controller=AdminModules&configure=erpillicopresta&token='.Tools::getAdminTokenLite('AdminModules').'">'.$this->l('Activate additional features in your TIME SAVER module in the Module section of your back-office! Go to your back-office, under the module tab, page 1-Click ERP!').'</a>';
+                }
 		parent::initContent();
 	}
 
@@ -366,10 +371,15 @@ class AdminAdvancedOrderController extends ModuleAdminController
                         $this->ajaxGetOrdersWithSameProduct();
                 elseif (Tools::isSubmit('task') && Tools::getValue('task') == 'getProducts')
                         $this->ajaxGetProducts();
+                elseif (Tools::isSubmit('task') && Tools::getValue('task') == 'updateOrderStatus')
+                {
+                    include_once(_PS_MODULE_DIR_.'erpillicopresta/ajax/ajax.php');
+                }
 		else
 			echo 'error';
 		die();
 	}
+        
 
 	public function InitToolbar()
 	{
@@ -427,15 +437,13 @@ class AdminAdvancedOrderController extends ModuleAdminController
                             'class' => 'process-icon-duplicate'
                     );
 
-                    if ($this->controller_status) 
-                    {
-                        $this->page_header_toolbar_btn['expedition'] = array(
-                                'href' => 'javascript:void(0)',
-                                'desc' => $this->l('Shipment'),
-                                'class' => 'icon-AdminParentShipping'
-                        );
-                    }
-
+                    $this->page_header_toolbar_btn['expedition'.($this->controller_status == STATUS3 ? '' : '-bl').''] = array(
+                            'href' => 'javascript:void(0)',
+                            'js' => ($this->controller_status == STATUS3 ? '' : 'jAlert(\''.$this->l('To use this feature, switch to the PRO offer.').'\')'),
+                            'desc' => $this->l('Shipment'),
+                            'class' => 'icon-AdminParentShipping'
+                    );
+                    
                     $this->page_header_toolbar_btn['print_invoices_delivery'] = array(
                             'href' => '#',
                             'desc' => $this->l('Print documents'),
@@ -453,7 +461,7 @@ class AdminAdvancedOrderController extends ModuleAdminController
 	public function getList($id_lang, $order_by = null, $order_way = null, $start = 0, $limit = null, $id_lang_shop = false)
 	{
 		parent::getList($id_lang, $order_by, $order_way, $start, $limit, $id_lang_shop);
-
+               
 		$nb_items = count($this->_list);
 		for ($i = 0; $i < $nb_items; ++$i)
 		{
@@ -500,18 +508,19 @@ class AdminAdvancedOrderController extends ModuleAdminController
                     'token_expeditor' =>  (ModuleCore::isEnabled('expeditor')) ? Tools::getAdminToken('AdminExpeditor'.(int)(Tab::getIdFromClassName('AdminExpeditor')).(int)$this->context->employee->id) : 'false',
                     'id_employee' => (int)$this->context->employee->id,
                     'order_statuses' => $statuses_array,
+                    'controller_status' => $this->controller_status,
                     'erp_feature' => ErpFeature::getFeaturesWithToken($this->context->language->iso_code),
                     'template_path' => $this->template_path,
                     'expeditor_status' => Configuration::get('EXPEDITOR_STATE_EXP'),
+                    '_module_dir_' => _MODULE_DIR_,
                     //'MR_status' => $account_shop['MR_ORDER_STATE']
 		));
 
                 $this->tpl_list_vars['has_bulk_actions'] = 'true';
 
-                // handle contient les messages d'erreur eventuels
+                // handle may contain error messages
                 $handle = Tools::getValue('handle');
-             
-                //var_dump($handle);
+
                 
 		switch(trim($handle))
 		{
@@ -526,11 +535,11 @@ class AdminAdvancedOrderController extends ModuleAdminController
 			default:
                                 if (!empty($handle))
                                 {
-                                    // VERRUE MR : redscend du unicode degueulasse
-                                    $handle = str_replace('u00e9', 'é', $handle);
-                                    $handle = str_replace('u00ea', 'ê', $handle);
+                                    // $handle = str_replace('u00e9', 'é', $handle);
+                                    // $handle = str_replace('u00ea', 'ê', $handle);
+									$handle = Tools::replaceAccentedChars($handle);
                                     
-                                    // VERRUE : on prend en compte les commandes avec erreur : pas de transporteurs valide (on split sur le num de commande : #) ..
+                                    // We take note about orders with error: no valid carrier (split on order number #)
                                     $orderWithoutShipping = (strstr($handle, '#') != false) ? true : false;
                                     $errors = explode('<br/>',str_replace('#','<br/>',$handle));
                                    
@@ -552,7 +561,7 @@ class AdminAdvancedOrderController extends ModuleAdminController
 		if (Tools::getValue('linkPDF') != '' && Tools::getValue('newState') != '')
 		{
 
-			// Si le statut nécéssite la génération de factures
+			// if state need invoice generation
 			if (ErpOrderState::invoiceAvailable(Tools::getValue('newState')))
 			{
 				$pdf_link = new Link();
@@ -560,7 +569,7 @@ class AdminAdvancedOrderController extends ModuleAdminController
 				$this->confirmations[] = '&nbsp;<a target="_blank" href="'.$pdf_link.'" alt="invoices">'.$this->l('Download all invoices').'<br/></a>';
 			}
 
-			// Si le statut nécéssite la génération de bon de livraison
+			// if state need delivery slip generation 
 			if (ErpOrderState::deliverySlipAvailable(Tools::getValue('newState')))
 			{
 				$pdf_link = new Link();
@@ -571,38 +580,46 @@ class AdminAdvancedOrderController extends ModuleAdminController
 
 		if (Tools::getValue('linkPDFPrint') != '')
 		{
-			$invoices = '';
-			$delivery = '';
-
-			foreach (explode(',', Tools::getValue('linkPDFPrint')) as $id_order)
-			{
-				if (ErpOrderState::invoiceAvailable( ErpOrder::getIdStateByIdOrder($id_order))) 
-                                    $invoices .= $id_order.',';
-				if (ErpOrderState::deliverySlipAvailable( ErpOrder::getIdStateByIdOrder($id_order))) 
-                                    $delivery .= $id_order.',';
-			}
-
-			if ($invoices != '')
-			{
-				$pdf_link = new Link();
-				$pdf_link = $pdf_link->getAdminLink("AdminAdvancedOrder", true).'&submitAction=generateInvoicesPDF3&id_orders='.Tools::substr($invoices, 0, -1);
-				$this->confirmations[] = '&nbsp;<a target="_blank" href="'.$pdf_link.'" alt="invoices">'.$this->l('Download all invoices').'</br></a>';
-			}
-
-			if ($delivery != '')
-			{
-				$pdf_link = new Link();
-				$pdf_link = $pdf_link->getAdminLink("AdminAdvancedOrder", true).'&submitAction=generateDeliverySlipsPDF2&id_orders='.Tools::substr($delivery, 0, -1);
-				$this->confirmations[] = '&nbsp;<a target="_blank" href="'.$pdf_link.'" alt="delivery">'.$this->l('Download all delivery slip').'</br></a>';
-			}
                         
-                        if ($invoices == '' && $delivery == '')
-                            $this->errors[] = $this->l('The selected orders have no invoice or delivery !').'<br/>';
+                        if( $this->controller_status == STATUS1 && count(explode(',', Tools::getValue('linkPDFPrint'))) > ERP_ORDERFR )
+                        {
+                            $this->informations[] = sprintf($this->l('You are using the free version of 1-Click ERP which limits the possible number of documents to print to %d orders'), ERP_ORDERFR);
+                        }
+                        else {
+                
+                            $invoices = '';
+                            $delivery = '';
+
+                            foreach (explode(',', Tools::getValue('linkPDFPrint')) as $id_order)
+                            {
+                                    if (ErpOrderState::invoiceAvailable( ErpOrder::getIdStateByIdOrder($id_order))) 
+                                        $invoices .= $id_order.',';
+                                    if (ErpOrderState::deliverySlipAvailable( ErpOrder::getIdStateByIdOrder($id_order))) 
+                                        $delivery .= $id_order.',';
+                            }
+
+                            if ($invoices != '')
+                            {
+                                    $pdf_link = new Link();
+                                    $pdf_link = $pdf_link->getAdminLink("AdminAdvancedOrder", true).'&submitAction=generateInvoicesPDF3&id_orders='.Tools::substr($invoices, 0, -1);
+                                    $this->confirmations[] = '&nbsp;<a target="_blank" href="'.$pdf_link.'" alt="invoices">'.$this->l('Download all invoices').'</br></a>';
+                            }
+
+                            if ($delivery != '')
+                            {
+                                    $pdf_link = new Link();
+                                    $pdf_link = $pdf_link->getAdminLink("AdminAdvancedOrder", true).'&submitAction=generateDeliverySlipsPDF2&id_orders='.Tools::substr($delivery, 0, -1);
+                                    $this->confirmations[] = '&nbsp;<a target="_blank" href="'.$pdf_link.'" alt="delivery">'.$this->l('Download all delivery slip').'</br></a>';
+                            }
+
+                            if ($invoices == '' && $delivery == '')
+                                $this->errors[] = $this->l('The selected orders have no invoice or delivery !').'<br/>';
+                        }
 		}
 
 		if (Tools::getValue('etiquettesMR') != '')
 		{
-			// On télécharge tout les PDF et on les zip, puis on les supprime et on affiche le lien vers le fichier zip
+			// Downlad all pdf and zip then delete and display link to zip file 
 			$etiquettesMR = explode (' ', Tools::getValue('etiquettesMR'));
 			unset ($etiquettesMR[count($etiquettesMR) - 1]);
 
@@ -619,12 +636,12 @@ class AdminAdvancedOrderController extends ModuleAdminController
 
 			$zip->close();
 
-			//On propose le zip au téléchargement
+			//Display link to dl zip file
 			$this->confirmations[] = '&nbsp;<a target="_blank" href="'.$zipPath.'" alt="zip_file">'.$this->l('Download zip archive which contents all labels for Mondial Relay shipment').'<br/></a>';
 
 			if (Tools::getValue('deliveryNumbersMR') != '')
 			{
-				// On récupère tout les numéros de suivis
+				// Get all tracking numbers
 				$numbers = explode(" ", Tools::getValue('deliveryNumbersMR'));
 				unset($numbers[count($numbers)-1]);
 				foreach ($numbers as $number)
@@ -646,24 +663,24 @@ class AdminAdvancedOrderController extends ModuleAdminController
 		}
 		if (Tools::getValue('expeditorCSV') != '')
 		{
-			// On crée le fichier CSV
+			// CSV file creation
 			$csvPath = '../modules/erpillicopresta/export/expeditor_inet.csv';
 			$fileCSV = fopen($csvPath, 'w');
 
-			// On le remplis
+			// Fill in file
 			fwrite ($fileCSV, str_replace( ',', '', Tools::getValue('expeditorCSV')));
 
-			//On le ferme
+			//Close
 			fclose($fileCSV);
 
-			// On crée le lien
+			// link creation
 			$this->confirmations[] = '&nbsp;<a target="_blank" href="'.$csvPath.'" alt="csv_file">'.$this->l('Download export file (CSV) for ExpeditorInet').'</br></a>';
 		}
 
 		if (Tools::getValue('idOthers') != '')
 		{
                     
-                    //BEGIN Initialisations pour TNT
+                    //BEGIN Initialisations for TNT
                     if (Module::isEnabled('tntcarrier'))
                     {
                             $TNTCheck = false;
@@ -672,8 +689,13 @@ class AdminAdvancedOrderController extends ModuleAdminController
 
                             if (class_exists('ZipArchive', false) && ($tnt_zip = new ZipArchive()))
                             {
-                                // On met tout les pdf TNT dans un zip
-                                $tnt_zip_path = 'erpillicopresta/export/tnt_'.date('Y-m-d_His').'_'.uniqid('file_').'.zip';
+                            	// Protection du ZIP
+                            	$dateday = new DateTime();
+                            	$uniqid_file = uniqid('file_');
+                            	$token = md5($dateday->getTimestamp().$uniqid_file);
+
+                                // Put all tnt pdf into a zip
+                                $tnt_zip_path = 'erpillicopresta/export/tnt_'.date('Y-m-d_His').'_'.$uniqid_file.$token.'.zip';
                                 if ($tnt_zip->open(_PS_MODULE_DIR_.$tnt_zip_path, ZIPARCHIVE::CREATE | ZIPARCHIVE::OVERWRITE) !== true)
                                         $this->errors[] = Tools::displayError($this->l('Failed to create a ZIP archive containing the shipping labels to TNT carrier !').'<br/>');
                                 else
@@ -681,7 +703,7 @@ class AdminAdvancedOrderController extends ModuleAdminController
                                     // one or several id orders
                                     $id_others_order_array = strpos(Tools::getValue('idOthers'), ',') !== false ? explode(',', Tools::getValue('idOthers')) : (int)Tools::getValue('idOthers');
 
-                                    //On parcours toutes les commandes n'étant ni ExpeditorInet ni MondialRelay
+                                    // Browse all orders not in ExpeditorInet nor MondialRelay
                                     foreach ((array)$id_others_order_array as $i=>$id_order)
                                     {
                                         // BEGIN Commande TNT
@@ -689,17 +711,18 @@ class AdminAdvancedOrderController extends ModuleAdminController
 
                                         if (ErpOrder::isTntOrder($id_order))
                                         {
-                                            // Changement status
+                                            // status change
                                             $currOrder = new ErpOrder($id_order);
                                             $currOrder->setCurrentState(4, $this->context->employee->id);
 
-                                            //On commence par vérifier que le poids de la commande est valide ! Sinon, tnt plante.
+                                            // Start to check that weight order is valid if not tnt crash !
                                             //echo($data['poid'] * 1000);die;
 
-                                            // On récupère le numéro de suivi : creation d'une classe dédié à cette manip pour nouvelle version TNT : 
-                                            // execution du hook générant le num de suivi sur l'OUVERTURE d'une commande .. donc ctrl c / ctrl v pour executer ici
-                                            $erp_tntCarrier = new ErpTntCarrier();
-                                            $generate = $erp_tntCarrier->generateShipping($id_order);
+                                            // Get tracking number : dedicated class created for this action
+                                            // Execution of the hook generating the tracking number at an order opening ... So ctrl c / ctrl v to execute here
+                                            /*$erp_tntCarrier = new ErpTntCarrier();
+                                            $generate = $erp_tntCarrier->generateShipping($id_order);*/
+                                            $generateShipping = Hook::exec('adminOrder', array('id_order'=> $id_order));
 
                                             $tnt = new PackageTnt($id_order);
                                             $tntNumber = $tnt->getShippingNumber();
@@ -720,22 +743,22 @@ class AdminAdvancedOrderController extends ModuleAdminController
                                             $order_carrier->tracking_number = pSQL($tntNumber);
                                             $order_carrier->update();
 
-                                            // On ajoute le PDF au zip
+                                            // Add pdf to zip
                                             $tnt_zip->addFile(_PS_MODULE_DIR_.'/tntcarrier/pdf/'.$tntNumber.'.pdf', $tntNumber.'.pdf');
 
                                             $TNTCheck = true;
 
                                         }
-                                        // END Commande TNT
+                                        // END Order TNT
 
-                                        // SPLICE de idOther
+                                        // SPLICE  idOther
                                         if(is_array($id_others_order_array))
                                             unset($id_others_order_array[$i]);
                                         else
                                             unset($id_others_order_array);
                                     }
 
-                                    //On propose le zip au téléchargement
+                                    //Display dl zip link
                                     $tnt_zip->close();
                                     if ($TNTCheck) $this->confirmations[] = '&nbsp;<a target="_blank" href="'._MODULE_DIR_.$tnt_zip_path.'" alt="zip_file">'.$this->l('Download zip archive which contents all labels for TNT shipment').'<br/></a>';
                                 }
@@ -746,7 +769,7 @@ class AdminAdvancedOrderController extends ModuleAdminController
                             //END Initialisations for TNT
                     }
                     
-                    // affichage des commandes non traitées : idothers
+                    // Display for order not  processed  : idothers
                     if(isset($id_others_order_array))
                         if(count($id_others_order_array) == 1)
                         {
@@ -770,10 +793,19 @@ class AdminAdvancedOrderController extends ModuleAdminController
 	*/
 	public function getStock($stock, $data)
 	{
-		// On récupère ($stock) une string contenant "id_product-id_attribut_product-quantiy-id_commande"
-		// séparés par des "-", chaque produit sont sépraés par des epaces
+            
+                if( $this->controller_status == STATUS1 )
+                {
+                    $this->informations[] = $this->l('You are using the free version of 1-Click ERP which limits the display of the stock column.');
+                    $this->informations[] = $this->l('this column informs you on the availability of products for each order.');
+                 
+                    return '<img src="'._MODULE_DIR_.'erpillicopresta/img/features/none.png" style="width:21px;height:21px;">';
+                }
+            
+		//  Get($stock) string containing "id_product-id_attribut_product-quantiy-id_commande"
+		// separated with "-", each product separated with space
 
-		//On récupère la liste des status actifs
+		// Get list of active states
 		$status_actifs = array();
 		$order_states = OrderState::getOrderStates((int)$this->context->language->id);
 				foreach ($order_states as $state)
@@ -782,7 +814,7 @@ class AdminAdvancedOrderController extends ModuleAdminController
 
 		$stock_level = array ('img' => '../img/admin/status_green.png', 'alt' => '1');
 
-		// On explode et range tout dans un tableau
+		// Explode and fill in a table 
 		$produits = explode(" ", $stock);
 		foreach ($produits AS &$prod)
 			$prod = explode('-', $prod);
@@ -795,17 +827,17 @@ class AdminAdvancedOrderController extends ModuleAdminController
 		{
 			$stock_level_out_of_stock = false;
 
-			foreach ($produits AS &$prod) // Premier parcours pour voir si un produit est hors stock car c'est le plus important
+			foreach ($produits AS &$prod) // First browse to seeif a product is out of stock cause it is the most important
 			{
-				$stock_physique = StockAvailable::getQuantityAvailableByProduct($prod[0], $prod[1]); // Gestion non avancée par defaut
+				$stock_physique = StockAvailable::getQuantityAvailableByProduct($prod[0], $prod[1]); // Advanced Management by default
 
-				if (Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT')) // Si la gestion avancée est activée
+				if (Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT')) // If Advanced stock management activated
 				{
 					$manager = StockManagerFactory::getManager();
 					$stock_physique = $manager->getProductPhysicalQuantities($prod[0], $prod[1]);
 				}
 
-				// Si un produit est hors stock
+				// If a product is out of stock
 				if (($stock_physique - $prod[2]) < 0)
 				{
 					$stock_level = array ('img' => '../img/admin/status_red.png', 'alt' => '3');
@@ -815,15 +847,15 @@ class AdminAdvancedOrderController extends ModuleAdminController
 
 			if (!$stock_level_out_of_stock)
 			{
-				foreach ($produits AS &$prod) // Second parcours pour voir si une commande a un produti en commun
+				foreach ($produits AS &$prod) // Second browse to see if an order has product in commin with others
 				{
-					//On vérifie si il est commandé ailleur
+					//Check if product is ordered elsewhere 
 					$tabOrders = ErpOrder::getOrdersByProductAndAttribute($prod[0], $prod[1]);
 					foreach ($tabOrders AS &$order)
 					{
 						$objOrder = new ErpOrder($order['id_order']);
 
-						// Si la commande n'est ni envoyée, ni annulée ni la commande courante
+						// if order is neither sent, nor cancelled, nor the current one
 						if (array_search($objOrder->current_state, $status_actifs) !== false && $order['id_order'] != $prod[3])
 							$stock_level = array ('img' => '../img/admin/status_orange.png', 'alt' => '2');
 					}
@@ -901,8 +933,7 @@ class AdminAdvancedOrderController extends ModuleAdminController
 
 		$num_doc = $document->number;
 
-		while(Tools::strlen($num_doc) < 6)
-			$num_doc = '0'.$num_doc;
+		$num_doc = str_pad($num_doc, 6, '0', STR_PAD_LEFT);
 
 		switch (get_class($documents[0])) 
 		{
@@ -1006,7 +1037,7 @@ class AdminAdvancedOrderController extends ModuleAdminController
 	}
 
 		/* RJMA
-	 * Rajout pour la traduction du controller AdminAdvancedOrder
+	 * Add Traduction for controller AdminAdvancedOrder
 	*/
 	protected function l($string, $class = 'AdminTab', $addslashes = false, $htmlentities = false)
 	{
@@ -1028,7 +1059,7 @@ class AdminAdvancedOrderController extends ModuleAdminController
 
 			require_once _PS_MODULE_DIR_.'erpillicopresta/classes/order/ErpOrder.php';
 
-			/*On récupère la liste des status actifs */
+			/*Get list of active states */
 			$status_actifs = array();
 			$order_states = OrderState::getOrderStates((int)$this->context->language->id);
 			foreach ($order_states as $state)
@@ -1050,7 +1081,7 @@ class AdminAdvancedOrderController extends ModuleAdminController
 
 			foreach ($produits as &$prod)
 			{
-				/*On vérifie si il est commandé ailleur*/
+				/*Check if not order elsewhere*/
 				$tabOrders = ErpOrder::getOrdersByProductAndAttribute($prod['product_id'], $prod['product_attribute_id']);
 				foreach ($tabOrders as &$order)
 				{
@@ -1077,7 +1108,7 @@ class AdminAdvancedOrderController extends ModuleAdminController
 														&quot;action&quot;:&quot;detailsAjax&quot;
 													});
 													return false">
-											<img src="../img/admin/more.png" alt="Details">
+											<img src="../img/admin/more.png" alt="Details" />
 										</a>
 									</td>';
 						$message .= '</tr>';
@@ -1108,12 +1139,12 @@ class AdminAdvancedOrderController extends ModuleAdminController
                             {
                                 $objProd = new Product($prod['product_id']);
 
-                                // Si la commande n'est ni envoyée, ni annulée ni la commande courante 
+                                // If order is neither sent, nor cancelled, nor the current one
                                 $product_return_template[$key]['reference'] = $objProd->reference;
                                 $product_return_template[$key]['name'] = $objProd->getProductName($prod['product_id'], $prod['product_attribute_id']);
                                 $product_return_template[$key]['quantity'] = $prod['product_quantity'];
 
-                                if (Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT')) /* Si la gestion avancée est activée */
+                                if (Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT')) /* If advanced stock management is activated */
                                 {
                                     $manager = StockManagerFactory::getManager();							
                                     $product_return_template[$key]['physical_stock'] = $manager->getProductPhysicalQuantities($prod['product_id'], $prod['product_attribute_id']);
@@ -1139,4 +1170,68 @@ class AdminAdvancedOrderController extends ModuleAdminController
                     self::$currentIndex = $this->context->link->getAdminLink('AdminOrders');
                     Tools::redirectAdmin(self::$currentIndex.'&vieworder&id_order='.(int)Tools::getValue('id_order'));
                 }
+                
+                
+                public function ajaxUpdateStates()
+                {
+                    $context = Context::getContext ();
+              
+                $retour = null;
+                $id_employee = (int)Tools::getValue('id_employee');
+
+                require_once _PS_MODULE_DIR_.'erpillicopresta/classes/order/ErpOrder.php';
+
+                set_error_handler(array('ErpOrder', 'ErpOrdersAjaxErrorHandler'));
+
+                switch (Tools::getValue('action'))
+                {
+                        case 'unique' :
+                                $retour = array('res' => false, 'newColor' => null);
+                                $currOrder = new ErpOrder( (int)Tools::getValue('idOrder'));
+                                $currOrder->setCurrentState( (int)Tools::getValue('idState'), (int)$id_employee);
+                                $currOrder = new ErpOrder( (int)Tools::getValue('idOrder')); /* Recreate object because the prvious one do not update after modification */
+                                $currOrderState = ($currOrder->getCurrentOrderState()); /* Get new state (no builder, need to pass by order) */
+                                $retour['newColor'] = $currOrderState->color;
+                                $retour['res'] = true;
+
+                                if (isset($context->cookie->errorOrderAjaxHandler) && !empty($context->cookie->errorOrderAjaxHandler))
+                                {
+                                    $retour['message'] .= $context->cookie->errorOrderAjaxHandler;
+                                }
+
+                        break;
+
+                        case 'masse' :
+                   
+                                $retour = array('message' => 'false', 'ordersWithoutError' => array ());
+                                foreach (Tools::getValue('idOrder') as $order)
+                                {
+                                    try
+                                    {
+                                        $currOrder = new ErpOrder($order);
+                                        $currOrder->setCurrentState(Tools::getValue('idState'), (int)$id_employee);
+                                        $retour['ordersWithoutError'][] = $order;
+                                    }
+
+                                    catch(Exception $e)
+                                    {
+                                        if ($retour['message'] == 'false')
+                                                $retour['message'] = '';
+
+                                        $retour['message'] .= $erpip->l('Error for the order #').$order.': '.$e->getMessage().'<br/>';
+                                    }
+
+                                    if ($retour['message'] == 'false' && !empty($context->cookie->errorOrderAjaxHandler))
+                                                $retour['message'] = '';
+
+                                    if (!empty($context->cookie->errorOrderAjaxHandler))
+                                        $retour['message'] .= $context->cookie->errorOrderAjaxHandler.'<br/>';                                            
+                                }
+                        break;
+                }
+
+                print Tools::jsonEncode($retour);
+                $context->cookie->__unset('errorOrderAjaxHandler');
+                exit();
+        }
 }

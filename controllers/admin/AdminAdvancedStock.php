@@ -19,11 +19,12 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
+require_once _PS_MODULE_DIR_.'erpillicopresta/controllers/admin/IPAdminController.php';
 require_once(_PS_MODULE_DIR_.'erpillicopresta/erpillicopresta.php');
 require_once(_PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpWarehouseProductLocation.php');
 require_once(_PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpStock.php');
@@ -32,7 +33,7 @@ require_once(_PS_MODULE_DIR_.'erpillicopresta/models/ErpWarehouseProductLocation
 require_once(_PS_MODULE_DIR_.'erpillicopresta/models/ErpZone.php');
 require_once _PS_MODULE_DIR_.'erpillicopresta/config/control.php';
 
-class AdminAdvancedStockController extends ModuleAdminController
+class AdminAdvancedStockController extends IPAdminController
 {
 	protected $stock_instant_state_warehouses = array();
 	private $advanced_stock_management = false;
@@ -50,18 +51,32 @@ class AdminAdvancedStockController extends ModuleAdminController
 
             $this->is_1_6 = version_compare( _PS_VERSION_ , '1.6' ) > 0;
 
-            // Récupération du type de gestion de stock actif et envoi au tpl
+            // Get the type of active stock management and send to tpl
             $this->advanced_stock_management = Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT');
             
             // get controller status
             $this->controller_status = Configuration::get(ErpIllicopresta::getControllerStatusName('AdminAdvancedStock'));
             $this->product_token = Tools::getAdminToken('AdminProducts'.(int)(Tab::getIdFromClassName('AdminProducts')).(int)$this->context->employee->id);
             $this->erp_zone_token = Tools::getAdminToken('AdminErpZone'.(int)(Tab::getIdFromClassName('AdminErpZone')).(int)$this->context->employee->id);
+
+            // get controller status
+            $this->controller_status = Configuration::get(ErpIllicopresta::getControllerStatusName('AdminAdvancedOrder'));
 	}
 
 	/**/
 	public function initContent()
 	{
+            if( $this->controller_status == STATUS1)
+            {
+                $this->informations[] = '<a href="?controller=AdminModules&configure=erpillicopresta&token='.Tools::getAdminTokenLite('AdminModules').'">'.$this->l('Do not limit yourself to a batch of 10 products, take advantage of the Light version of the Stock Management area for €79.99 before tax or €8.00/month before tax. Go to your back-office, under the module tab, page 1-Click ERP!').'</a>';
+            } else if( $this->controller_status == STATUS2)
+            {
+                $this->informations[] = '<a href="?controller=AdminModules&configure=erpillicopresta&token='.Tools::getAdminTokenLite('AdminModules').'">'.$this->l('Optimise the management of your stock with dynamic logs of stock images and the auto-incrementation of SKU for just €20.00 before tax or €1.00/month before tax. Go to your back-office, under the module tab, page 1-Click ERP!').'</a>';
+            } else if( $this->controller_status == STATUS3)
+            {
+                $this->informations[] = '<a href="?controller=AdminModules&configure=erpillicopresta&token='.Tools::getAdminTokenLite('AdminModules').'">'.$this->l('Activate additional features in your TIME SAVER module in the Module section of your back-office! Go to your back-office, under the module tab, page 1-Click ERP!').'</a>';
+            }
+                
                 $this->displayInformation($this->l('If you want to add an area, a subarea and a location for a product, please select a warehouse in the location filter first.'));
 		$this->displayInformation($this->l('A subarea cannot be selected in the location filter if the corresponding area is not selected !'));
                 $this->_helper_list = new HelperList();
@@ -130,8 +145,8 @@ class AdminAdvancedStockController extends ModuleAdminController
 		// retrieving the type of inventory management and send to template
 		$this->advanced_stock_management = Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT');
 
-			$this->context->smarty->assign(array(
-				'advanced_stock_management' => $this->advanced_stock_management,
+                $this->context->smarty->assign(array(
+                        'advanced_stock_management' => $this->advanced_stock_management,
 		));
 
 		// smarty values
@@ -337,6 +352,9 @@ class AdminAdvancedStockController extends ModuleAdminController
                         $this->context->smarty->assign(array(
                                 'sub_title' => $this->l('List of products available in stock'),
                         ));
+                        
+                                         
+                            
 
 			// SPECIFIC FILTER
 			$area = $this->getCurrentValue('area');
@@ -353,13 +371,13 @@ class AdminAdvancedStockController extends ModuleAdminController
                         }
 
 			
-			// Si on a spécifié une zone ET sous zone, on filtre pour l'entrepôt, la zone et la sous zone spécifiée
+			// If area and sub area specified, filter on warehouse, area and subarea
 			if ($area != false && $subarea != false)
 			{
                             $this->_where .= ' AND (s.id_warehouse = '.$id_warehouse.' OR wpl.id_warehouse='.$id_warehouse.') 
                                                 AND area.id_erpip_zone = "'.(int)$area.'" AND sub_area.id_erpip_zone = '.(int)$subarea; 
 			}
-                        // Si on a juste spécifié une zone, on filtre pour l'entrepôt, la zone sépcifiée
+                        // If juste area then filter on warehouse and area
 			elseif ($area != false)
 			{
                             $this->_where .= ' AND (s.id_warehouse = '.$id_warehouse.' OR wpl.id_warehouse='.$id_warehouse.') 
@@ -534,10 +552,10 @@ class AdminAdvancedStockController extends ModuleAdminController
                         else
                         {
                             
-                            //Si le filtre par entrepôt n'est pas utilisé, alors on s'intéresse à la somme des quantités des entrepôts.
-                            //Pour cela, on modifie la sélection dans la requete pour calculer cette somme
-                            //Puis on remplace la condition where par un group by having
-                            //(Dans ce cas, il n'est plus nécessaire de forcer à zéro les quantités non définies car SUM s'en occupe)
+                            //If filter by warehouse not used, then we check the addition of quantity of the warehouses
+                            //Therefore we modify the selection in the request to calculate its sum
+                            //Then we replace where condition by group by having
+                            //(In this case no need to force to 0 quantity not definied cause Sum manage it)
                             if(!$this->advanced_stock_management)
                                 $id_warehouse = -1;
                             
@@ -571,11 +589,11 @@ class AdminAdvancedStockController extends ModuleAdminController
 		return $list;
 	}
 
-	/* Liste des produits en stock selon l'image choisie */
+	/* In stock Product list in function of the image choosen */
 	public function getCustomListIllicoTimeMachine()
 	{
 
-		
+		$current_currency = Context::getContext()->currency->sign;
 
 				// smarty values
 		$this->context->smarty->assign(array(
@@ -584,7 +602,8 @@ class AdminAdvancedStockController extends ModuleAdminController
 				'id_supplier' => -1,
 				'id_manufacturer' => -1,
 				'moreless' => -1,
-				'quantity_filter' => 0
+				'quantity_filter' => 0,
+				'controller_status' => $this->controller_status
 		));
 
 		$id_image = Tools::getValue('id_image');
@@ -637,6 +656,7 @@ class AdminAdvancedStockController extends ModuleAdminController
                                             'search' => false,
                                             'type' => 'decimal',
                                             'currency' => true,
+                                            'type' => 'price',
                                             'align' => 'right'
                             ),
                             'price' => array(
@@ -646,6 +666,7 @@ class AdminAdvancedStockController extends ModuleAdminController
                                             'search' => false,
                                             'align' => 'right',
                                             'type' => 'decimal',
+                                            'type' => 'price'
                             ),
                             'price_ttc' => array(
                                             'title' => $this->l('Price (ti)'),
@@ -657,7 +678,7 @@ class AdminAdvancedStockController extends ModuleAdminController
                             ),
 		);
 
-		// Colonne propres au type de gestion de stock actif
+		// Column specific to the stock management active
 		if ($this->advanced_stock_management)
 			$additional_columns = array(
 					'valuation' => array(
@@ -758,7 +779,6 @@ class AdminAdvancedStockController extends ModuleAdminController
 
 		$this->_where = 'AND id_stock_image ='.$id_image;
 
-		// On affiche seulement un seul bloc de filtre
 		// we display only one filter bloc
 		$this->context->smarty->assign(array(
 				'list' => 'image',
@@ -770,11 +790,19 @@ class AdminAdvancedStockController extends ModuleAdminController
 		return $list;
 	}
 
-	/* Produit en stock : ajout de colonnes quantité & location */
+	/* Product in stock : add a quantity & location column */
 	public function getList($id_lang, $order_by = null, $order_way = null, $start = 0, $limit = null, $id_lang_shop = false)
 	{
 			if (Tools::isSubmit('csv') && (int)Tools::getValue('id_warehouse') != -1)
 					$limit = false;
+                        
+                        
+                        $stckmgtfr = ERP_STCKMGTFR;
+                        if( $this->controller_status == STATUS1)
+                        {
+                            $limit = $stckmgtfr;
+                            $this->informations[] = sprintf($this->l('You are using the free version of 1-Click ERP which limits document editing to %d products'), $limit);
+                        }
 
 			$order_by_valuation = false;
 			$order_by_real_quantity = false;
@@ -797,7 +825,7 @@ class AdminAdvancedStockController extends ModuleAdminController
 
 			parent::getList($id_lang, $order_by, $order_way, $start, $limit, $id_lang_shop);
 
-			// On ajoute des colonnes que pour la liste de produits en stock
+			// Add columns only for the product in stock list
 			if (isset($this->_list[0]['id_product']))
 			{
 				$nb_items = count($this->_list);
@@ -823,7 +851,7 @@ class AdminAdvancedStockController extends ModuleAdminController
 
                                     $query->where('id_product ='.(int)$item['id_product'].' AND id_product_attribute = '.(int)$item['id_product_attribute']);
 
-                                    // Si id = -1, tout entrepôt
+                                    // If id = -1, all warehouses
                                     if ($id_warehouse != -1)
                                             $query->where('id_warehouse = '.$id_warehouse);
                                     $res = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($query);
@@ -865,7 +893,7 @@ class AdminAdvancedStockController extends ModuleAdminController
                             }
 			}
 
-			// Ajout colonne prix ttc pour les stock, stock available & illicotimemachine
+			// Add TTC price column for  stock, stock available & illicotimemachine
 			if (isset($this->_list[0]['id_product']) || isset($this->_list[0]['id_stock_available'])
 					|| isset($this->_list[0]['id_stock_image_content']))
 			{
@@ -884,7 +912,7 @@ class AdminAdvancedStockController extends ModuleAdminController
 					$res = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($query);
 
 
-					// Si on est sur un produit
+					// If we are on a product
 					if ($item['price_attribute'] == null)
 					{
 						$item['price'] = $item['price_product'];
@@ -902,7 +930,7 @@ class AdminAdvancedStockController extends ModuleAdminController
 			$this->getTotalPrices();
 	}
 
-	/* Retourne les totaux prix achat / fournisseur et prix de vente HT */
+	/* Return the total purchase prices / supplier and sell prices HT */
 	protected function getTotalPrices()
 	{
 		$array = array();
@@ -935,7 +963,7 @@ class AdminAdvancedStockController extends ModuleAdminController
 		{
 			$item = &$this->_list[$i];
 
-			// Dans le cas d'un affichage gestion de stock DESACTIVE : on ne prend pas en compte les produits affiché alors qu'ils ont des declinaisons (quantité = --)
+			// In case of display stock management desactivated: we do not take in account the products displayed while they have attributes (quantities = --)
 			if ($item['quantity'] != '--')
 				$wholesale_price += ErpStock::getWholesalePrice($item['id_product'], $item['id_product_attribute']);
 		}
@@ -993,7 +1021,7 @@ class AdminAdvancedStockController extends ModuleAdminController
             return $warehouse;
 	}
 
-	/* Retourne une valeur en get/post */
+	/* return a value in get/post */
 	protected function getCurrentValue($var)
 	{
             if (Tools::isSubmit($var))
@@ -1042,10 +1070,38 @@ class AdminAdvancedStockController extends ModuleAdminController
 					 'desc' => $this->l('Export current stock'),
 			);
                         
-                        // Update Areas
+                        
+                if($this->controller_status == STATUS1)
+                {
+                    $text = addslashes($this->l('Proceed to superior offer to use this feature.'));        
+                    if ($this->controller_status)
+                    {
+                            // Creation of a stock image
+                            $this->page_header_toolbar_btn['save-and-stay'] = array(
+                                    'short' => 'New stock image',
+                                    'js' => 'cancelBubble(event, \''.$text.'\');',
+                                    'href' => '#',
+                                    'desc' => $this->l('Make a new stock image'),
+                            );
+                    }
+
+                    // Update Areas
+                    if ($this->advanced_stock_management)
+                    {
+                        $this->page_header_toolbar_btn['update'] = array(
+                                        'short' => 'Update Areas',
+                                        'href' => '#',
+                                        'js' => 'cancelBubble(event, \''.$text.'\');',
+                                        'desc' => $this->l('Update Location'),
+                        );
+                    }
+                }
+                else
+                {
+                     // Update Areas
                         if ($this->advanced_stock_management)
                         {
-                            $this->toolbar_btn['refresh-cache'] = array(
+                            $this->page_header_toolbar_btn['update'] = array(
                                             'short' => 'Update Areas',
                                             'class' => 'update_areas',    
                                             'href' => 'javascript:$(\'.form\').submit();',
@@ -1056,14 +1112,16 @@ class AdminAdvancedStockController extends ModuleAdminController
                         
 			if ($this->controller_status)
 			{
-				// Création d'une image de stock
-				$this->toolbar_btn['save-and-stay'] = array(
+				// Creation of a stock image
+				$this->page_header_toolbar_btn['save-and-stay'] = array(
 					'short' => 'New stock image',
 					'href' => '#',
 					'desc' => $this->l('Make a new stock image'),
 				);
 			}
-		}
+                }
+                       
+            }
 	}
 
 	public function initToolBarTitle()
@@ -1104,24 +1162,52 @@ class AdminAdvancedStockController extends ModuleAdminController
 				 'desc' => $this->l('Export current stock'),
 		);
 
-		if ($this->controller_status)
-		{
-			// Création d'une image de stock
-			$this->page_header_toolbar_btn['save-and-stay'] = array(
-				'short' => 'New stock image',
-				'href' => '#',
-				'desc' => $this->l('Make a new stock image'),
-			);
-		}
-                
-                // Update Areas
-                if ($this->advanced_stock_management)
+                if($this->controller_status == STATUS1)
                 {
-                    $this->page_header_toolbar_btn['update'] = array(
-                                    'short' => 'Update Areas',
+                    $text = addslashes($this->l('Proceed to superior offer to use this feature.'));        
+                    if ($this->controller_status)
+                    {
+                            // Creation of a stock image
+                            $this->page_header_toolbar_btn['save-and-stay'] = array(
+                                    'short' => 'New stock image',
+                                    'js' => 'cancelBubble(event, \''.$text.'\');',
                                     'href' => '#',
-                                    'desc' => $this->l('Update Location'),
-                    );
+                                    'desc' => $this->l('Make a new stock image'),
+                            );
+                    }
+
+                    // Update Areas
+                    if ($this->advanced_stock_management)
+                    {
+                        $this->page_header_toolbar_btn['update'] = array(
+                                        'short' => 'Update Areas',
+                                        'href' => '#',
+                                        'js' => 'cancelBubble(event, \''.$text.'\');',
+                                        'desc' => $this->l('Update Location'),
+                        );
+                    }
+                }
+                else
+                {
+                    if ($this->controller_status)
+                    {
+                            // Creation of a stock image
+                            $this->page_header_toolbar_btn['save-and-stay'] = array(
+                                    'short' => 'New stock image',
+                                    'href' => '#',
+                                    'desc' => $this->l('Make a new stock image'),
+                            );
+                    }
+
+                    // Update Areas
+                    if ($this->advanced_stock_management)
+                    {
+                        $this->page_header_toolbar_btn['update'] = array(
+                                        'short' => 'Update Areas',
+                                        'href' => '#',
+                                        'desc' => $this->l('Update Location'),
+                        );
+                    }
                 }
                 
                 $var_assign = array();
@@ -1138,14 +1224,13 @@ class AdminAdvancedStockController extends ModuleAdminController
                 $this->context->smarty->assign($var_assign);
 	}
 
-	/* Affichage des tableaux */
+	/* Display table*/
 	public function renderList()
 	{
                 $this->toolbar_title = $this->l('Stock');
 //                $this->page_header_toolbar_title = $this->l('Advanced Stock Management');
 		$this->processFilter();
 
-		// HACK : reset foireux avec plusieurs tableaux
 		if (Tools::isSubmit('submitReset'.$this->table))
 		{
 			unset($this->context->cookie->stock_availableFilter_name);
@@ -1257,7 +1342,7 @@ class AdminAdvancedStockController extends ModuleAdminController
 			}
 		}
 
-		// Affichage de l'information ou du message de confirmation / erreur de fin d'inventaire
+		//Display Information or confirmation message / error of end of inventory
 		switch(Tools::getValue('submitFilterstock'))
 		{
 			case 0:
@@ -1274,16 +1359,16 @@ class AdminAdvancedStockController extends ModuleAdminController
 			break;
 		}
 
-		// Sélection d'une image de stock
+		// Stock image selection
 		$this->context->smarty->assign(array(
                         'images' => StockImage::getStockImages(),
-                        'pack' => Configuration::get('ERP_PACK_CONF'),
+                        'pack' => ERP_SLOT_IPTIMEMACHINE,
                         'id_warehouse' => Tools::getValue('id_warehouse'),
 		));
 
 		$this->getCurrentValue('id_image');
 
-		// Récup context link et affichage de la toolbar
+		// Get context link and display toolbar
 		$this->context_link = $this->context->link;
 		$this->initToolbar();
                 $this->initPageHeaderToolbar();
@@ -1304,6 +1389,7 @@ class AdminAdvancedStockController extends ModuleAdminController
 	{
 		if (Tools::isSubmit('export_csv'))
 		{
+                    $stckmgtfr = ERP_STCKMGTFR;
                     // get all filter
                     //
                     // category filer
@@ -1318,7 +1404,7 @@ class AdminAdvancedStockController extends ModuleAdminController
                     foreach ($categories_exec as $category)
                             $categories[] = (int)$category['id_product'];
 
-                    //Si aucune donnée
+                    //If no data
                     if($id_category!=-1 && $categories==null)
                     {
                         $this->displayWarning($this->l('No data to export in this category !'));
@@ -1340,7 +1426,7 @@ class AdminAdvancedStockController extends ModuleAdminController
                     foreach ($suppliers_exec as $supplier)
                             $suppliers[] = (int)$supplier['id_product'];
 
-                    //Si aucune donnée
+                    //If no data
                     if($id_supplier!=-1 && $suppliers==null)
                     {
                         $this->displayWarning($this->l('No data to export with this supplier !'));
@@ -1350,7 +1436,7 @@ class AdminAdvancedStockController extends ModuleAdminController
                     if($suppliers != null)
                         $suppliers = array_unique($suppliers);
 
-                    // Fitltre marque
+                    // Filter by manufacturer
                     $id_manufacturer = (Tools::isSubmit('id_manufacturer')) ? (int)Tools::getValue('id_manufacturer') : -1;
                     $query = null;
                     $query = new DbQuery();
@@ -1364,7 +1450,7 @@ class AdminAdvancedStockController extends ModuleAdminController
                     foreach ($manufacturers_exec as $manufacturer)
                             $manufacturers[] = (int)$manufacturer['id_product'];
                     
-                    //Si aucune donnée
+                    //If no data
                     if($id_manufacturer!=-1 && $manufacturers==null)
                     {
                         $this->displayWarning($this->l('No data to export with this manufacturer !'));
@@ -1374,7 +1460,7 @@ class AdminAdvancedStockController extends ModuleAdminController
                     if($manufacturers != null)
                         $manufacturers = array_unique($manufacturers);
                     
-                    // Filtre quantité
+                    // Quantity filter
                     $table_quantity = 'quantity';
                     $moreless = (Tools::isSubmit('moreless') && in_array(Tools::getValue('moreless'), array('=','>','<'))) ? Tools::getValue('moreless') : -1;
                     $quantity = (Tools::isSubmit('quantity_filter')) ? (int)Tools::getValue('quantity_filter') : -1;
@@ -1422,15 +1508,15 @@ class AdminAdvancedStockController extends ModuleAdminController
                         $combination->leftjoin('erpip_zone', 'subarea', '(subarea.id_erpip_zone = ewpl.id_zone)');
 
                         // apply filters
-                        // entrepot
+                        // warehouse
                         if ($id_warehouse != -1)
                         {
                                 $combination->where('s.id_warehouse = '.(int)$id_warehouse.' OR wpl.id_warehouse = '.(int)$id_warehouse);
-                                // zone
+                                // area
                                 if(Tools::isSubmit('area'))
                                 {
                                     $combination->where('ewpl.id_zone_parent= '. Tools::getValue('area'));
-                                    // sous zone
+                                    // sub area
                                     if(Tools::isSubmit('subarea'))
                                     $combination->where('ewpl.id_zone= '. Tools::getValue('subarea'));
                                 }
@@ -1457,16 +1543,28 @@ class AdminAdvancedStockController extends ModuleAdminController
 
                         $combination->groupBy('pa.id_product, pa.id_product_attribute, w.id_warehouse');
                         $combination->orderBy('pa.id_product, pa.id_product_attribute');
+                        
+                       
+
+                        if( $this->controller_status == STATUS1)
+                        {
+                            $combination->limit($stckmgtfr);
+                            $this->informations[] = sprintf($this->l('You are using the free version of 1-Click ERP which limits document editing to %d products'), $stckmgtfr);
+                        }
+                        
+                        
                         $combinations = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($combination);
 
-                        // Liste des ids produits
+                        
+                        
+                        // List of product id
                         $ids = array();
                         foreach ($combinations as $combination)
                                 $ids[] = $combination['id_product'];
 
                         $ids = array_unique($ids);
 
-                        // Produits sans déclinaisons
+                        // Product without attribute
                         $product = new DbQuery();
                         $product->select('p.id_product as id_product, 
                             0 as id_product_attribute, 
@@ -1500,11 +1598,11 @@ class AdminAdvancedStockController extends ModuleAdminController
                         if ($id_warehouse != -1)
                         {
                                 $product->where('s.id_warehouse = '.(int)$id_warehouse.' OR wpl.id_warehouse = '.(int)$id_warehouse);
-                                // zone
+                                // Area
                                 if(Tools::isSubmit('area'))
                                 {
                                     $product->where('ewpl.id_zone_parent= '. intval(Tools::getValue('area')));
-                                    // sous zone
+                                    // sub area
                                     if(Tools::isSubmit('subarea'))
                                     $product->where('ewpl.id_zone= '. intval(Tools::getValue('subarea')));
                                 }
@@ -1533,13 +1631,28 @@ class AdminAdvancedStockController extends ModuleAdminController
                             $product->where("p.id_product NOT IN (".implode(',', array_map('intval', $ids)).")");
                         $product->groupBy('p.id_product, w.id_warehouse');
                         $product->orderBy('p.id_product');
+                        
+
+                        if( $this->controller_status == STATUS1)
+                        {
+                            $product->limit($stckmgtfr);
+                            $this->informations[] = sprintf($this->l('You are using the free version of 1-Click ERP which limits document editing to %d products'), $stckmgtfr);
+                        }
+                        
                         $products = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($product);
                      
                         // $query = array_merge($products, $combinations);
                         $query = array_merge($products, $combinations);
                         
+                        
+                        
                         // we sort by id_product and id_product_attribute
                         usort($query, array($this, "idproductSort"));
+                        
+                         if( $this->controller_status == STATUS1)
+                        {
+                            $query = array_splice($query,0,$stckmgtfr);
+                        }
 
                         $csv_header_columns = array(
                             $this->l('EAN13'),
@@ -1579,8 +1692,9 @@ class AdminAdvancedStockController extends ModuleAdminController
                                 self::transformText($warning)
                             );
                                     
-                            echo implode(';', $csv_value_columns)."\r\n";
+                            echo implode(';', $csv_value_columns)."\r\n";   
                         }
+                        echo sprintf($this->l('You are using the free version of 1-Click ERP which limits the export to %d products'),$stckmgtfr);
                     }
                     else
                     {
@@ -1617,7 +1731,13 @@ class AdminAdvancedStockController extends ModuleAdminController
                         $stock->orderBy('id_product_attribute');
                         $stock->getAll();
 
-                        // Génération du CSV
+                         if( $this->controller_status == STATUS1)
+                        {
+                            $stock = array_splice($stock,0,$stckmgtfr);
+                            $this->informations[] = sprintf($this->l('You are using the free version of 1-Click ERP which limits document editing to %d products'), $stckmgtfr);
+                        }
+                        
+                        // generation of CSV
                         $csv = new CSV($stock, $this->l('stock').'_'.date('Y-m-d_His'));
                         $csv->export();
                     }
@@ -1644,6 +1764,7 @@ class AdminAdvancedStockController extends ModuleAdminController
 	/* */
 	protected function renderCatalog()
 	{
+            $stckmgtfr = ERP_STCKMGTFR;
 		if (Tools::isSubmit('export_catalog'))
 		{
                     //OUPUT HEADERS
@@ -1688,11 +1809,11 @@ class AdminAdvancedStockController extends ModuleAdminController
                         $combination->leftjoin('erpip_zone', 'z', '(z.id_erpip_zone = ewpl.id_zone_parent)');
                         $combination->leftjoin('erpip_zone', 'sz', '(sz.id_erpip_zone = ewpl.id_zone)');
                         
-                        // Filtre sur zone
+                        // filter on area
                         if ($area != null && $subarea == null)
                             $combination->where('z.id_erpip_zone = '. (int)$area);
                             
-                        // Filtre sur zone et sous zone
+                        // filter on area and sub area
                         if ($area != null && $subarea != null)
                         {
                             $combination->where('z.id_erpip_zone = '. (int)$area);
@@ -1710,6 +1831,12 @@ class AdminAdvancedStockController extends ModuleAdminController
                     $combination->innerjoin('attribute_group_lang', 'agl', 'agl.id_attribute_group = atr.id_attribute_group AND agl.id_lang='.(int)$this->context->language->id);
                     $combination->innerjoin('category_lang', 'cl', 'cl.id_category = p.id_category_default AND cl.id_lang ='.(int)$this->context->language->id);
                     $combination->groupBy('pa.id_product, pa.id_product_attribute');
+                    
+                    if( $this->controller_status == STATUS1)
+                        {
+                            $combination->limit($stckmgtfr);
+                            $this->informations[] = sprintf($this->l('You are using the free version of 1-Click ERP which limits document editing to %d products'), $order_free_limit);
+                        }
 
                     $combinations = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($combination);
 
@@ -1720,7 +1847,6 @@ class AdminAdvancedStockController extends ModuleAdminController
 
 			$ids = array_unique ($ids);
 
-                        
 		   // GET PRODUCT WITHOUT COMBINATIONS
 		   $product = new DbQuery();
                    
@@ -1748,12 +1874,12 @@ class AdminAdvancedStockController extends ModuleAdminController
                         $product->leftjoin('erpip_zone', 'z', '(z.id_erpip_zone = ewpl.id_zone_parent)');
                         $product->leftjoin('erpip_zone', 'sz', '(sz.id_erpip_zone = ewpl.id_zone)');
                         
-                        // Filtre sur zone
+                        // filter on area
                         if ($area != null && $subarea == null)
                             $product->where('z.id_erpip_zone = '. (int)$area);
                             
 
-                        // Filtre sur zone et sous zone
+                        // filter on area and sub area
                         if ($area != null && $subarea != null)
                         {
                             $product->where('z.id_erpip_zone = '. (int)$area);
@@ -1766,15 +1892,27 @@ class AdminAdvancedStockController extends ModuleAdminController
                     $product->innerjoin('product_lang', 'pl', 'p.id_product = pl.id_product');
                     $product->innerjoin('category_lang', 'cl', 'cl.id_category = p.id_category_default AND cl.id_lang ='.(int)$this->context->language->id);
                    
-                   // Si on a des déclinaisons, on filtre pour ne pas avoir un produit déjà listé avec ces declinaisons
+                   // if we have attributes we filter for not having a product already listed with attributes
                    if(count($ids) > 0)
                         $product->where('p.id_product NOT IN ('.pSQL (implode(',' , array_map('intval', $ids))).') ');
                    
 		   $product->groupBy('p.id_product');
+                   
+                   if( $this->controller_status == STATUS1)
+                        {
+                            $product->limit($stckmgtfr);
+                            $this->informations[] = sprintf($this->l('You are using the free version of 1-Click ERP which limits document editing to %d products'), $order_free_limit);
+                        }
+                        
 		   $products = Db::getInstance()->executeS($product);
                   
                     // merge product with product attribute
 		   $query = array_merge($products, $combinations);
+                   
+                   if( $this->controller_status == STATUS1)
+                        {
+                            $query = array_splice($query,0,$stckmgtfr);
+                        }
 
 		   $nb_items = count($query);
 		   for ($i = 0; $i < $nb_items; ++$i)
@@ -1874,7 +2012,7 @@ class AdminAdvancedStockController extends ModuleAdminController
                             if ($area != null && $subarea == null)
                                 array_push($header, $this->l('AREA'));
 
-                            // Filtre sur zone et sous zone
+                            // filter on area and sub area
                             if ($area != null && $subarea != null)
                                 array_push($header, $this->l('AREA'), $this->l('SUBAREA'));
                             
@@ -1915,7 +2053,7 @@ class AdminAdvancedStockController extends ModuleAdminController
                                     if ($area != null && $subarea == null)
                                         array_push($content, $product['area']);
                                     
-                                    // Filtre sur zone et sous zone
+                                    // filter on area and sub area
                                     if ($area != null && $subarea != null)
                                          array_push($content, $product['area'], $product['subarea']);
                                     
@@ -1925,6 +2063,7 @@ class AdminAdvancedStockController extends ModuleAdminController
                                 echo implode(';', $content)."\r\n";
                                 
 			}
+                        echo sprintf($this->l('You are using the free version of 1-Click ERP which limits the export to %d products'),$stckmgtfr);
 			die();
 		}
 	}
@@ -1936,11 +2075,15 @@ class AdminAdvancedStockController extends ModuleAdminController
 
 		elseif (Tools::isSubmit('task') && Tools::getValue('task') == 'getProductSupplierPrice')
 			$this->ajaxGetProductSupplierPrice();
+                elseif(Tools::isSubmit('task') && Tools::getValue('task') == 'getSupplierReference')
+                {
+                    include_once(_PS_MODULE_DIR_.'erpillicopresta/ajax/ajax.php');
+                }
 	}
 
 	public function ajaxGetProductSupplierPrice()
 	{
-		//  Si on a bien appeler le script avec un terme à rechercher
+		//  If we have called the script with a term to search
 		if (Tools::isSubmit('id_product') && Tools::isSubmit('id_product_attribute'))
 		{
 				require_once (_PS_MODULE_DIR_.'erpillicopresta/classes/ErpProductSupplier.php');
@@ -1949,7 +2092,7 @@ class AdminAdvancedStockController extends ModuleAdminController
 				$id_product_attribute = Tools::getValue('id_product_attribute');
 				//$id_currency = Tools::getValue('id_currency', false) ? Tools::getValue('id_currency') : 1;
 
-				/*  Prix de tous les fournisseurs pour le produit */
+				/*  Price for all suppliers for the product */
 				$supplier_prices = ErpProductSupplier::getAllProductSupplierPrice($id_product, $id_product_attribute, true);
 
 				if (!empty($supplier_prices))
@@ -1957,13 +2100,13 @@ class AdminAdvancedStockController extends ModuleAdminController
                                     echo '<table class="table">';
                                     foreach ($supplier_prices as $price)
                                     {
-                                        /*  Si prix fournisseur = 0, on prend celui de base */
+                                        /*  If supplier price  = 0 we take the basic one */
                                         if ($price['product_supplier_price_te'] == '0.000000')
                                                 $supplier_price = ErpStock::getWholesalePrice($id_product, $id_product_attribute);
                                         else
                                                 $supplier_price = $price['product_supplier_price_te'];
 
-                                        /*  Ecriture du tableau HTML */
+                                        /*  writing of the HTML table */
                                         echo  '<tr>
                                                     <td>'.$price['supplier_name'].' : </td>
                                                     <td> &nbsp; '.number_format($supplier_price , 2, '.', ' ').'€</td>
@@ -1980,20 +2123,20 @@ class AdminAdvancedStockController extends ModuleAdminController
 
 	public function ajaxGetCategories()
 	{
-            //  Si on a bien appeler le script avec un terme à rechercher/
+            //  If we have called the script with a term to search
             if (Tools::isSubmit('id_product'))
             {
                     $id_product = (int)Tools::getValue ('id_product');
 
-                    /*  Récupération des catégories du produit */
+                    /*  Get product categories */
                     $categories = Product::getProductCategoriesFull($id_product, (int)$this->context->language->id);
 
-                    /*  Si on en a, on renvoi le contenu en tableau */
+                    /* If we have some we return the table content */
                     if (count ($categories) > 0)
                     {
                         $i = 0;
 
-                        /*  Détermination du nombre de colonne dans le tableau en fonction du nombre de catégories à afficher */
+                        /*  determination of the number of column in the table in function of the number of category to display */
                         $maxCells = (count ($categories) < 10) ? 1 : round ((count ($categories) / 10));
 
                         echo '<table style="text-align:left" class="table" width="100%">';
@@ -2016,25 +2159,8 @@ class AdminAdvancedStockController extends ModuleAdminController
 		exit();
 	}
 
-	/**/
-	protected static function transformText($text)
-	{
-                //delete html tags
-		$text = strip_tags($text);
-                
-                // decode html specialchar 
-                $text = html_entity_decode($text);
-                $text = utf8_decode($text);
-                
-		$text = str_replace("\n", '.', $text);
-		$text = str_replace("\r", '.', $text);
-		$text = str_replace(";", ',', $text);
-                
-		return $text;
-	}
-
 	/* RJMA
-	 * Rajout pour la traduction du controller AdminAdvancedStock
+	 * Add traduction for controller AdminAdvancedStock
 	*/
 	protected function l($string, $class = 'AdminTab', $addslashes = false, $htmlentities = false)
 	{
@@ -2071,7 +2197,7 @@ class AdminAdvancedStockController extends ModuleAdminController
 		$html = '--';
 		if (!empty($first_supplier_ref))
 		{
-			$html = '<a href="#" class="supplier_ref" title="'.$this->l('Suppliers references').'" rel="../modules/erpillicopresta/ajax/ajax.php?id_product='.(int)$data['id_product'].'&id_product_attribute='.(int)$data['id_product_attribute'].'&task=getSupplierReference&token='.$this->token.'">
+			$html = '<a href="#" class="supplier_ref" title="'.$this->l('Suppliers references').'" rel=index.php?controller=AdminAdvancedStock&ajax=1&id_product='.(int)$data['id_product'].'&id_product_attribute='.(int)$data['id_product_attribute'].'&task=getSupplierReference&token='.$this->token.'">
 					<img style="width: 16px; height: 16px;" alt="products" src="../img/admin/search.gif" class="icon-search" />
 					'.$first_supplier_ref.'
 			</a> ';
@@ -2166,4 +2292,5 @@ class AdminAdvancedStockController extends ModuleAdminController
             }
             return $html;
         }
+
 }

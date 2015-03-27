@@ -18,7 +18,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 *}
@@ -28,7 +28,7 @@
     <!-- Dialog de confirmation de création d'image -->
 
     <div id="dialog-confirm_image" title="{l s='Confirmation' mod='erpillicopresta'}" style="display: none;">
-
+       {if $controller_status == $smarty.const.STATUS3}
         <form method="get" id="form-confirm-image">
             <input type="hidden" name="id_warehouse" value="{$id_warehouse|escape:intval}" />
             <input type="hidden" name="token" value="{$smarty.get.token|escape:'htmlall'}" />
@@ -73,6 +73,9 @@
                 <p>{l s='Caution, the current filters are not used' mod='erpillicopresta'}</p>
             {/if}
         </div>
+        {else}
+            <p>{l s='To use this functionnality switch to PRO offer.' mod='erpillicopresta'}</p>
+        {/if}
     </div>
     
     <!-- On affiche seulement un seul bloc de filtre -->
@@ -89,7 +92,7 @@
                                 <input type="hidden" name="controller" value="AdminAdvancedStock" />
                                 <input type="hidden" name="token" value="{$token|escape:'html':'UTF-8'}" />
 
-
+                                {if $controller_status == $smarty.const.STATUS3}
                                 <!-- Liste des images de stock -->
                                 {if count($images) > 0}
                                         
@@ -107,6 +110,7 @@
 
                                        <label>{l s='Or use the filters below' mod='erpillicopresta'}</label>
 
+                                {/if}
                                 {/if}
 
                                 <!-- Filtre par entrepôt seulement en gestion de stock avancée active -->
@@ -196,6 +200,8 @@
                     <h3><i class="icon-cogs"></i> {l s='Location filter' mod='erpillicopresta'}</h3>
                      <!-- quantity filter more / less -->
                      
+                     
+                   {if $controller_status == $smarty.const.STATUS3}
                      <div>
                      
                      {if count($warehouses) > 0}
@@ -262,6 +268,10 @@
                 {/if}
                    
                      </div>
+                {else}
+                    <p>{l s='To use Warehouse/Area filter, switch to PRO version.' mod='erpillicopresta'}</p>
+                {/if}
+                 
                 <br style="clear:both;"/>
                 </div>
                 

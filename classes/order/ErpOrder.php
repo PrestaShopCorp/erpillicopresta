@@ -19,7 +19,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -35,18 +35,23 @@ class ErpOrder extends Order
 		if (!Module::isEnabled('mondialrelay'))
 			return false;
 
-		$query = '
+		/*$query = '
 		SELECT COUNT(*)
 		FROM '._DB_PREFIX_.'orders
 		WHERE id_order = "'.(int)$id_order.'" AND
 		id_carrier IN (SELECT id_carrier
-		FROM '._DB_PREFIX_.'mr_method)';
+		FROM '._DB_PREFIX_.'mr_method)';*/
 
-		$tab = Db::getInstance()->getValue($query);
-		if ($tab == 0)
-			return false;
+		$query = 'SELECT count(*) 
+			FROM '._DB_PREFIX_.'carrier c
+			INNER JOIN '._DB_PREFIX_.'orders o on o.id_carrier = c.id_carrier
+			WHERE o.id_order = '.$id_order.' 
+			AND c.external_module_name = "mondialrelay"';
 
-		return true;
+
+		if ((int)Db::getInstance()->getValue($query) > 0)
+			return true;
+		return false;
 	}
 
 	/*
@@ -57,15 +62,23 @@ class ErpOrder extends Order
 		if (!Module::isEnabled('tntcarrier'))
 			return false;
 
-		$query = 'SELECT COUNT(*)
+		/*$query = 'SELECT COUNT(*)
 		FROM '._DB_PREFIX_.'orders
 		WHERE id_order = "'.(int)$id_order.'" AND
 		id_carrier IN (SELECT id_carrier
-		FROM '._DB_PREFIX_.'tnt_carrier_option)';
+		FROM '._DB_PREFIX_.'tnt_carrier_option)';*/
 
-		if ((int)Db::getInstance()->getValue($query) == 0)
-			return false;
-		return true;
+		$query = 'SELECT count(*) 
+			FROM '._DB_PREFIX_.'carrier c
+			INNER JOIN '._DB_PREFIX_.'orders o on o.id_carrier = c.id_carrier
+			WHERE o.id_order = '.$id_order.' 
+			AND c.external_module_name = "tntcarrier"';
+
+			echo $query;
+
+		if ((int)Db::getInstance()->getValue($query) > 0)
+			return true;
+		return false;
 	}
 
 	/*
@@ -174,11 +187,11 @@ class ErpOrder extends Order
 			WHERE o.`id_order` = '.(int)($id_order));
 	}
         
-        // Gestionnaire d'erreurs
+        // Error handler
         public static function ErpOrdersAjaxErrorHandler($errno, $errstr, $errfile, $errline)
         {
            if (!(error_reporting() & $errno)) {
-                // Ce code d'erreur n'est pas inclus dans error_reporting()
+                // This error code is not included in error_reporting()
                 return;
             }
             

@@ -19,26 +19,30 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
+require_once _PS_MODULE_DIR_.'erpillicopresta/controllers/admin/IPAdminController.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/erpillicopresta.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpStockMvt.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/config/control.php';
 
-class AdminStockTransferController extends ModuleAdminController
+class AdminStockTransferController extends IPAdminController
 {
 	private $baseColumns;
 
 	public function __construct()
 	{
+    // get controller status
+    $this->controller_status = Configuration::get(ErpIllicopresta::getControllerStatusName('AdminAdvancedOrder'));
+
 		parent::__construct();
                 
                 $this->bootstrap = true;
                 
-                // Colonnes de base
+                // Base columns
                 $this->baseColumns = array(
                         'ids' => array(
                                 'title' => $this->l('#'),
@@ -114,10 +118,18 @@ class AdminStockTransferController extends ModuleAdminController
                         $url_get_csv .= '&id_warehouse_src='.Tools::getValue('id_warehouse_src').'&id_warehouse_dst='.Tools::getValue('id_warehouse_dst');
                         
                         if (!empty($ids_mvt_csv))
-                            $this->confirmations[] = '&nbsp; - <a target="_blank" href="'.$url_get_csv.'" alt="csv_file"><b>'.$this->l('Download CSV transfer').'</b></a>';
+                            $this->confirmations[] = '<br />&nbsp;<a target="_blank" href="'.$url_get_csv.'" alt="csv_file"><b>'.$this->l('Download CSV transfer').'</b></a>';
                     }
                 }
                 
+        }
+        
+        public function ajaxProcess()
+	{
+             if(Tools::isSubmit('task') && Tools::getValue('task') == 'updateListeTransfert')
+                        include_once(_PS_MODULE_DIR_.'erpillicopresta/ajax/ajax.php');
+              elseif(Tools::isSubmit('task') && Tools::getValue('task') == 'getPresenceWarehouseB')
+                        include_once(_PS_MODULE_DIR_.'erpillicopresta/ajax/ajax.php');
         }
 
 	public function renderList()
@@ -158,6 +170,10 @@ class AdminStockTransferController extends ModuleAdminController
 
 	public function initContent()
 	{
+                if( $this->controller_status == STATUS3)
+                {
+                    $this->informations[] = '<a href="?controller=AdminModules&configure=erpillicopresta&token='.Tools::getAdminTokenLite('AdminModules').'">'.$this->l('Activate additional features in your TIME SAVER module in the Module section of your back-office! Go to your back-office, under the module tab, page 1-Click ERP!').'</a>';
+                }
 		if (!Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT'))
 		{
                     $this->warnings[md5('PS_ADVANCED_STOCK_MANAGEMENT')] = $this->l('You need to activate advanced stock management prior to using this feature. (Preferences/Products/Products Stock)');
@@ -175,7 +191,7 @@ class AdminStockTransferController extends ModuleAdminController
                 
 		$this->display = 'view';
 
-		// Ajout du plugin simple tooltip
+		// add simple tooltip plugin
 		$this->addJqueryPlugin('cluetip', _MODULE_DIR_.'erpillicopresta/js/cluetip/');
 
 		if (version_compare(_PS_VERSION_,'1.5.2','>=') && version_compare(_PS_VERSION_,'1.5.4','<='))
@@ -199,13 +215,13 @@ class AdminStockTransferController extends ModuleAdminController
                 
                 }
 
-		// Charge les JS
+		// load JS
 		$this->addJS(_MODULE_DIR_.'erpillicopresta/js/advanced_stock.js');
 		$this->addJS(_MODULE_DIR_.'erpillicopresta/js/advanced_stock_tools.js');
 
 		$this->addJS(_MODULE_DIR_.'erpillicopresta/js/stock_transfert.js');
 
-		// Charge les CSS
+		// load CSS
 		$this->addCSS(_MODULE_DIR_.'erpillicopresta/css/jquery.custom.css');
 		$this->addCSS(_MODULE_DIR_.'erpillicopresta/css/jquery.cluetip.css');
 		$this->addCSS(_MODULE_DIR_.'erpillicopresta/css/stock.transfert.css');
@@ -215,14 +231,14 @@ class AdminStockTransferController extends ModuleAdminController
 
 
 	/*
-	* Traitement Filtres
+	* Filters treatments
 	*/
 	public function postProcess()
 	{
-		// ENTREPOTS
+		// Warehouse
 		$warehouses = Warehouse::getWarehouses(true);
 
-		// Si on a déjà choisis un entrepot source et destination, on filtre sur les 2 pour ne pas afficher les sélections de l'autre
+                // if we already pick a warehouse source and location, we filter on twice to not display selections of the other
 		if (Tools::isSubmit('warehouseA') && Tools::getValue('warehouseA') != -1
 				&& Tools::isSubmit('warehouseB') && Tools::getValue('warehouseB') != -1)
 		{
@@ -239,7 +255,7 @@ class AdminStockTransferController extends ModuleAdminController
                                             array_push($warehousesA, $warehouse);
 			}
 		}
-		// Si on a déjà sélectionné un entrepot source, on filtre la liste de destination pour ne pas afficher celui sélectionné
+                // if we already pick a warehouse source, we filter on location list to not display the one selected
 		elseif (Tools::isSubmit('warehouseA') && Tools::getValue('warehouseA') != -1)
 		{
 			$warehouseA = Tools::getValue('warehouseA');
@@ -251,13 +267,13 @@ class AdminStockTransferController extends ModuleAdminController
 
 			$warehousesA = $warehouses;
 
-			// Repasse la liste B sur aucune sélection
+                        // Restaure B list on no selection
 			$this->context->smarty->assign(array(
 				'warehouseB' => -1
 			));
 
 		}
-		// Si on a déjà sélectionné un entrepot destination, on filtre la liste de source pour ne pas afficher celui sélectionné
+                // if we already pick a warehouse location, we filter on source list to not display the one selected
 		elseif (Tools::isSubmit('warehouseB') && Tools::getValue('warehouseB') != -1)
 		{
                     $warehouseB = Tools::getValue('warehouseB');
@@ -269,7 +285,7 @@ class AdminStockTransferController extends ModuleAdminController
 
                     $warehousesB = $warehouses;
 		}
-		// Sinon on affiche tout
+                // else display all
 		else
 		{
                     $warehousesA = $warehouses;
@@ -286,7 +302,7 @@ class AdminStockTransferController extends ModuleAdminController
                         {
                                             
 
-                                /*  Après les transferts, on supprime les cookies pour repartir sur un affichage vierge */
+                                // After transfert, delete cookies to get a blank display
                                if (Tools::isSubmit('deleteCookie'))
                                {
                                        $cookie = new Cookie('psAdmin');
@@ -297,12 +313,12 @@ class AdminStockTransferController extends ModuleAdminController
                                /*  Initialisation */
                                $ids_mvt = array();
 
-                               /* Appel à l'Helper "traducteur" de la chaine de transfert */
+                               // Call the helper "traducteur" of the chain transfert
                                require_once (_PS_MODULE_DIR_.'erpillicopresta/classes/helpers/StockTransferHelper.php');
                                require_once (_PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpStock.php');
                                $values = StockTransferHelper::getTransfertDataAsArray (Tools::getValue('values'));
 
-                               /* Pour chaque mouvement enregistré */
+                               /* For each movement recorded */
                                foreach ($values as $value)
                                {
                                                $id_product 		= $value['id_product'];
@@ -317,7 +333,7 @@ class AdminStockTransferController extends ModuleAdminController
                                                    return true;
                                                }
 
-                                               /*  Mise à jour stock dans l'entrepôt A (source) */
+                                               // update stock un warehouse A (source)
                                                $stock = new ErpStock( (int)$id_stock_s1 );
                                                $stock->physical_quantity -= $transfer_quantity;
                                                $stock->usable_quantity -= $transfer_quantity;
@@ -328,10 +344,10 @@ class AdminStockTransferController extends ModuleAdminController
                                                if ($stock->usable_quantity < 0)
                                                                $stock->usable_quantity = 0;
 
-                                               /*  MAJ Stock */
+                                               /*  Update Stock */
                                                if ($stock->update())
                                                {
-                                                               /*  Mouvement A vers B */
+                                                               /*  Movment A to B */
                                                                $stock_mvt = new ErpStockMvt();
                                                                $stock_mvt->id_stock = $stock->id;
                                                                $stock_mvt->id_order = 0;
@@ -345,10 +361,10 @@ class AdminStockTransferController extends ModuleAdminController
                                                                $stock_mvt->sign = -1;
                                                                $stock_mvt->physical_quantity = $transfer_quantity;
 
-                                                               /*  Si mouvement OK, Mise à jour stock dans l'entrepôt B (destination) */
+                                                               // if movment OK, update stock in B warehouse (location)
                                                                if ($stock_mvt->add(true))
                                                                {
-                                                                               /*  Ajout de l'id mvt stock généré (utile pour la génération du bon inter entrepot) */
+                                                                               // add id movment stock generated (useful to generate the warehouse delivery notice)
                                                                                array_push($ids_mvt, $stock_mvt->getLastId());
 
 
@@ -377,14 +393,14 @@ class AdminStockTransferController extends ModuleAdminController
                                                                                    $stock_s2->upc = $product_stock->upc;
                                                                                }
 
-                                                                               /*  Si OK, mouvement de B vers A */
+                                                                               /*  of OK, movment from B to A */
                                                                                if ($stock_s2->save())
                                                                                {
                                                                                    $stock_mvt->id_stock = $stock_s2->id;
                                                                                    $stock_mvt->id_stock_mvt_reason = 7;
                                                                                    $stock_mvt->sign = 1;
 
-                                                                                   // Ajout de l'id mvt stock généré (utile pour la génération du bon inter entrepot) 
+                                                                                   // add id movment stock generated (useful to generate warehouse inter delivery)
                                                                                    if ($stock_mvt->add(true))
                                                                                        array_push($ids_mvt, $stock_mvt->getLastId());
                                                                                    else
@@ -399,7 +415,7 @@ class AdminStockTransferController extends ModuleAdminController
                                                else
                                                        $this->errors[] = 'Error while updating the stock for a product';
 
-                                               /*  Synchronisation du stock available ::quantity */
+                                               // synchronize availbale stock ::quantity
                                                StockAvailable::synchronize($id_product);
                                }
 
@@ -429,7 +445,7 @@ class AdminStockTransferController extends ModuleAdminController
                 // to get erp feature list
                 require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpFeature.php';
 
-                // Envois des listes entrepot au tpl
+                // send warehouse liste to template
 		$this->context->smarty->assign(array(
 			'warehousesA' => $warehousesA,
 			'warehousesB' => $warehousesB,
@@ -462,7 +478,7 @@ class AdminStockTransferController extends ModuleAdminController
 	}
 
 	/*
-		* Affichage des 2 tableaux
+		* Display the 2 arrays
 		*/
 	public function renderView()
 	{
@@ -475,7 +491,7 @@ class AdminStockTransferController extends ModuleAdminController
 			'link_pdf' => $this->context->link->getAdminLink('AdminStockTransfer').'&submitAction=generateTransferPDF'
 		));
 
-		// Si on a des valeurs de transfert déjà enregistrés on les envoi (pagination & filtre)
+                // if we have transfert values already recorded, we send them (pagination & filter)
 		if (Tools::isSubmit('transfers') && Tools::getValue('transfers') != '')
 			$this->context->smarty->assign(array('transfers' => Tools::getValue('transfers')));
 
@@ -488,7 +504,7 @@ class AdminStockTransferController extends ModuleAdminController
 	}
         
         /*
-        * Retourne une valeur en get/post
+        * get a value in get/post
         */
 	protected function getCurrentValue ($var, $defaultValue = -1)
 	{
@@ -511,7 +527,7 @@ class AdminStockTransferController extends ModuleAdminController
 	*/
 	public function processGenerateTransferPDF()
 	{
-            // Si on a bien des mouvements
+            // if we have movments
             $ids_mvt = Tools::getValue('ids_mvt');
 
             if (!empty ($ids_mvt))
@@ -526,9 +542,8 @@ class AdminStockTransferController extends ModuleAdminController
 	}
 
 
-	/* RJMA
-	* Rajout pour la traduction du controller AdminStockTransfer
-        *
+	/* RJMA         
+        * Add to translate AdminStockTransfer controller 
         */
 	protected function l($string, $class = 'AdminTab', $addslashes = false, $htmlentities = true)
 	{
@@ -542,14 +557,14 @@ class AdminStockTransferController extends ModuleAdminController
 
 	public function getCustomList()
 	{
-            // Si on a les id warehouse en get (cas premier affichage)
+            // if we get warehouse id from GET (case first diplay)
             if(Tools::isSubmit('warehouseA') && Tools::isSubmit('warehouseB'))
             {
-                // Recup valeur warehouses selectionnés ou pas
+                // Get warehouse value selected or not
                 $this->context->cookie->warehouseA = Tools::getValue('warehouseA');
                 $this->context->cookie->warehouseB = Tools::getValue('warehouseB');
             
-                // Si on a un bon id warehouse, on affiche
+                // if we have a good warehourse id, display
 		if(($this->context->cookie->warehouseA != -1 && $this->context->cookie->warehouseA != '')
                         && ($this->context->cookie->warehouseB != -1 && $this->context->cookie->warehouseB != ''))
                 {
@@ -558,7 +573,7 @@ class AdminStockTransferController extends ModuleAdminController
 			$id_warehouseB = (Tools::isSubmit('warehouseB')) ? Tools::getValue('warehouseB') : $this->context->cookie->warehouseB;
 
 				
-			// Ajout de colonnes supplémentaires
+                        // Add additional columns
 			$AColumns = array(
 				'qte_transfer' => array(
                                     'title' => $this->l('Transfer'),
@@ -605,7 +620,7 @@ class AdminStockTransferController extends ModuleAdminController
                                 )
 	);
 
-			// Colonnes affichées
+			// column displayed
 			$this->fields_list = array_merge($this->baseColumns, $AColumns);
 
 			$this->context->smarty->assign(array(
@@ -665,13 +680,13 @@ class AdminStockTransferController extends ModuleAdminController
 			$this->_group = "GROUP BY a.id_product, a.id_product_attribute";
 
 			$this->_where .= "AND w.id_warehouse = ".$id_warehouseA;
-			// FILTRES
+			// FILTERS
 
-			// Filtre Marque
+			// Brand filter
 			if (($id_manufacturer = $this->getCurrentValue('id_manufacturer')) != false)
 				$this->_where .= ' AND m.id_manufacturer = '.$id_manufacturer;
 
-			//Filtre catégorie
+			// Category filter
 			if (($id_category = $this->getCurrentValue('id_category')) != false)
 			$this->_where .= ' AND a.id_product IN (
 											SELECT cp.id_product
@@ -679,7 +694,7 @@ class AdminStockTransferController extends ModuleAdminController
 											WHERE cp.id_category = '.$id_category.'
 							)';
 
-			// Filtre fournisseur
+			// Provider filter
 			if (($id_supplier = $this->getCurrentValue('id_supplier')) != false)
 			$this->_where .= ' AND a.id_product IN (
 											SELECT ps.id_product
@@ -697,7 +712,7 @@ class AdminStockTransferController extends ModuleAdminController
 		}
                 else
                 {
-                    // Vide cookie affichage form : correction if selection warehouse + changement controller
+                    // empty cookie display form :  correction if selection warehouse + change controller
                     $cookie = new Cookie('psAdmin');
                     $cookie->warehouseA = '';
                     $cookie->warehouseB = '';
@@ -722,7 +737,7 @@ class AdminStockTransferController extends ModuleAdminController
                     header('Cache-Control: no-store, no-cache');
                     header('Content-disposition: attachment; filename="'.$file_name);
                     
-                    // Ecriture des titres de colonnes
+                    // write headers column
                     $keys = array (
                             $this->l('warehouse_source_id'),
                             $this->l('warehouse_source_name'),
@@ -740,14 +755,14 @@ class AdminStockTransferController extends ModuleAdminController
                     
                     echo sprintf ("%s\n", implode (';', $keys));
 
-                    // Appel à l'Helper "traducteur" de la chaine de transfert pour récupération des données
+                    // call the helper "traducteur" of the transfert chain to get datas
                     require_once (_PS_MODULE_DIR_.'erpillicopresta/classes/helpers/StockTransferHelper.php');
                     $data = StockTransferHelper::getTransfertDataAsArray (Tools::getValue ('ids_mvt_csv'));
 
-                    // Ecritures des données
+                    // write datas
                     foreach ($data as &$product)
                     {
-                            // Récupération information complémentaire
+                            // get additional informations
                             $product ['product_name']	= ErpProduct::getProductName($product['id_product'], $product['id_product_attribute']);
                             $productInfo 		= ErpProduct::getProductsInfo($product['id_product'], $product['id_product_attribute']);
 
@@ -776,22 +791,6 @@ class AdminStockTransferController extends ModuleAdminController
 	public function InitToolbar ()
 	{
             return parent::initToolbar();
-	}
-
-	protected static function transformText($text)
-	{
-                //delete html tags
-		$text = strip_tags($text);
-                
-                // decode html specialchar 
-                $text = html_entity_decode($text);
-                $text = utf8_decode($text);
-                
-		$text = str_replace("\n", '.', $text);
-		$text = str_replace("\r", '.', $text);
-		$text = str_replace(";", ',', $text);
-                
-		return $text;
 	}
         
 	public function renderQteTransferColumn($qte_transfer, $data)

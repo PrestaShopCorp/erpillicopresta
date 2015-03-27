@@ -19,15 +19,16 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
+require_once _PS_MODULE_DIR_.'erpillicopresta/controllers/admin/IPAdminController.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/erpillicopresta.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/config/control.php';
 
-class AdminAdvancedSupplierController extends ModuleAdminController
+class AdminAdvancedSupplierController extends IPAdminController
 {
 	public $bootstrap = true ;
 	public function __construct()
@@ -92,6 +93,9 @@ class AdminAdvancedSupplierController extends ModuleAdminController
 							'orderby' => false
 						)
 		);
+
+		// get controller status
+        $this->controller_status = Configuration::get(ErpIllicopresta::getControllerStatusName('AdminAdvancedOrder'));
 
 		parent::__construct();
 
@@ -471,11 +475,14 @@ class AdminAdvancedSupplierController extends ModuleAdminController
 	 */
 	public function postProcess()
 	{
-				require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpFeature.php';
-				$this->context->smarty->assign(array(
+		require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpFeature.php';
+		$this->context->smarty->assign(array(
 			'erp_feature' => ErpFeature::getFeaturesWithToken($this->context->language->iso_code),
 			'template_path' => $this->template_path,
-				));
+		));
+
+		if(Tools::isSubmit('export_csv'))
+			$this->renderCSV();
 
 		// checks access
 		if (Tools::isSubmit('submitAdd'.$this->table) && !($this->tabAccess['add'] === '1'))
@@ -636,6 +643,12 @@ class AdminAdvancedSupplierController extends ModuleAdminController
 				'icon' => 'process-icon-new'
 			);
 
+			$this->page_header_toolbar_btn['save'] = array(
+				'href' => self::$currentIndex.'&export_csv&token='.$this->token,
+				'desc' => $this->l('Export suppliers'),
+				'icon' => 'process-icon-save'
+			);
+
 		parent::initPageHeaderToolbar();
 	}
 
@@ -722,8 +735,89 @@ class AdminAdvancedSupplierController extends ModuleAdminController
 		return $return;
 	}
 
+	public function renderCSV()
+	{
+	    if (Tools::isSubmit('export_csv'))
+	    {
+	        // header
+	        header('Content-type: text/csv; charset=utf-8');
+	        header('Cache-Control: no-store, no-cache');
+	        header('Content-disposition: attachment; filename="suppliers.csv"');
+
+	        // write headers column
+	        $keys = array(
+	                'Name',
+	                'Email',
+	                'Company',
+	                'Firstname',
+	                'Lastname',
+	                'Address 1',
+	                'Address 2',
+	                'Post code',
+	                'City',
+	                'Phone',
+	                'GSM',
+	                'Fax',
+	                'Franco amount',
+	                'Discount amount',
+	                'Escompte',
+	                'Delivery time',
+	                'Account number accounting',
+	                'Adding date',
+	                'Updating date',
+	                'activate'
+	        );
+
+	        echo sprintf("%s\n", implode(';', $keys));
+
+	        $query = null;
+	        $query = new DbQuery();
+	        $query->select('s.*, erpips.*, a.company, a.firstname, a.lastname, a.address1, a.address2, a.postcode, a.city, a.phone, a.phone_mobile');
+
+	        $query->from('supplier', 's');
+	        $query->leftjoin('erpip_supplier', 'erpips', 'erpips.id_supplier = s.id_supplier');
+	        $query->leftjoin('address', 'a', 'a.id_supplier = s.id_supplier');
+
+	        // Execute query
+	        $res = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
+
+	        // write datas
+	        foreach ($res as $supplier)
+	        {
+	            $content_csv = array( 
+	                self::transformText($supplier['name']),
+	                $supplier['email'],
+	                self::transformText($supplier['company']),
+	                self::transformText($supplier['firstname']),
+	                self::transformText($supplier['lastname']),
+	                self::transformText($supplier['address1']),
+	                self::transformText($supplier['address2']),
+	                $supplier['postcode'],
+	                $supplier['city'],
+	                $supplier['phone'],
+	                $supplier['phone_mobile'],
+	                $supplier['fax'],
+	                $supplier['franco_amount'],
+	                $supplier['discount_amount'],
+	                $supplier['escompte'],
+	                $supplier['delivery_time'],
+	                $supplier['account_number_accounting'],
+	                $supplier['date_add'],
+	                $supplier['date_upd'],
+	                $supplier['active'],
+	                PHP_EOL
+	            );
+	           
+	            echo implode(';', $content_csv);
+	        }
+	        die();
+	    }
+	}
+
+	
+
 		/* RJMA
-	 * Rajout pour la traduction du controller AdminAdvancedSupplier
+         * Help to translate AdminAdvancedSupplier controller
 	*/
 	protected function l($string, $class = 'AdminTab', $addslashes = false, $htmlentities = false)
 	{

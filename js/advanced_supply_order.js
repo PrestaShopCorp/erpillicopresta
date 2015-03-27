@@ -18,12 +18,12 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
-// Récupération du Token pour sécuriser les requetes AJAX
+// Fetching token to secure AJAX queries
 var token = document.location.href.split("token=");
 token = token[1].split("#");
 token = token[0].split("&");
@@ -33,18 +33,18 @@ $('document').ready(function()
 {
     
     /*
-     * Blocage de la modification du fournisseur une fois que la commande fournisseur est crée
+     * Blocking supplier change once supplier order is created
     **/
     if( $('#supply_order_form select#id_supplier').length > 0 && $('#supply_order_form input#id_supply_order').length > 0 )
     {
-        //Récupération de l'id du fournisseur 
+        // Fetching supplier id
         var id_supply = $('#supply_order_form select#id_supplier').val();
         
         /*
-         * Modification pour rendre le fournisseur inchangeable
-         * Info : l'attribut readOnly n'est pas disponible 
-         * Création d'un bouton hidden qui contient la valeur du fournisseur
-         * Et changement des name et id du champs désactivés
+         * To make a supplier unchangeable
+         * Info : the "readOnly" attribute is not available 
+         * Creating a hidden button which contains the supplier's value
+         * Disabling name and id changes
         */
         $('#supply_order_form select#id_supplier').attr('disabled', true)
                                                   .attr('id', 'id_supplier_disabled')
@@ -53,21 +53,21 @@ $('document').ready(function()
     }
     
     /*
-    *  Permet de récupérer l'escompte d'un fournisseur dans l'ecran de création de commande fournisseur
+    *  Allows to fetch the discount (escompte) of a supplier in the supplier order creation screen
     */
     $('select#id_supplier').change( function(){
         
         $.ajax({
                 type: 'GET',
-                url: '../modules/erpillicopresta/ajax/ajax.php',
+                url: 'index.php?controller=AdminAdvancedSupplyOrder&ajax=1&task=supplier&token='+token,
                 async: true,
                 cache: false,
                 dataType : "json",
                 data : { 
-                    'task' : 'supplier',
+                    //'task' : 'supplier',
                     'action' : 'getSupplier',
                     'id_supplier' :$(this).val(),
-                    'token': token
+                    //'token': token
                 },
                 success: function(jsonData)
                 {
@@ -77,14 +77,14 @@ $('document').ready(function()
                              jAlert(jsonData.error);
                         else {
                             
-                            //Récupération des données sinon zéro 
+                            // Retrieving data else zero
                             var escompte = $.isEmpty( jsonData.escompte ) ? '0.00' : parseFloat(jsonData.escompte).toFixed(2) ; 
                             var shipping_amount = $.isEmpty( jsonData.shipping_amount ) ? '0.00' : parseFloat(jsonData.shipping_amount).toFixed(2) ; 
                             var franco_amount = $.isEmpty( jsonData.franco_amount )?   '0.00' : parseFloat(jsonData.franco_amount).toFixed(2); 
                             var delivery_time = $.isEmpty( jsonData.delivery_time )?   '0' : parseInt(jsonData.delivery_time); 
                             var discount_amount = $.isEmpty( jsonData.discount_amount )?   '0' : parseFloat(jsonData.discount_amount); 
                           
-                            //Récupération du total du prix d'achat HT des produits HT avec reduction
+                            // Recovery of the total duty free purchase price from duty free products price with discount
                             var total_product_price_te_with_discount = $('.txt_total_product_price').html();
                             total_product_price_te_with_discount = parseFloat(total_product_price_te_with_discount).toFixed(2);       
                             total_product_price_te_with_discount =  total_product_price_te_with_discount.replace(/ /g,'') !=  "" ? total_product_price_te_with_discount.replace(/ /g,'') : '0.00';
@@ -93,13 +93,13 @@ $('document').ready(function()
                             //get date delivery expected
                             var date_delivery_expected = getDateDelivery(delivery_time)
                                                  
-                            //Set des valeurs pour le formule 
+                            // Set values for formula
                             $('#escompte').val(escompte).addClass('updatedField');
                             $('#shipping_amount').val(shipping_amount).addClass('updatedField');
                             $('#global_discount_amount').val(discount_amount).addClass('updatedField');
                             $('input[name=date_delivery_expected]').val(date_delivery_expected).addClass('updatedField');
                             
-                            //set des valeurs pour le franco
+                            // Set free shipping amount values
                             $('.txt_franco_amount').text(franco_amount).addClass('updatedField').css('padding', '2px 5px 2px 5px');
                             $('.txt_amount_to_franco').text(amount_to_franco_with_produc_discount).addClass('updatedField').css('padding', '2px 5px 2px 5px'); 
                         }
@@ -111,7 +111,7 @@ $('document').ready(function()
     });
     
     /*
-    *   Execution du sript au chargement de la page
+    *   Executing script while page is loading
     */
     if( $('input[name=global_discount_type]').length > 0)
     {
@@ -120,7 +120,7 @@ $('document').ready(function()
     }
     
     /*
-    *  Permet de permuter entre type de remise global
+    *  Allow to switch between overall discount type
     */
    $('input[name=global_discount_type]').change(function(){
        
@@ -128,7 +128,7 @@ $('document').ready(function()
    });
    
    
-   //Affichage des popups utilisant le plugins Cluetip
+   // Showing popups using Cluetip plugin
    $('.cluetip').cluetip({
         showTitle: true,
         sticky: true,
@@ -141,7 +141,7 @@ $('document').ready(function()
         closeText: '<img src="../img/admin/cross.png">'
    }); 
    
-   //Affichage des popups utilisant le plugins Cluetip
+   // Showing popups using Cluetip plugin
    $('.cluetip-min').cluetip({
         showTitle: true,
         sticky: true,
@@ -155,7 +155,7 @@ $('document').ready(function()
    }); 
    
      
-   //Popup pour l'affichage des prix par fournisseur
+   // Popup displaying prices ordered by supplier
    $("body").delegate(".cluetip-supply-price:not(.hasTooltip)", "mouseover", function (event) {
 
         $('.cluetip-supply-price').cluetip({
@@ -173,7 +173,7 @@ $('document').ready(function()
    });
     
     
-   //Si la div avec cet ID existe sur la page 
+   // If the div with this ID exists on page 
    if( $('#dialog_select_product').length > 0) 
    {
           $( "#dialog_select_product" ).dialog({
@@ -188,19 +188,19 @@ $('document').ready(function()
 
                             var product_checked  = false;
                             
-                            //On parcour la liste des produits en ne gardant que les produits coché
+                            // Browsing products list keeping only selected products
                             $('#dialog_select_product #content table tr').each( function(index){
 
-                                 //Si le produit a été coché
+                                 // If product has been checked
                                  if( $(this).find('input.select_product').is(':checked'))
                                  {
-                                      //On récupère le Json sous fomr de string
+                                      // Getting Json as a string
                                       var product_json = $(this).find('.product_json').html();
 
-                                      //Transforme en objet Json
+                                      // Transform in Json object
                                       product_infos = $.parseJSON(product_json);
 
-                                      //On remplit de champs pour réutiliser la fonction existante
+                                      // Filling the field to use existing function again
                                       $('#cur_product_name').val(product_infos.name);
 
                                       // call to addProduct function ( in form.tpl or list.php depending to the source)
@@ -226,7 +226,7 @@ $('document').ready(function()
     
     
     /*
-     * Selection multiple de produit
+     * Multiple product selection 
     */
     $('.multiple_selection').click(function(){
        
@@ -265,7 +265,7 @@ $('document').ready(function()
     });
     
     /*
-     * Dans la selection multiple : permet de selectionner tous les produits de la liste
+     * In multiple product selection : allows to select all products in the list
     */
     $('#select_all_product').live('click', function(){
           $(this).parent().parent().parent().find(':checkbox').attr('checked', this.checked);
@@ -273,7 +273,7 @@ $('document').ready(function()
     
     
     /*
-     * Gestion du produit poubelle si on tape "divers" dans le champs auto-completion
+     * Trash product management if "divers" is typed in auto-completion field
      *
     */
     $('#cur_product_name').keyup( function() {
@@ -284,7 +284,7 @@ $('document').ready(function()
         }        
     })
     
-    // Sélection id 5 "order receive completely", affichage des champs de factu date et numéro
+    // Selection id 5 "order receive completely", displaingy billing fields, date and number
     $('#id_supply_order_state').change(function()
     {
         if($('#id_supply_order_state option:selected').val() == 5)
@@ -293,7 +293,7 @@ $('document').ready(function()
             $('#invoice').addClass('invoice');
     });
     
-    // Passage champs date factu en datepicker
+    // changing billing date field in datepicker
     $('.date_to_invoice').datepicker(
     {
         defaultDate:new Date,
@@ -313,7 +313,7 @@ $('document').ready(function()
             });
     }
                         
-    // Controle vérification numéro de facture et date rempli
+    // Control check invoice number and date filled
     $('#_form').live('submit', function(e)
     {
         if($('#id_supply_order_state option:selected').val() == 5)
@@ -327,14 +327,14 @@ $('document').ready(function()
         }
     });
     
-    // Création  et gestion de la dialog popup
+    // Creation and management of the popup dialog
     $("#dialog-wholesale").dialog({
         autoOpen: false,
         width: "500"
         
     });
     
-    // Affiche dialog de confirmation MAJ wolesale price
+    // Showing update confirm dialog of wolesale price
     $('.wholesale_update').live('click', function()
     {
         var tr = $(this).parent().parent().parent();
@@ -354,11 +354,11 @@ $('document').ready(function()
                 text: "Ok",
                 click: function() 
                 {
-                    // prix d'achat en remplacant virgule par point, et on dégage le € en parsint
+                    // Purchasing price transforming coma by dot, parsint to clear the "€"
                     var wholesale_price = parseFloat(tr.find('td input.input_price').val().replace(',', '.'));
                     var ids = trim(tr.find('td.ids').text());
                    
-                    // Maj price
+                    // Updating price
                     apply_new_wholesalePrice(wholesale_price, ids);
                     $(this).dialog("close"); 
                 }
@@ -367,7 +367,7 @@ $('document').ready(function()
         $("#dialog-wholesale").dialog().dialog("open");
     });
     
-    // MAJ réception ou ANNULATION réception
+    // Updating receive or Cancelling receive
     $('.receipt_update, .receipt_cancel').live('click', function()
     {        
         var _this = $(this);
@@ -388,12 +388,12 @@ $('document').ready(function()
 	
         $.ajax({
                 type: 'GET',
-                url: '../modules/erpillicopresta/ajax/ajax.php',
+                url: 'index.php?controller=AdminAdvancedSupplyOrder&ajax=1&task=supplier&token='+token,
                 async: true,
                 cache: false,
                 data: 
                 {
-                    task: 'supplier',
+                   // task: 'supplier',
                     action : action,
                     wholesale_price : wholesale_price,
                     discount_rate : discount_rate,
@@ -406,13 +406,13 @@ $('document').ready(function()
                     id_erpip_supply_order_receipt_history:id_erpip_supply_order_receipt_history,
                     id_supply_order_detail:id_supply_order_detail,
                     id_stock_mvt:id_stock_mvt,
-                    token:token
+                    //token:token
                 }, 
                 success: function(data)
                 {
                     if(data == '1')
                     {
-                        // Si annulation, on grise la ligne et supprime les boutons d'actions
+                        // If cancelled, line becomes gray and buttons are disabeld
                         if(action == 'receipt_cancel')
                         {
                             _this.parent().parent().parent().find('td input').attr('disabled','disabled');
@@ -435,24 +435,24 @@ $('document').ready(function()
     });
    
     
-    // Création  et gestion de la dialog popup de création d'une image de stock
+    // Creation and management of the popup dialog to create a stock image
     $("#dialog-billing").dialog({
         autoOpen: false,
         width: "500"
     });
     
-    // Facturation groupée
+    // Collective billing
     $('#desc-supply_order-duplicate').click(function()
     {
         var isChecked = false;
         $('table tbody > tr').each(function()
         {
-            //Si commande sélectionnée
+            // If selected order
             if($(this).find('td input.orderSelected').is(':checked'))
                 isChecked = true;   
         });
         
-        // Si au moins une commande est sélectionnée
+        // If an order is selected at least
         if(isChecked)
         {
             $("#dialog-billing").dialog({ show: 'clip'});
@@ -482,10 +482,10 @@ $('document').ready(function()
     });
     
     
-    // MAJ du Montant total du prix d'achat HT des produits (avec réductions produit & taxe)
+    // Updating total amount of the duty free purchase products price (with discount and taxes)
     $('.unit_price, .quantity_expected, .tax_rate').live('change',function()
     {
-        // Maj total commande
+        // Updating order total
         //majTotalOrder();
         
         majTotalPrice($(this).parent().parent());
@@ -501,25 +501,25 @@ $('document').ready(function()
         var discount_amount = (total_price * $(this).val()) / 100;
         var tax_rate = $(this).parent().parent().find('td input.tax_rate').val();
         
-        // Total = quantité * prix * taxe
+        // Total = quantity * price * taxe
         total_price = ((total_price - discount_amount) * tax_rate)/100 + (total_price - discount_amount);
         
-        // Maj discount amount
+        // Updating discount amount
         $(this).parent().parent().find('td input.discount_amount_product').val(discount_amount.toFixed(2));
         
-        // MAJ Total price
+        // Updating Total price
         $(this).parent().parent().find('td span.total_product').text(total_price);
         
-        // Derniere moduif de type AMOUNT
+        // Last modification AMOUNT type
         $('#last_discount_change').val('rate');
         
-        // Maj total commande
+        // Updating total order
         majTotalOrder();
     });
     
     //    
     
-    // Change discount amount --> maj discount rate
+    // Change discount amount --> updating discount rate
     $('.discount_amount_product').live('change',function()
     {
         var unit_price = $(this).parent().parent().find('td input.unit_price').val();
@@ -530,34 +530,34 @@ $('document').ready(function()
         var discount_rate = ($(this).val() / total_price) * 100;
         var tax_rate = $(this).parent().parent().find('td input.tax_rate').val();
         
-        // Total = quantité * prix * taxe
+        // Total = quantity * price * taxe
         total_price = ((total_price - discount_amount) * tax_rate)/100 + (total_price - discount_amount);
         
-        // Maj discount amount
+        // Updating discount amount
         $(this).parent().parent().find('td input.discount_rate_product').val(discount_rate.toFixed(2));
         
-        // MAJ Total price
+        // Updating Total price
         $(this).parent().parent().find('td span.total_product').text(total_price);
         
-        // Derniere moduif de type RATE
+        // Last modification RATE type
         $('#last_discount_change').val('amount');
         
-        // Maj total commande
+        // Updating total order
         majTotalOrder();
     });
     
     
     
-    // Sélection de produit avec une quantité --> maj total price ligne & commande
+    // Product selection with a quantity --> Updating Total price line & order
     $('#btn_multipleSelected').click(function()
     {   
         //majTotalOrder();
     });
     
-    // Suppression d'une ligne de produit --> maj total price
+    // Deleting a product line --> Updating total price
     $('.removeProductFromSupplyOrderLink').live("click", function()
     {
-        // Maj total
+        // Updating total
         setTimeout(function() 
         {
             majTotalOrder();
@@ -565,40 +565,40 @@ $('document').ready(function()
     });
     
     
-    // Popup sélection multiple, saisie quantité, enregistrement dans le json product_infos
+    // Multiple selection Popup, quantity, write in json product_infos
     $('.quantity_ordered').live("change",function()
     {
         var json = $(this).parent().parent().find('td.product_json').text();
         
-        //Transforme en objet Json
+        // Transform in Json object
         json = $.parseJSON(json);0  
         json.quantity_expected = $(this).val();
         
-        // Enregistre avec la modification
+        // Save with modification
         $(this).parent().parent().find('td.product_json').text(JSON.stringify(json));
         
-        // Sélection auto de la checkbox associée
+        // Auto select the associated checkbox
         $(this).parent().parent().find('td input.select_product').prop('checked', true);
     });
 	
-	    // Popup sélection multiple, saisie quantité, enregistrement dans le json product_infos
+	    // Multiple selection Popup, quantity, write in json product_infos
     $('.comment').live("change",function()
     {
         var json = $(this).parent().parent().find('td.product_json').text();
         
-        //Transforme en objet Json
+        // Transform in Json object
         json = $.parseJSON(json);0  
         json.comment = $(this).val();
         
-        // Enregistre avec la modification
+        // Save with modification
         $(this).parent().parent().find('td.product_json').text(JSON.stringify(json));
         
-        // Sélection auto de la checkbox associée
+        // Auto select the associated checkbox
         $(this).parent().parent().find('td input.select_product').prop('checked', true);
     });
     
     
-    // Réception de produits. Si aucun produit sélectionné, on bloque
+    // Receiving products. Blocked if no selected product
     $('.form').submit(function(e)
     {
         if($('.supply_order_detail tbody >tr').length > 0)
@@ -616,25 +616,25 @@ $('document').ready(function()
     });
     
     
-    // Réception de produit, modification quantité, on coche la check associée
+    // Receiving products, quantity modification, the associated checkbox is checked
     $('input[name^="quantity_received_today_"]').change(function()
     {
         $(this).parent().parent().find('td input.noborder').prop('checked', true);
     });
     
-    // appel ajax si le champ total_price existe 
+    // Ajax call if total_price field exists 
     if( $('#total_price').length > 0 )
     {
         $.ajax({
             type: 'POST',
-            url: '../modules/erpillicopresta/ajax/ajax.php',
+            url: 'index.php?controller=AdminAdvancedSupplyOrder&ajax=1&task=supplier&token='+token,
             async: true,
             cache: false,
             data:  
             {
-                task : 'supplier',
+                //task : 'supplier',
                 action : 'getTotalPrice',
-                token : token,
+                //token : token,
                 id_supply_order : $('#id_supply_order').val()
             }, 
             success: function(data)
@@ -644,7 +644,7 @@ $('document').ready(function()
         });
     }
 
-    // Evenements pour mettre à jour le prix total de la réception si le prix ou la réduction sont modifiés
+    // Events to update the total price of the receipt if price or discount are changed
     $(document).on("change", "input.discount_rate_change", function()
     {
             calcTotalPrice($(this));
@@ -654,7 +654,7 @@ $('document').ready(function()
             calcTotalPrice($(this));
     });
 
-    // Affiche/masque l'input de commentaire dans le tableau de la selection multiple
+    // Displaying/Hidding comments input in multiple selection table
     $(".writeComment").live('click', function()
     {
             if ($(this).parent().find(".comment").css("display") == "none")
@@ -721,7 +721,7 @@ $('document').ready(function()
     
 });
 
-// Calcul le total réception
+// Calculate the total reception
 function calcTotalPrice(row)
 {
 	var wholesale_price = parseFloat(row.parent().parent().find('td input.input_price').val().replace(",", "."));
@@ -740,20 +740,20 @@ function calcTotalPrice(row)
 	if (total_price < 0)
 		total_price = 0;
 	
-        // MAJ total ligne
+        // Updating total line
 	row.parent().parent().find('td.total_price').html('<input type="hidden" class="last_price" type="text" size="5" value="' +  total_price.toFixed(2) + '" />' + total_price.toFixed(2) + " €");
 	
-        // MAJ total réception
+        // Updating total reception
 	$('#total_price').html(parseFloat($('#total_price').html()) + (total_price - old_total));	
         
-        // MAJ Total NET avec remise
+        // Updating Total including taxes with discount
         row.parent().parent().find('td.wholesale_price_net').text(wholesale_price_discount + ' €');
 }
 
-// Mise a jour des totaux
+// Updating total
 function majTotalPrice(selector)
 {
-    // Valeurs du tableau
+    // Table values
     var unit_price = parseFloat(selector.find('td input.unit_price').val());
     var quantity = parseInt(selector.find('td input.quantity_expected').val());
     var discount_amount = 0;
@@ -766,7 +766,7 @@ function majTotalPrice(selector)
     
     var last_discount_change = $('#last_discount_change').val();
     
-    // MAJ discount rate
+    // Updating discount rate
     if(last_discount_change == 'amount')
     {
         discount_amount = parseFloat(selector.find('td input.discount_amount_product').val());
@@ -780,45 +780,45 @@ function majTotalPrice(selector)
         selector.find('td input.discount_amount_product').val(discount_amount.toFixed(2));
     }
     
-    // Calcul total produit
+    // Calculating total product
     var total = ((total_price - discount_amount) * tax_rate)/100 + (total_price - discount_amount);
 
-    // MAJ total produit
+    // Updating total product
     selector.find('td span.total_product').text(total.toFixed(2));
     
-    // Seulement si le franco est différent de 0 car dans ce cas, 0 = pas de franco définit
+    // Only if discount amount != 0 because in this case, 0 = no discount amount defined
     if($('.txt_franco_amount').text() != '0,00' && $('.txt_franco_amount').text() != '0,00 €')
     {
         var total_order = 0;
         
-        // Calcul total commande en live
+        // Calculating total order live
         $('#products_in_supply_order tbody > tr').each(function()
         {
             var unit_price = $(this).find('td input.unit_price').val();
             var quantity = $(this).find('td input.quantity_expected').val();
             var discount_amount = $(this).find('td input.discount_amount_product').val();
 
-            // Cumul total commande
+            // Accumulated total order
             var total_price = (unit_price * quantity);
             total_order += (total_price - discount_amount);
         });
     
         var franco = parseFloat($('.txt_franco_amount').text().replace(' ', ''));
         
-        // Calcul Restant franco
+        // Calculating discount amount remaining
         var total_franco = (franco - total_order).toFixed(2);
         total_franco = (total_franco == 1) ? 0 : total_franco; // Hack calcul, quand plus de produit, le résultat donne 1 au lieu de 0
 
-        // MAJ Restant franco
+        // Updating discount amount remaining
 		if (total_franco <= 0)
 			$('.txt_amount_to_franco').html('<span style="color: green;">0.00 €</span>');
         else
 			$('.txt_amount_to_franco').text(total_franco + ' €');
 		
-        // Si franco <= 0, frais de ports offerts
+        // If discount amount <= 0, free shipping
         if(total_franco <= 0)
         { 
-            // Passage des frais de ports à 0
+            // Shipping costs to 0
             if( $('#shipping_amount').data("oldValue") == undefined ||  $('#shipping_amount').data("oldValue") == 0)
             {
                 console
@@ -829,7 +829,7 @@ function majTotalPrice(selector)
         }
         else
         {
-            // Restaure les frais de ports d'origine
+            // Restores original shipping costs
             if( $('#shipping_amount').data("oldValue") != undefined &&  $('#shipping_amount').data("oldValue") != 0)
                 $('#shipping_amount').val( $('#shipping_amount').data("oldValue"));
         }
@@ -839,12 +839,12 @@ function majTotalPrice(selector)
 }
 
 
-// MAJ total commande
+// Update total order
 function majTotalOrder()
 {
     var total_order = 0;
 
-    // Derniere suppressionn, on RAZ les compteurs
+    // Last deleting, reset counters
     if($('#products_in_supply_order tbody > tr').length == 0)
     {
         $('.txt_amount_to_franco').text($('.txt_franco_amount').text());
@@ -858,17 +858,17 @@ function majTotalOrder()
             var quantity = $(this).find('td input.quantity_expected').val();
             var discount_amount = $(this).find('td input.discount_amount_product').val();
 
-            // Cumul total commande
+            // Accumulated total order
             var total_price = (unit_price * quantity);
             total_order += (total_price - discount_amount);
         });
         
-        // MAJ total commande
+        // Updating total order
         $('.txt_total_product_price').text(total_order.toFixed(2) + ' €');
     }
 }
 
-// Accrochage de plusieurs commande à une facture
+// Attachment of several orders to an invoice
 function createBilling()
 {
     var orders = [];
@@ -879,7 +879,7 @@ function createBilling()
 
     $('table .supply_order tbody > tr').each(function()
     {
-        //Si commande sélectionnée
+        // If selected order
         if($(this).find('td.id_supply_order input.orderSelected').is(':checked'))
         {
             var id_supply_order = $(this).find('td.id_supply_order input.id').val();
@@ -889,7 +889,7 @@ function createBilling()
 
      $.ajax({
             type: 'GET',
-            url: '../modules/erpillicopresta/ajax/ajax.php',
+            url: 'index.php?controller=AdminAdvancedSupplyOrder&ajax=1&task=supplier&token='+token,
             async: false,
             cache: false,
             data: 
@@ -898,7 +898,7 @@ function createBilling()
                 orders:orders,
                 invoice_number:invoice_number,
                 date_to_invoice:date_to_invoice,
-				token:token
+				//token:token
             }, 
             success: function(data)
             {
@@ -913,7 +913,7 @@ function createBilling()
 }
 
 /*
-* Permet de cacher ou afficher les remise global selon choix de l'utilisateur
+* Allows you to hide or show overall discount as user choice
 */
 function toggleGobalDiscount(global_dicounr_type)
 {   
@@ -939,7 +939,7 @@ function toggleGobalDiscount(global_dicounr_type)
 
 
 /*
- * Permet savoir si l'URL courante contient un paramètre
+ * Indicates whether the current URL contains a parameter
  * 
 */
 $.hasUrlParam = function(name){
@@ -948,7 +948,7 @@ $.hasUrlParam = function(name){
 }
 
 /*
-* Permet de vérifier si une variable est vide
+* Check if a variable is empty
 *
 */
 $.isEmpty = function(variable){
@@ -961,7 +961,7 @@ $.isEmpty = function(variable){
 }
 
 /*
-* Retourne la date de livraison calculé à partir du delai de livraison
+* Returnes date of delivery calculated from the delivery time
 *
 */
 function getDateDelivery(delivery_time)
@@ -969,7 +969,7 @@ function getDateDelivery(delivery_time)
     //int var 
     var date_delivery_expected = '';
     
-    //Calcul date de livraison
+    //Delivery date calculation
     if( delivery_time > 0)
     {
         //Get date now
@@ -990,7 +990,7 @@ function getDateDelivery(delivery_time)
 
 
 /*
- * Fonction pour la gestion du produit "Poubelle"
+ * Function for "Trash" product management
 */
 
 function addProductTrash()
@@ -1009,10 +1009,10 @@ function addProductTrash()
                         text: $('#trad_add').val(),
                         click: function() { 
                             
-                            // action a réaliser si soumission du formulaire
+                            // Action if form submit
                             $(this).find('form').submit( function() {
 
-                                  //Récupération des données
+                                  //Getting datas
                                   var datas = $(this).serialize();
 
                                   if(datas != '')
@@ -1041,18 +1041,18 @@ function addProductTrash()
                                                    },
                                                    success: function(newProductTrash){
 
-                                                      // remplissage de la variable pour ajouter le nouveau produit
+                                                      // Variable filling to add the new product
                                                       product_infos = newProductTrash;
                                                       
-                                                      //Ajout des nouvelles valeur saisie pour le produit
+                                                      // Adding new values entered for the product
                                                       product_infos.quantity_expected = data_new_product.quantity_expected;
                                                       product_infos.discount_rate = data_new_product.discount_rate;
                                                       product_infos.tax_rate = data_new_product.tax_rate;
 
-                                                      // on remplit de champs pour réutiliser la fonction existante
+                                                      // Filling field to use existing function again
                                                       $('#cur_product_name').val(product_infos.name);
 
-                                                      // on appel de la fonction de Prestashop (fichier form.tpl)
+                                                      // Prestashop function is called (form.tpl)
                                                       addProduct();
                                                       
                                                       $( "#dialog_add_product" ).dialog("close");
@@ -1066,7 +1066,7 @@ function addProductTrash()
                                   return false;
                             }); 
                             
-                            // soumission du formulaire d'ajout de nouveau produit
+                            // Adding a new product form submission
                             $(this).find('form').submit();
                         }
                     },
@@ -1078,7 +1078,7 @@ function addProductTrash()
         });
 }
 
-// Applique le nouveau prix d'achat
+// Apply new purchase price
 function apply_new_wholesalePrice(wholesale_price, ids)
 {
     
@@ -1089,7 +1089,7 @@ function apply_new_wholesalePrice(wholesale_price, ids)
     
     $.ajax({
             type: 'GET',
-            url: '../modules/erpillicopresta/ajax/ajax.php',
+            url: 'index.php?controller=AdminAdvancedSupplyOrder&ajax=1&task=supplier&token='+token,
             async: true,
             cache: false,
             data: 
@@ -1099,8 +1099,8 @@ function apply_new_wholesalePrice(wholesale_price, ids)
                 id_product : id_product,
                 id_product_attribute : id_product_attribute,
                 id_supplier:id_supplier,
-                task:'supplier',
-                token : token
+                //task:'supplier',
+                //token : token
             }, 
             success: function(data)
             {
@@ -1116,14 +1116,14 @@ function updateSupplyOrderState (id_supply_order,id_supply_order_state ){
 
 	$.ajax({
             type: 'POST',
-            url: '../modules/erpillicopresta/ajax/ajax.php',
+            url: 'index.php?controller=AdminAdvancedSupplyOrder&ajax=1&task=supplier&token='+token,
             dataType:'json',
             data: {
                 'id_supply_order' : id_supply_order,
                 'id_supply_order_state' : id_supply_order_state,
-                'token': token,
+                //'token': token,
                 'action': 'updateSupplyOrderStatus',
-                'task':'supplier',
+                //'task':'supplier',
                 'id_employee' : $('input#id_employee').val() 
             },
             success: (function (data) {

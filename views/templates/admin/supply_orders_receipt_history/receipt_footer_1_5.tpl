@@ -18,7 +18,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 *}
@@ -88,7 +88,11 @@
                     </select>
                 </td>
                 <td>
-                    <span class="multiple_selection" style="cursor:pointer;"> <img src="../img/admin/choose.gif"/> {l s='Selection multiple' mod='erpillicopresta'} </span>
+                    {if $controller_status == $smarty.const.STATUS3}
+                        <span class="multiple_selection" style="cursor: pointer;"> <img src="../img/admin/choose.gif"/> {l s='Multiple selection' mod='erpillicopresta'} </span>
+                    {else}
+                        <span class="multiple_selection" style="cursor: pointer;" onclick="cancelBubble(event, '{l s="To use this functionnality, switch to PRO offer."|escape:'htmlall'  mod='erpillicopresta'}');"> <img src="../img/admin/choose.gif"/> {l s='Multiple selection' mod='erpillicopresta'} </span>
+                    {/if}
                     <img class="multiple_selection_loder" alt="{l s='Supply Order Management' mod='erpillicopresta'}" src="../img/loader.gif"/>
                 </td>
             </tr>

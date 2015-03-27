@@ -18,14 +18,14 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 *}
 
 <!-- ui-dialog -->
 <div id="dialog_select_product" title="{l s='Multiple Selection' mod='erpillicopresta'}">
-
+    {if $controller_status == $smarty.const.STATUS3}
         <!-- Traduction des niveaux de stock-->
         <p>{l s='Please select the products for this order' mod='erpillicopresta'}</p>
         <div id="content" style="margin-left:0;">
@@ -72,7 +72,10 @@
                 <span class="niveau_nr"></span> {l s='Levels not informed' mod='erpillicopresta'}
             {/if}
         </div>
-        </div>    
+        </div>  
+       {else}
+            <p>{l s='To use this functionnality switch to PRO offer.' mod='erpillicopresta'}</p>
+        {/if}   
 </div>
 
 <!-- ui-dialog -->

@@ -19,7 +19,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -46,7 +46,7 @@ class ErpStock extends Stock
 	/**/
 	public function getPriceTe()
 	{
-		// Récupération valeurs
+		// Get values
 		$query = new DbQuery();
 		$query->select('price_te');
 		$query->from('stock');
@@ -62,7 +62,7 @@ class ErpStock extends Stock
 	{
 			$query = new DbQuery();
 
-			// Si stock avancé on passe par la table ps_stock
+			// If Advanced Stock Management go through table ps_stock
 			if ($advanced_stock_management)
 			{
 					$query->select('p.id_product, IFNULL(pa.id_product_attribute, 0) as id_product_attribute');
@@ -99,7 +99,7 @@ class ErpStock extends Stock
 					// gets stock manager
 					$manager = StockManagerFactory::getManager();
 
-					// Si gestion de stock avancé, récup quantités & valuation
+					// If Advanced Stock Management get quantities & valuation
 					if ($advanced_stock_management)
 					{
 							// gets quantities and valuation
@@ -113,7 +113,7 @@ class ErpStock extends Stock
 
 							$res = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($query);
 
-							// Quantités
+							// Quantities
 							$item['physical_quantity'] = $res['physical_quantity'];
 							$item['usable_quantity'] = $res['usable_quantity'];
 							$item['quantity'] = 0;
@@ -132,8 +132,8 @@ class ErpStock extends Stock
 							$item['valuation'] = 0;
 					}
 
-					// PRIX DE VENTE
-					// Produit
+					// Sale price
+					// Product
 					if ((int)$item['id_product_attribute'] == 0)
 					{
 							$query = 'SELECT p.price as price';
@@ -153,21 +153,21 @@ class ErpStock extends Stock
 
 					$item['price_te'] = $res['price'];
 
-					// Prix achat
+					// Purchase price
 					$item['wholesale_price'] = self::getWholesalePrice($item['id_product'], $item['id_product_attribute']);
 
-					// Emplacement
+					// Location
 					//$item['location']= ErpWarehouseProductLocationClass::getCompleteLocation($item['id_product'], $item['id_product_attribute'],(int)$warehouse);
 			}
 
 			return $stock;
 	}
 
-	/* Retourne le prix d'achat d'un produit ou d'une déclinaison */
+	/* Returns the purchase price of a product or a variation */
 	public static function getWholesalePrice($id_product, $id_product_attribute = 0, $id_supplier = 0)
 	{
 
-            //S'il y a fournisseur
+            // If there is a supplier
             if (!empty($id_supplier))
             {
                 //On récupère tout d'abord le prix du fournisseur
@@ -176,8 +176,8 @@ class ErpStock extends Stock
                                 $price = $prices['product_supplier_price_te'];
             }
 
-            // Si pas de prix pour ce fournisseur, ou prix fournisseur nul, 
-            // on cherche le prix du produit ou de la déclinaison
+            // If no price for this supplier, or supplier price null, 
+            // get the price of the product or variation
             if (empty($price) || $price == '0.000000')
             {
                 // pas de décliaison, on cherche le prix du produit
@@ -189,7 +189,7 @@ class ErpStock extends Stock
                     $query->where('id_product = '.(int)$id_product);
                     $price = Db::getInstance()->getValue($query);
                 }
-                // Prix déclinaison
+                // Variation price
                 else
                 {
                     $query = new DbQuery();
@@ -200,15 +200,15 @@ class ErpStock extends Stock
                     $query->innerJoin('product', 'p', ' p.id_product = pa.id_product');
                     $prices = Db::getInstance()->getRow($query);
 
-                    //si la déclinaison à un prix
+                    //If variation has a price
                     if ($prices['wholesale_price_product_attribute'] == '0.000000')
                                     $price = $prices['wholesale_price_product'];
 
-                    //sinon, on prend le prix du produit
+                    // Else product price
                     elseif ($prices['wholesale_price_product_attribute'] != '0.000000')
                                     $price = $prices['wholesale_price_product_attribute'];
 
-                    //Sinon zero
+                    // Else ZERO
                     else
                                     $price = '0.00000';
                 }
@@ -217,7 +217,7 @@ class ErpStock extends Stock
             return $price;
 	}
 
-	/* Retourne si un produit est présent dans un entrepot donné */
+	/* Returns whether a product is present in a specified warehouse */
 	public static function getPresenceInStock($id_product, $id_product_attribute, $id_warehouse)
 	{
 			// build query

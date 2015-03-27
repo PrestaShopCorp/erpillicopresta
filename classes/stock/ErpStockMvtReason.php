@@ -19,7 +19,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -29,50 +29,49 @@ class ErpStockMvtReason extends StockMvtReasonCore
 
 	public static function existsByName($name)
 	{
-			$query = new DbQuery();
-			$query->select('smr.id_stock_mvt_reason');
-			$query->from('stock_mvt_reason_lang', 'smr');
-			$query->where('smr.name = "'.pSQL($name).'"');
+            $query = new DbQuery();
+            $query->select('smr.id_stock_mvt_reason');
+            $query->from('stock_mvt_reason_lang', 'smr');
+            $query->where('smr.name = "'.pSQL($name).'"');
 
-			$rst = Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($query);
+            $rst = Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($query);
 
-			if (!empty($rst))
-				return (int)$rst;
-			else
-				return false;
+            if (!empty($rst))
+                return (int)$rst;
+            else
+                return false;
 	}
 
 	public static function getIdsByName($name)
 	{
-			$query = new DbQuery();
-			$tab = array();
-			$query->select('smr.id_stock_mvt_reason');
-			$query->from('stock_mvt_reason_lang', 'smr');
-			$query->where('smr.name = "'.pSQL($name).'"');
+            $query = new DbQuery();
+            $tab = array();
+            $query->select('smr.id_stock_mvt_reason');
+            $query->from('stock_mvt_reason_lang', 'smr');
+            $query->where('smr.name = "'.pSQL($name).'"');
 
-			$res = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
-			foreach ($res as $row)
-			{
-				$tab[] = $row['id_stock_mvt_reason'];
-			}
-			return $tab;
+            $res = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($query);
+            foreach ($res as $row)
+            {
+                    $tab[] = $row['id_stock_mvt_reason'];
+            }
+            return $tab;
 	}
 
 	public static function deleteByIds($ids)
 	{
-		foreach ($ids as $id)
-		{
-			$query = new DbQuery();
-			$query->delete('stock_mvt_reason_lang', 'id_stock_mvt_reason = "'.pSQL($id['id_stock_mvt_reason']).'"');
-			Db::getInstance(_PS_USE_SQL_SLAVE_)->execute($query);
+            foreach ($ids as $id)
+            {
+                $query = new DbQuery();
+                $query->delete('stock_mvt_reason_lang', 'id_stock_mvt_reason = "'.pSQL($id['id_stock_mvt_reason']).'"');
+                Db::getInstance(_PS_USE_SQL_SLAVE_)->execute($query);
 
-			$query = null;
+                $query = null;
 
-			$query = new DbQuery();
-			$query->delete('stock_mvt_reason', 'id_stock_mvt_reason = "'.pSQL($id['id_stock_mvt_reason']).'"');
-			Db::getInstance(_PS_USE_SQL_SLAVE_)->execute($query);
-
-		}
-		return true;
+                $query = new DbQuery();
+                $query->delete('stock_mvt_reason', 'id_stock_mvt_reason = "'.pSQL($id['id_stock_mvt_reason']).'"');
+                Db::getInstance(_PS_USE_SQL_SLAVE_)->execute($query);
+            }
+            return true;
 	}
 }

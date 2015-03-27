@@ -19,7 +19,7 @@
 * needs please refer to http://www.prestashop.com for more information.
 *
 *  @author    Illicopresta SA <contact@illicopresta.com>
-*  @copyright 2007-2014 Illicopresta
+*  @copyright 2007-2015 Illicopresta
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
@@ -31,11 +31,10 @@ require_once(_PS_MODULE_DIR_.'erpillicopresta/models/ErpFeature.php');
 require_once(_PS_MODULE_DIR_.'erpillicopresta/models/ErpFeatureLang.php');
 require_once _PS_MODULE_DIR_.'erpillicopresta/models/StockImage.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/models/StockImageContent.php';
-require_once _PS_MODULE_DIR_.'erpillicopresta/models/Inventory.php';
+require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpInventory.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/models/InventoryProduct.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/models/ErpSupplier.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/config/define.php';
-require_once _PS_MODULE_DIR_.'erpillicopresta/config/Licence.php';
 require_once _PS_MODULE_DIR_.'erpillicopresta/config/control.php';
 
 class ErpIllicopresta extends Module
@@ -44,55 +43,50 @@ class ErpIllicopresta extends Module
 
 	public function __construct()
 	{
-		
-				
-		// recupération langue iso
-		
+            
+                // these two classes extends ErpIllicopresta
+                require_once _PS_MODULE_DIR_.'erpillicopresta/config/Licence.php';
+                require_once _PS_MODULE_DIR_.'erpillicopresta/classes/ErpConfiguration.php';
+                
+		// Get ISO Lang
 		$this->context = Context::getContext();
-
-		// On n'autorise que les iso_code fr ou en (par défaut)
-		
-		$iso_code = $this->context->language->iso_code;
-		
-		if($iso_code != "fr")
-		{
-			$iso_code = "en";
-		}
-		
-		$this->iso_code = $iso_code;
-		
+                                
+		// Only iso_code "fr" or "en" are allowed (by default)
+		$this->iso_code = $this->context->language->iso_code != 'fr' ? 'en' : 'fr';
 		
 		$this->bootstrap = true;
-
+                $this->diplayFormHasLicence = true;         // display form to ask if merchant has a licence number
+                $this->blockLicence = false;                 // block licence if fatal error
+                
 		$this->name = 'erpillicopresta';
 		$this->tab = 'administration';
-		$this->version = '2.6.1';
-		$this->author = 'illicopresta';
+		$this->version = '3.0.0';
+		$this->author = 'illicopresta';	
 		$this->displayName = $this->l('1 Click ERP Illicopresta');
-		$this->description = $this->l('Save 2 hours / day with this complete and scalable ERP pack, quickly and effectively manage your shop (shipments, inventory, management and export inventory, purchase orders ...)');
+		$this->description = $this->l('Save time in managing your E-Shop with the first ERP FREE and flexible(customer orders, Shipment, Suppliers, Stock management and export, inventory, ...).');
 
-                $this->is_1_6 = version_compare( _PS_VERSION_ , '1.6' ) > 0;
-                 
-		$this->trash_category_name = 'Divers'; //used in ajax/addProduct.php file
+		$this->is_1_6 = version_compare( _PS_VERSION_ , '1.6' ) > 0 ? true : false;
+                                
+		$this->trash_category_name = 'Divers';
 
 		// list of stock mvt reason to install
 		$this->stock_mvt_reason = array
 		(
-			'Increase inventory' => array(
-				'sign' => 1,
-				'lang' => array('fr' => 'Augmentation d\'inventaire', 'en' => 'Increase of inventory')
-			),
+                    'Increase inventory' => array(
+                        'sign' => 1,
+                        'lang' => array('fr' => 'Augmentation d\'inventaire', 'en' => 'Increase of inventory')
+                    ),
 
-			'Decrease inventory' => array(
-				'sign' => -1,
-				'lang' => array('fr' => 'Diminution d\'inventaire', 'en' => 'Decrease of inventory')
-			),
+                    'Decrease inventory' => array(
+                        'sign' => -1,
+                        'lang' => array('fr' => 'Diminution d\'inventaire', 'en' => 'Decrease of inventory')
+                    ),
 
-			'Reception cancelling' => array(
-				'sign' => -1,
-				'configuration_name' => 'ERP_RECEPTION_CANCELING_ID',
-				'lang' => array('fr' => 'Annulation de réception', 'en' => 'Cancellation of reception')
-			)
+                    'Reception cancelling' => array(
+                        'sign' => -1,
+                        'configuration_name' => 'ERP_RECEPTION_CANCELING_ID',
+                        'lang' => array('fr' => 'Annulation de réception', 'en' => 'Cancellation of reception')
+                    )
 		);
 
 		// list of original menu to enable/disable
@@ -105,120 +99,117 @@ class ErpIllicopresta extends Module
 
                 // list of original menu for 1.6
                if ($this->is_1_6)
-                     array_push($this->original_menus, 'AdminParentOrders');
-                        
+                    array_push($this->original_menus, 'AdminParentOrders');
+               
 		// list of fileds name configuration
 		$this->field_name_configuration = array
 		(
-			'erp_exceptional_order_limit' => array('default' => ''),
-			'erp_comparison_period' => array('default' => 6),
-			'erp_projected_period' => array('default' => 15),
-			'erp_coefficients' => array('default' => '1.4;1.2;1;1;0.8;0.6'),
-			'erp_sales_forecast_choice' => array('default' => 0),
-			'erp_rolling_months_nb_so' => array('default' => 6),
-			'erp_generate_order_state_to' => array('default' => 4),
-			'erp_generate_order_state' => array('default' => 3),
-			'erp_so_state_to_send_mail' => array('default' => ''),
-			'erp_enable_sending_mail_supplier' => array('default' => 0),
-			'erp_prefix_reference' => array('default' => 'SO'),
-			'erp_disable_original_menus' => array('default' => '0'),
-			'erp_state_to_send_mail_so' => array('default' => '2'),
-			'erp_contact_mail' => array('default' => ''),
-			'erp_licence_mail' => array('default' => ''),
-			'erp_knowledge_source' => array('default' => ''),
-			'erp_contact_name' => array('default' => ''),
-			'erp_newsletter' => array('default' => 1),
-			'erp_month_free_active' => array('default' => ( Configuration::get('ERP_MONTH_FREE_ACTIVE') == '1' ) ? '1' : '0' ),
+                    'erp_exceptional_order_limit' => array('default' => '', 'deleteOnUninstall' => true),
+                    'erp_comparison_period' => array('default' => 6, 'deleteOnUninstall' => true),
+                    'erp_projected_period' => array('default' => 15, 'deleteOnUninstall' => true),
+                    'erp_coefficients' => array('default' => '1.4;1.2;1;1;0.8;0.6', 'deleteOnUninstall' => true),
+                    'erp_sales_forecast_choice' => array('default' => 0, 'deleteOnUninstall' => true),
+                    'erp_rolling_months_nb_so' => array('default' => 6, 'deleteOnUninstall' => true),
+                    'erp_generate_order_state_to' => array('default' => 4, 'deleteOnUninstall' => true),
+                    'erp_generate_order_state' => array('default' => 3, 'deleteOnUninstall' => true),
+                    'erp_so_state_to_send_mail' => array('default' => '', 'deleteOnUninstall' => true),
+                    'erp_enable_sending_mail_supplier' => array('default' => 0, 'deleteOnUninstall' => true),
+                    'erp_prefix_reference' => array('default' => 'SO', 'deleteOnUninstall' => true),
+                    'erp_disable_original_menus' => array('default' => '0', 'deleteOnUninstall' => true),
+                    'erp_state_to_send_mail_so' => array('default' => '2', 'deleteOnUninstall' => true),
+                    'erp_contact_mail' => array('default' => '', 'deleteOnUninstall' => true),
+                    'erp_licence_mail' => array('default' => '', 'deleteOnUninstall' => true),
+                    'erp_knowledge_source' => array('default' => '', 'deleteOnUninstall' => true),
+                    'erp_contact_name' => array('default' => '', 'deleteOnUninstall' => true),
+                    'erp_contact_firstname' => array('default' => '', 'deleteOnUninstall' => true),
+                    'erp_newsletter' => array('default' => 1, 'deleteOnUninstall' => true),
+                    'erp_partner_code' => array('default' => '', 'deleteOnUninstall' => true),
+                    'erp_commande_previsionnel' => array('default' => '', 'deleteOnUninstall' => true),
+                    'erp_sales_forecast_choice' => array('default' => 0, 'deleteOnUninstall' => true),
+                    'erp_rolling_months_nb_so' => array('default' => 6, 'deleteOnUninstall' => true),
+                    'erp_prefix_reference_so' => array('default' => 'SO', 'deleteOnUninstall' => true),
+                    'erp_reception_canceling_id' => array('default' => '', 'deleteOnUninstall' => true),
+                    'erp_licence_validity' => array('default' => 0, 'deleteOnUninstall' => true),
+                    'erp_msg_after_process' => array('default' => '', 'deleteOnUninstall' => true),
+                    'erp_licence_install_error' => array('default' => 0, 'deleteOnUninstall' => true),
+                    'erp_new_licence' => array('default' => '', 'deleteOnUninstall' => true),
+                    'erp_licence_domaine_generate' => array('default' => '', 'deleteOnUninstall' => true),
+                    'erp_configuration_ok' => array('default' => false, 'deleteOnUninstall' => true),
+                    'erp_so_state_to_product_sales' => array('default' => 5, 'deleteOnUninstall' => true)
 		);
-
+                
 		parent::__construct();
 	}
 
 	public function install()
 	{
-		$e = get_headers(WS);
+		$e = get_headers(ERP_WS);
 		if ($e[0] == 'HTTP/1.1 200 OK')
 		{
-		
-			if($this->isCurlInstalled() == false)
-			{
-				$this->_errors[] = $this->l('Error while installing the module. CURL Extension is not active on your server. Please contact your server administrator.');
-				return false;
-			}
-			
-			if (Shop::isFeatureActive())
-				Shop::setContext(Shop::CONTEXT_ALL);
+                    if($this->isCurlInstalled() == false)
+                    {
+                        $this->_errors[] = $this->l('Error while installing the module. CURL Extension is not active on your server. Please contact your server administrator.');
+                        return false;
+                    }
 
-                        if (!Configuration::hasKey('ERP_ADMIN_PARENT_ORDERS_TAB_ID'))
-                            Configuration::updateValue('ERP_ADMIN_PARENT_ORDERS_TAB_ID', Tab::getIdFromClassName('AdminParentOrders'));
-            
-			if (parent::install() != false
-				&& $this->parseSQL('install.sql') != false
-				&& $this->installStockMvtReason() != false
-				&& $this->installPackConf() != false
-				//&& $this->changeStatusOfOriginalMenus(0) != false
-				&& $this->installErpTab() != false
-				&& $this->addTrashCategory() != false
-				&& $this->addOrderState($this->l('Order to the supplier')) != false
-				&& $this->registerHook('actionOrderStatusUpdate') != false
-				&& $this->registerHook('displayBackOfficeHeader') != false)
-			{
-                                Configuration::updateValue('ERP_SALES_FORECAST_CHOICE', 0);
-                                Configuration::updateValue('ERP_ROLLING_MONTHS_NB_SO', 6);
-                                Configuration::updateValue('ERP_PREFIX_REFERENCE_SO', 'SO');
-                                
-                                foreach ($this->field_name_configuration as $field_name => $param)
-                                    Configuration::updateValue(Tools::strtoupper($field_name), $param['default']);
-					
-                                return true;
-			}
+                    if (Shop::isFeatureActive())
+                            Shop::setContext(Shop::CONTEXT_ALL);
 
-			return false;
+                    if (!Configuration::hasKey('ERP_ADMIN_PARENT_ORDERS_TAB_ID'))
+                        Configuration::updateValue('ERP_ADMIN_PARENT_ORDERS_TAB_ID', Tab::getIdFromClassName('AdminParentOrders'));
+
+                    if (parent::install() != false
+                            && $this->parseSQL('install.sql') != false
+                            && $this->installStockMvtReason() != false
+                            && $this->installErpTab() != false
+                            && $this->addTrashCategory() != false
+                            && $this->addOrderState($this->l('Order to the supplier')) != false
+                            && $this->registerHook('actionOrderStatusUpdate') != false
+                            && $this->registerHook('displayBackOfficeHeader') != false)
+                    {
+                            foreach ($this->field_name_configuration as $field_name => $param)
+                                Configuration::updateValue(Tools::strtoupper($field_name), $param['default']);
+
+                            // load a licence if exits
+                            $this->loadLicenceIfExists();
+                            
+                            // save the first install date
+                            if(!Configuration::hasKey('ERP_FIRST_INSTALL_DATE') || Configuration::get('ERP_FIRST_INSTALL_DATE') == '' || Configuration::get('ERP_FIRST_INSTALL_DATE') == false )
+                                Configuration::updateValue('ERP_FIRST_INSTALL_DATE', date("Y-m-d H:i:s"));
+                            
+                            return true;
+                    }
+
+                    return false;
 		}
 		else
                 {
-                        $this->_errors[] = $this->l('Error while getting headers of WS ! Please contact the customer service.');
-			return false;
+                    $this->_errors[] = $this->l('Error while getting headers of WS ! Please contact the customer service.');
+                    return false;
                 }
 	}
 
 	public function uninstall()
-	{
-            
-		if ($this->uninstallModuleTabs() != false
-			&& $this->uninstallPackConf() != false
-			&& $this->uninstallStockMvtReason() != false
-			&& $this->uninstallErpTab() != false
-			&& $this->parseSQL('uninstall.sql') != false
-			&& $this->deleteTrashCategory() != false
-			&& $this->changeStatusOfOriginalMenus(1) != false
-			&& $this->unregisterHook('actionOrderStatusUpdate') != false
-			&& parent::uninstall() != false)
-		{
-				Configuration::deleteByName('ERP_GAP_STOCK');
-				Configuration::deleteByName('ERP_STATUS_WARNING_STOCK');
-				Configuration::deleteByName('ERP_SALES_FORECAST_CHOICE');
-				Configuration::deleteByName('ERP_COEFFICIENTS');
-				Configuration::deleteByName('ERP_PROJECTED_PERIOD');
-				Configuration::deleteByName('ERP_COMPARISON_PERIOD');
-				Configuration::deleteByName('ERP_ROLLING_MONTHS_NB_SO');
-				Configuration::deleteByName('ERP_PREFIX_REFERENCE_SO');
-				Configuration::deleteByName('ERP_NSTOCK_ALERTE_SO');
-				Configuration::deleteByName('ERP_NSTOCK_NORMAL_SO');
-				Configuration::deleteByName('ERP_STATE_TO_SEND_MAIL_SO');
-				Configuration::deleteByName('ERP_ENABLE_SENDING_MAIL_SUPPLIER');
-				Configuration::deleteByName('ERP_EXCEPT_ORDER_LIMIT_SO');
-				Configuration::deleteByName('ERP_GENERATE_ORDER_STATE');
-				Configuration::deleteByName('ERP_GENERATE_ORDER_STATE_TO');
-				Configuration::deletebyName('ERP_RECEPTION_CANCELING_ID');
-				Configuration::deletebyName('ERP_DISABLE_ORIGINAL_MENUS');
-                                
-                                Configuration::deletebyName('ERP_ADMIN_PARENT_ORDERS_TAB_ID');
-                                
-				return true;
-		}
+	{   
+            if ($this->uninstallModuleTabs() != false
+                && $this->uninstallStockMvtReason() != false
+                && $this->uninstallErpTab() != false
+                && $this->parseSQL('uninstall.sql') != false
+                && $this->deleteTrashCategory() != false
+                //&& $this->changeStatusOfOriginalMenus(1) != false
+                && $this->unregisterHook('actionOrderStatusUpdate') != false
+                && parent::uninstall() != false)
+            {
+                
+                // delete all ERP configuration
+                foreach ($this->field_name_configuration as $field_name => $param)
+                    if ($param['deleteOnUninstall'])
+                        Configuration::deleteByName(Tools::strtoupper($field_name));
+                
+                return true;
+            }
 
-		return false;
+            return false;
 	}
 
 	/* SQL install */
@@ -236,11 +227,12 @@ class ErpIllicopresta extends Module
 			$tab_query = str_replace('[DB_NAME]', _DB_NAME_, $tab_query);
 
 			// Execute requests
+			$sql_instance = Db::getInstance();
 			foreach ($tab_query as $sql)
 			{
-				$sql = trim($sql);
-				if (!empty($sql))
-					Db::getInstance()->Execute(trim($sql), false);
+                            $sql = trim($sql);
+                            if (!empty($sql))
+                                    $sql_instance->Execute($sql, false);
 			}
 
 			return true;
@@ -253,491 +245,75 @@ class ErpIllicopresta extends Module
 
 	/* Configuration */
 	public function getContent()
-	{
+	{									
+		//To do after first install v3
+		$this->doAfterFirstIntallV3();
+        
+		// redirect to shop
+		if($this->context->cookie->__isset('erp_do_redirect_shop') && !empty($this->context->cookie->erp_do_redirect_shop))
+		{
+			$url = $this->context->cookie->erp_do_redirect_shop;	
+			$this->context->cookie->__unset('erp_do_redirect_shop');
+			Tools::redirectLink($url);
+		}
+		
 		//update fields
 		$output = $this->postProcess();
-
 		// display form
-		return $output.$this->displayForm();
+		return $output.$this->displayForm().$this->displayCart();
 	}
 
 	/* Configuration Form */
 	public function displayForm()
 	{
-		// Get default Language
-		$default_lang = (int)Configuration::get('PS_LANG_DEFAULT');
-		
-		// Init Fields form array
+                // init licence error
+                $licence_msg = '';
+                
+                // display if exist message after installation
+                $licence_msg .= Configuration::get('ERP_MSG_AFTER_PROCESS') != '' ? html_entity_decode(Configuration::get('ERP_MSG_AFTER_PROCESS')) : '';
+                                
+                // delete message after installation
+                Configuration::deleteByName('ERP_MSG_AFTER_PROCESS');
+                
+                // create an ERP Configuration boject
+                $this->erpConfiguration = new ErpConfiguration();
+                 
+                // Init fields form array
 		$fields_form = array();
-		$source_options = Tools::jsonDecode(Licence::SourceKnowledge());
-
-		// Récupération du tableau des modules activés
-		$features = ErpFeature::getFeaturesWithToken($this->context->language->iso_code);
-		$erp_cgv[] = array( 'id' => 'erp_cgv', 'name' => '');
-		$erp_newsletter[] = array( 'id' => 'erp_newsletter', 'name' => '');
-		
-		// echo $this->display(__FILE__, 'views\templates\admin\configuration\description.tpl');
-		$fields_form[1]['form'] = array(
-				'legend' => array(
-						'title' => $this->l('Licence'),
-						'image' => '../img/admin/AdminPayment.gif'
-				),
-				'input' => array(
-						array(
-								'type' => 'text',
-								'label' => $this->l('Module access'),
-								'name' => 'module_access',
-								'size' => 100,
-								'required' => false,
-								'disabled' => true
-								),
-						array(
-								'type' => 'text',
-								'label' => $this->l('License Management Mail (store mail)'),
-								'name' => 'erp_licence_mail',
-								'size' => 100,
-								'required' => false,
-								'disabled' => true
-							)	
-				));
-				
-				
-				// si l'utilisateur à une licence non valide (expirée ou autre) ET qu'il a déjà activé son mois gratuit
-				if (Configuration::get('ERP_LICENCE_VALIDITY') == '0' && Configuration::get('ERP_MONTH_FREE_ACTIVE') == '1' )
-				{
-					$fields_form[1]['form'] = array_merge($fields_form[1]['form'], array(
-						'submit' => array(
-								'title' => $this->l('Buy or update a licence'),
-								'class' => $this->is_1_6 ? null : 'button',
-								'name' => 'submitValidateLicence',
-								'desc' => $this->l('Buy or update a licence')
-						)
-					));
-				}
-			
-		
-		if (Configuration::get('ERP_LICENCE_VALIDITY') == '1')
-		{		
-				// Get licence
-	            $licence = Licence::crypt(Configuration::get('ERP_LICENCE'));
-
-				$fields_form[1]['form']['input'][] = array(
-										'type' => 'text',
-										'label' => $this->l('Licence number'),
-										'name' => 'erp_licence',
-										'desc' => $this->l('Use this licence number to subscribe ').
-																				'<a href="http://shop.illicopresta.com?iso='.$this->iso_code.'&licence='.$licence['licence_encode'].'&iv='.$licence['iv'].'" target="_blank">('.$this->l('Illicopresta web store').')</a>',
-										'size' => 50,
-										'required' => false,
-										'disabled' => true
-								);
-				$fields_form[1]['form']['input'][] = array(
-										'type' => 'text',
-										'label' => $this->l('Account type'),
-										'name' => 'erp_account_type',
-										'size' => 25,
-										'disabled' => 'disabled',
-										'required' => false
-								);
-				$fields_form[1]['form']['input'][] = array(
-										'type' => 'text',
-										'label' => $this->l('Availability'),
-										'name' => 'erp_ws_date_end',
-										'size' => 25,
-										'disabled' => 'disabled',
-										'required' => false
-								);
-				$fields_form[1]['form']['input'][] = array(
-										'type' => 'text',
-										'label' => $this->l('Pack name'),
-										'name' => 'erp_pack',
-										'size' => 25,
-										'desc' => (Configuration::get('ERP_ID_ERP_PACK') < 3) ? $this->l('Access to a superior pack on').'<a href="http://shop.illicopresta.com?iso='.$this->iso_code.'&licence='.$licence['licence_encode'].'&iv='.$licence['iv'].'" target="_blank">('.$this->l('Illicopresta web store').')</a>' : '',
-										'disabled' => 'disabled',
-										'required' => false,
-								);					
-
-				$fields_form[1]['form'] = array_merge($fields_form[1]['form'], array(
-					'submit' => array(
-							'title' => $this->l('Buy or update a licence'),
-							'class' => $this->is_1_6 ? null : 'button',
-							'name' => 'submitValidateLicence',
-							'desc' => $this->l('Buy or update a licence')
-					)
-				));
-			}
-			
-			else if( Configuration::get('ERP_MONTH_FREE_ACTIVE') == '0')
-			{
-					$fields_form[1]['form']['input'][] = array(
-							'type' => 'text',
-							'label' => $this->l('Contact Mail (if different)'),
-							'name' => 'erp_contact_mail',
-							'size' => 100,
-							'required' => false,
-							'disabled' => Configuration::get('ERP_LICENCE_VALIDITY') == '1' ? true : false
-						);
-						
-					$fields_form[1]['form']['input'][] = array(
-							'type' => 'text',
-							'label' => $this->l('Name'),
-							'name' => 'erp_contact_name',
-							'size' => 100,
-							'required' => true,
-							'disabled' => Configuration::get('ERP_LICENCE_VALIDITY') == '1' ? true : false
-						);
-						
-					$fields_form[1]['form']['input'][] = array(
-							'type' => 'select',
-							'label' => $this->l('How have you known us?'),
-							'name' => 'erp_knowledge_source',
-							'required' => true,
-							'options' => array(
-								'query' => $source_options,
-								'id' => 'Id',
-								'name' => 'Value'
-							),
-							'disabled' => Configuration::get('ERP_LICENCE_VALIDITY') == '1' ? true : false
-						);
-						
-				$fields_form[1]['form']['input'][] = 
-						 array(
-							'type' => 'checkbox',
-							'label' => $this->l('TOU'),
-							'name' => '',
-							'required' => true,
-							'values' => array(
-								'query' => $erp_cgv,
-								'id' => 'id',
-								'name' => 'name'
-							),
-							'desc' => $this->l('Please agree to our ').'<a href="http://www.illicopresta.com/?page_id=10408" target="_blank" >'.$this->l('General Terms Of Use.').'</a>',
-						);
-				$fields_form[1]['form']['input'][] = 
-						 array(
-							'type' => 'checkbox',
-							'label' => $this->l('Newsletter'),
-							'name' => '',
-							'required' => false,
-							'values' => array(
-								'query' => $erp_newsletter,
-								'id' => 'id',
-								'name' => 'name'
-							),
-							'desc' => $this->l('Subscribe to our newsletter and keep aware about improvements and offers.'),
-						);
-								
-					$fields_form[1]['form'] = array_merge($fields_form[1]['form'], array(
-						'submit' => array(
-								'title' => $this->l('Activate your one month free offer'),
-								'class' => $this->is_1_6 ? null : 'button',
-								'name' => 'submitActivateLicence',
-								'desc' => $this->l('Activate your one month free offer')
-						)
-					));
-					$fields_form[1]['form']['input'][] = 
-						 array(
-							'type' => '',
-							'name' => '',
-							'required' => false,
-							'values' => array(),
-							'desc' => $this->l('You already have a licence ? please contact us at : support@illicopresta.com'),
-						);
-			}					
-            
-            $licence_invalid = '';
-            
-            // check licence validity
-            if (Configuration::get('ERP_LICENCE_VALIDITY') == '1')
-            {
-                    // configure stock gap
-                    $fields_form[2]['form'] = array(
-                        'legend' => array(
-                                'title' => $this->l('General settings'),
-                                'image' => '../img/admin/cog.gif'
-                        ),
-                        'input' => array(
-                                array(
-                                                'type' => 'radio',
-                                                'label' => $this->l('Disable original menus of PrestaShop'),
-                                                'name' => 'erp_disable_original_menus',
-                                                'required' => true,
-                                                'br' => true,
-                                                'class' => 't',
-                                                'default_value' => '1',
-                                                'values' => array(
-                                                        array(
-                                                                'id' => 'erp_disable_original_menus'._PS_SMARTY_NO_COMPILE_,
-                                                                'value' => '1',
-                                                                'label' => $this->l('Yes')
-                                                        ),
-                                                        array(
-                                                                'id' => 'erp_disable_original_menus'._PS_SMARTY_CHECK_COMPILE_,
-                                                                'value' => '0',
-                                                                'label' => $this->l('No')
-                                                        )
-                                                ),
-                                                'desc' => $this->l('This option allows you to disable the menus :  orders, supply order and supplier')
-                                ),
-                        ),
-                        'submit' => array(
-                                'title' => $this->l('Save'),
-                                'class' => $this->is_1_6 ? null : 'button',
-                                'name' => 'submitGeneralSettings'
-                        )
-                    );
-
-                    //On affiche les paramètres des controleurs s'ils sont actifs et s'ils ont le bon statut
-                    foreach($features as $feature)
-                        {
-                            //INVENTAIRE
-                            if ($feature['active'] && $feature['controller'] == 'AdminInventory' && Configuration::get(self::getControllerStatusName('AdminInventory')))
-                            {
-                                // configure stock gap
-                                $fields_form[3]['form'] = array(
-                                    'legend' => array(
-                                        'title' => sprintf($this->l('%s settings'),$feature['name']),
-                                        'image' => '../modules/erpillicopresta/img/features/inventory.png'
-                                    ),
-                                    'input' => array(
-                                        array(
-                                            'type' => 'text',
-                                            'label' => $this->l('Maximum authorized stock gap'),
-                                            'name' => 'erp_gap_stock',
-                                            'size' => 20,
-                                            'required' => true,
-                                            'desc' => $this->l('If the difference between the found quantity and the expected quantity is greater than this value, an alert will be generated. (0 to disable)')
-                                        ),
-                                    ),
-                                    'submit' => array(
-                                        'title' => $this->l('Save'),
-                                        'class' => $this->is_1_6 ? null : 'button',
-                                        'name' => 'submitInventorySettings'
-                                    )
-                                );
-                            }
-                            
-                            //COMMANDES
-                            if ($feature['active'] && $feature['controller'] == 'AdminAdvancedOrder')
-                            {
-                                $states = OrderState::getOrderStates($default_lang);
-
-                                $fields_form[4]['form'] = array(
-                                                                'legend' => array(
-                                                                        'title' => sprintf($this->l('%s settings'),$feature['name']),
-                                                                        'image' => '../modules/erpillicopresta/img/features/order.png'
-                                                                ),
-                                                                'input' => array(
-                                                                        array(
-                                                                                        'type' => 'text',
-                                                                                        'label' => $this->l('Stock level - ALERT'),
-                                                                                        'name' => 'erp_level_stock_alert',
-                                                                                        'desc' => $this->l('Please indicate the stock quantity above which an alert will notify you : from 1 to [X]'),
-                                                                                        'size' => 4,
-                                                                        ),
-                                                                        array(
-                                                                                        'type' => 'text',
-                                                                                        'label' => $this->l('Stock level - NORMAL'),
-                                                                                        'name' => 'erp_level_stock_normal',
-                                                                                        'desc' => $this->l('Please indicate the stock quantity corresponding to a normal stock level : from ALERT to [X]'),
-                                                                                        'size' => 4,
-                                                                        ),
-                                                                        array(
-                                                                                        'type' => 'checkbox',
-                                                                                        'label' => $this->l('Order status to notify'),
-                                                                                        'name' => 'erp_status_warning_stock',
-                                                                                        'required' => true,
-                                                                                        'values' => array(
-                                                                                                        'query' => $states,
-                                                                                                        'id' => 'id_order_state',
-                                                                                                        'name' => 'name'
-                                                                                        ),
-                                                                                        'desc' => $this->l('Select all status which are concerned by stock warnings'),
-                                                                        ),
-                                                                ),
-                                                                'submit' => array(
-                                                                        'title' => $this->l('Save'),
-                                                                        'class' => $this->is_1_6 ? null : 'button',
-                                                                        'name' => 'submitAdvancedOrderSettings'
-                                                                )
-                                );
-
-                            }
-                            
-                            //COMMANDES FOURNISSEURS
-                            if ($feature['active'] && $feature['controller'] == 'AdminAdvancedSupplyOrder')
-                            {
-                                $fields_form[5]['form'] = array(
-                                    'legend' => array(
-                                            'title' => sprintf($this->l('%s settings'),$feature['name']),
-                                            'image' => '../modules/erpillicopresta/img/features/supply_order.png'
-                                    ),
-                                    'input' => array(
-                                            array(
-                                                            'type' => 'text',
-                                                            'label' => $this->l('References prefix'),
-                                                            'name' => 'erp_prefix_reference',
-                                                            'desc' => $this->l('References prefixes for the supplier order: maximum of two characters. Default prefix is SO.'),
-                                                            'size' => 2,
-                                                            'maxlength' => 2,
-                                                            'required' => true
-                                            ),
-                                            array(
-                                                            'type' => 'radio',
-                                                            'label' => $this->l('Activate email sending to suppliers'),
-                                                            'name' => 'erp_enable_sending_mail_supplier',
-                                                            'required' => true,
-                                                            'br' => true,
-                                                            'class' => 't',
-                                                            'default_value' => '0',
-                                                            'values' => array(
-                                                                    array(
-                                                                                    'id' => 'erp_enable_sending_mail_supplier'._PS_SMARTY_NO_COMPILE_,
-                                                                                    'value' => '1',
-                                                                                    'label' => $this->l('Yes')
-                                                                    ),
-                                                                    array(
-                                                                                    'id' => 'erp_enable_sending_mail_supplier'._PS_SMARTY_CHECK_COMPILE_,
-                                                                                    'value' => '0',
-                                                                                    'label' => $this->l('No')
-                                                                    )
-                                                            ),
-                                                            'desc' => $this->l('If you select this option, please define the default status to be considered.')
-                                            ),
-                                            array(
-                                                            'type' => 'select',
-                                                            'label' => $this->l('Status of supplier orders that activates an email sending'),
-                                                            'name' => 'erp_so_state_to_send_mail',
-                                                            'desc' => $this->l('In the selected status, an email will be sent to the supplier. Default : 2 - Order validated.'),
-                                                            'required' => true,
-                                                            'options' => array(
-                                                                    'query' => SupplyOrderState::getStates(),
-                                                                    'id' => 'id_supply_order_state',
-                                                                    'name' => 'name'
-                                                            )
-                                            )
-                                    ),
-                                    'submit' => array(
-                                            'title' => $this->l('Save'),
-                                            'class' => $this->is_1_6 ? null : 'button',
-                                            'name' => 'submitAdvancedSupplyOrderSettings'
-                                    )
-                                );
-
-                                if (Configuration::get(self::getControllerStatusName('AdminAdvancedSupplyOrder')))
-                                {
-                                                                // configure stock gap
-                                                                $fields_form[5]['form']['input'][] = array(
-                                                                                        'type' => 'select',
-                                                                                        'label' => $this->l('Status of customer orders that generates supplier orders'),
-                                                                                        'name' => 'erp_generate_order_state',
-                                                                                        'desc' => $this->l('Please choose here the status of customer orders that will generate an automatic supplier order.'),
-                                                                                        'required' => true,
-                                                                                        'options' => array(
-                                                                                                        'query' => OrderState::getOrderStates((int)$this->context->language->id),
-                                                                                                        'id' => 'id_order_state',
-                                                                                                        'name' => 'name'
-                                                                                        )
-                                                                                );
-
-                                                                $fields_form[5]['form']['input'][] = array(
-                                                                                        'type' => 'select',
-                                                                                        'label' => $this->l('Status of customer orders after generation of supplier orders'),
-                                                                                        'name' => 'erp_generate_order_state_to',
-                                                                                        'desc' => $this->l('Select the state to apply to customer orders after the automatic generation of supplier orders occured.'),
-                                                                                        'required' => true,
-                                                                                        'options' => array(
-                                                                                                'query' => OrderState::getOrderStates((int)$this->context->language->id),
-                                                                                                'id' => 'id_order_state',
-                                                                                                'name' => 'name'
-                                                                                        )
-                                                                                );
-
-                                                                // configure stock gap
-                                                                $fields_form[5]['form']['input'][] = array(
-                                                                        'type' => 'text',
-                                                                        'label' => $this->l('Number of rolling months'),
-                                                                        'name' => 'erp_rolling_months_nb_so',
-                                                                        'size' => 20,
-                                                                        'required' => true,
-                                                                        'desc' => $this->l('Used to display the quantities sold for x rolling months.')
-                                                                );
-
-
-                                                                $fields_form[5]['form']['input'][] = array(
-                                                                                        'type' => 'radio',
-                                                                                        'label' => $this->l('Sales forecast type'),
-                                                                                        'name' => 'erp_sales_forecast_choice',
-                                                                                        'br' => true,
-                                                                                        'class' => 't',
-                                                                                        'values' => array(
-                                                                                                array(
-                                                                                                        'id' => 'none',
-                                                                                                        'value' => 0,
-                                                                                                        'label' => $this->l('No projected sales')
-                                                                                                ),
-                                                                                                array(
-                                                                                                        'id' => 'forecast_six_last_month',
-                                                                                                        'value' => 1,
-                                                                                                        'label' => $this->l('Weighted average sales on the six last rolling months')
-                                                                                                ),
-                                                                                                array(
-                                                                                                        'id' => 'forecast_period',
-                                                                                                        'value' => 2,
-                                                                                                        'label' => $this->l('Sales forecast by period')
-                                                                                                )
-                                                                                        ),
-                                                                                        'desc' => $this->l('Sales forecast will be calculated during supplier orders.').('</br>')
-                                                                                                            .$this->l('The "Sales forecast by period" method calculates ')
-                                                                                                            .$this->l('the sales growth factor based on the comparison between ')
-                                                                                                            .$this->l('x rolling months of the current year ')
-                                                                                                            .$this->l('and the same x rolling months of the previous year at the same date. ')
-                                                                                                            .$this->l('Sales for the choosen projection period are then estimated by multiplying ')
-                                                                                                            .$this->l('this sales growth factor by the sales performed during that period on the previous year.')
-                                                                );
-
-                                                                $fields_form[5]['form']['input'][] = array(
-                                                                                                'type' => 'text',
-                                                                                                'label' => $this->l('Weighting coefficients'),
-                                                                                                'name' => 'erp_coefficients',
-                                                                                                'desc' => $this->l('Coefficients that will be used to calculate the "Weighted average sales on the six last rolling months". Positive numbers expected.')
-                                                                                                          .'<br/>'.$this->l('Syntax : M-1;M-2;M-3;M-4;M-5;M-6 (coefficient of the month M-1; etc.)'),
-                                                                                                'size' => 20
-                                                                );
-
-                                                                $fields_form[5]['form']['input'][] = array(
-                                                                                                'type' => 'text',
-                                                                                                'label' => $this->l('Projection period'),
-                                                                                                'name' => 'erp_projected_period',
-                                                                                                'suffix' => $this->l('days'),
-                                                                                                'desc' => $this->l('The "Sales forecast by period" method will return the total sales estimation for the filled out period.'),
-                                                                                                'size' => 20,
-                                                                );
-
-                                                                $fields_form[5]['form']['input'][] = array(
-                                                                                                'type' => 'text',
-                                                                                                'label' => $this->l('Comparison period for the growth factor calculation'),
-                                                                                                'name' => 'erp_comparison_period',
-                                                                                                'suffix' => $this->l('month'),
-                                                                                                'desc' => $this->l('Number of months preceding the current date that will be used to calculate the sales growth factor in the "Sales forecast by period" method.'),
-                                                                                                'size' => 20,
-                                                                );
-
-                                                                $fields_form[5]['form']['input'][] = array(
-                                                                        'type' => 'text',
-                                                                        'label' => $this->l('Exceptional sales threshold'),
-                                                                        'name' => 'erp_exceptional_order_limit',
-                                                                        'desc' => $this->l('Above this value, a sale will be considered exceptional and will not be taken into account in forecasts. 0 if non applicable.'),
-                                                                        'size' => 20,
-                                                                        'required' => true
-                                                                );
-                                }
-
-                            }
-                        }
-            }// end check licence validity
-//            else
-//                $licence_invalid = $this->displayError($this->l('Error : the licence is invalid ! Please buy a new licence or contact the customer service.'));     
+                
+                // no license found in configuration or submit "has licence" form
+                if( (!Configuration::hasKey('ERP_LICENCE') || Tools::isSubmit('submitValidateHasLicence')) && Configuration::get('ERP_LICENCE') == false )
+                {
+                    // display form to ask if merchant has a licence number
+                    // if diplayFormHasLicence is TRUE
+                    // and if, ERP NEW LICENCE not exists
+                    if( $this->diplayFormHasLicence && Configuration::get('ERP_NEW_LICENCE') == '')
+                        $fields_form[] = $this->erpConfiguration->getFormHasLicence();
+                    
+                    // display form to generate a new licence
+                    else {
+                        
+                        $this->diplayFormHasLicence = false;
+                        $fields_form[] = $this->erpConfiguration->getFormBeforeActivation();
+                    }
+                }
+                
+                // the license already exists
+                else
+                {
+                    
+                    $this->diplayFormHasLicence = false;
+                    
+                    // if licence is valid
+                    if (Configuration::get('ERP_LICENCE_VALIDITY') == '1')
+                    {
+                        // get form information after activate licence
+                        $fields_form[] = $this->erpConfiguration->getFormAfterActivation();
+                        
+                        // get form to configure features
+                        $fields_form[] = $this->erpConfiguration->getFormConfigurationController();
+                    }
+                }
                 
                 $helper = new HelperForm();
 
@@ -747,6 +323,9 @@ class ErpIllicopresta extends Module
                 $helper->token = Tools::getAdminTokenLite('AdminModules');
                 $helper->currentIndex = AdminController::$currentIndex.'&configure='.$this->name;
 
+                // Get default Language
+                $default_lang = (int)Configuration::get('PS_LANG_DEFAULT');
+                    
                 // Language
                 $helper->default_form_language = $default_lang;
                 $helper->allow_employee_form_lang = $default_lang;
@@ -756,21 +335,13 @@ class ErpIllicopresta extends Module
                 $helper->show_toolbar = true;
                 $helper->toolbar_scroll = true;
                 $helper->submit_action = 'submit'.$this->name;
-                $helper->toolbar_btn = array(
-
-                        'new' => array(
-                                'href' => 'http://shop.illicopresta.com/',
-                                'desc' => $this->l('Buy or update a licence')
-                        ),
-                        'refresh-index' => array(
-                                'href' => AdminController::$currentIndex.'&token='.Tools::getAdminTokenLite('AdminModules').'&configure=erpillicopresta&tab_module=shipping_logistics&module_name=erpillicopresta&submitValidateLicence',
-                                'desc' => $this->l('Check my licence')
-                        ),
-                        'back' => array(
-                                'href' => AdminController::$currentIndex.'&token='.Tools::getAdminTokenLite('AdminModules'),
-                                'desc' => $this->l('Back to list')
-                        )
-                );
+                                
+                // hide the toolbar in PS 1.5  
+                if(!$this->is_1_6)
+                {
+                    $helper->show_toolbar = false;
+                    $helper->toolbar_btn = null;
+                }
 
                 if($this->is_1_6)
                 {
@@ -781,7 +352,7 @@ class ErpIllicopresta extends Module
                                     'desc' => $this->l('Buy or update a licence')
                             ),
                             'refresh-index' => array(
-                                    'href' => AdminController::$currentIndex.'&token='.Tools::getAdminTokenLite('AdminModules').'&configure=erpillicopresta&tab_module=shipping_logistics&module_name=erpillicopresta&submitValidateLicence',
+                                    'href' => AdminController::$currentIndex.'&token='.Tools::getAdminTokenLite('AdminModules').'&configure=erpillicopresta&tab_module=shipping_logistics&module_name=erpillicopresta&submitCheckLoadLicence',
                                     'desc' => $this->l('Check my licence')
                             ),
                             'back' => array(
@@ -796,10 +367,48 @@ class ErpIllicopresta extends Module
                         'languages' => $this->context->controller->getLanguages(),
                         'id_language' => $this->context->language->id
                 );
+                
+                
+                $currentLanguage = Language::getIsoById((int)$this->context->language->id);
 
+                $urlEShop = URL_ESHOP_EN;
+				$urlTechnicalSupport = URL_TECHNICAL_SUPPORT_EN;
+                if($currentLanguage == 'fr')
+				{
+                    $urlEShop = URL_ESHOP_FR;
+                    $urlTechnicalSupport = URL_TECHNICAL_SUPPORT_FR;
+				}
+                elseif($currentLanguage == 'es')
+                    $urlTechnicalSupport = URL_TECHNICAL_SUPPORT_ES;
+                
+                elseif($currentLanguage == 'it')
+                    $urlTechnicalSupport = URL_TECHNICAL_SUPPORT_IT;
+               
+                // init array form
+                $forms = array();
+                
+                // if there are field form
+                if(!empty($fields_form))
+                {
+                    foreach ($fields_form as $field_form)
+                    {
+                        $forms[] = $helper->generateForm($field_form);
+                    }
+                }
+               
+                // Add Licence activate form to the tpl
+                $this->context->smarty->assign(array(
+                    'forms' => $forms,
+                    'urlTechnicalSupport' => $urlTechnicalSupport,
+                    'urlEShop' => $urlEShop,
+                    'isDevelopper' => self::isDevelopper(),
+                    'blockLicence' => $this->blockLicence,
+                    'erp_iso_code' => $this->context->language->iso_code
+		));
+
+                return $licence_msg.$this->display(__FILE__, 'views/templates/admin/configuration/description.tpl');
 
                 // Générate helper
-                return $this->display(__FILE__, 'views/templates/admin/configuration/description.tpl').$licence_invalid.$helper->generateForm($fields_form);
 	}
 
 	/*
@@ -816,7 +425,8 @@ class ErpIllicopresta extends Module
 			'erp_level_stock_normal',
 			'erp_account_type',
 			'erp_ws_date_end',
-			'erp_pack'
+			'erp_pack',
+                        'erp_contact_firstname'
 		);
 
 		$field_name = array_merge( array_keys($this->field_name_configuration), $field_name); // we need for keys only
@@ -824,170 +434,329 @@ class ErpIllicopresta extends Module
 		foreach ($field_name as $name)
 			$fields_values[$name] = Tools::getValue( $name, Configuration::get(Tools::strtoupper($name)));
 
-		$order_states = OrderState::getOrderStates((int)$this->context->language->id);
-		foreach ($order_states as $state)
-		{
-			$erp_status_warning_stock = Tools::getValue('erp_status_warning_stock_'.$state['id_order_state'], Configuration::get('ERP_STATUS_WARNING_STOCK_'.$state['id_order_state']));
-			$fields_values['erp_status_warning_stock_'.$state['id_order_state']] = $erp_status_warning_stock;
-		}
+		foreach( OrderState::getOrderStates((int)$this->context->language->id) as $state)
+			$fields_values['erp_status_warning_stock_'.$state['id_order_state']] = Tools::getValue('erp_status_warning_stock_'.$state['id_order_state'], Configuration::get('ERP_STATUS_WARNING_STOCK_'.$state['id_order_state']));
+                
                 $fields_values['_erp_newsletter'] = 1;
-				$fields_values['erp_licence_mail'] = Configuration::get('PS_SHOP_EMAIL');
-                $fields_values['module_access'] = $this->l('The 1 CLICK ERP ILLICOPRESTA module is in the Orders tab'); 
-		return $fields_values;
+                $fields_values['_erp_cgv'] = Tools::isSubmit('_erp_cgv') ? 1 : 0;
+                
+                $fields_values['erp_licence_mail'] = Configuration::get('PS_SHOP_EMAIL');
+                $fields_values['erp_licence_domaine_name'] = Configuration::get('ERP_LICENCE_DOMAINE_GENERATE');
+                $fields_values['erp_licence_is_free'] = '1';
+                $fields_values['erp_set_licence'] = Tools::getValue('erp_set_licence', '');
+                $fields_values['erp_has_licence_number'] = Tools::getValue('erp_has_licence_number', 0);
+                $fields_values['erp_licence_password'] = Tools::getValue('erp_licence_password', Configuration::get('ERP_LICENCE_PASSWORD'));
+                
+                $fields_values['submitCreateNewLicence'] = '';
+                $fields_values['erp_new_licence'] = Configuration::get('ERP_NEW_LICENCE');
+                
+                $fields_values['module_access'] = $this->l('The 1 CLICK ERP ILLICOPRESTA module is in the Orders tab');
+                return $fields_values;
 	}
 
 	/* Save configuration submit */
 	public function postProcess()
 	{
-		$output_success = null;
-		$output_error = null;
-
-		// Check licence (toolbar button)
-		if (Tools::isSubmit('submitValidateLicence'))
-		{
-            $email = Configuration::get('PS_SHOP_EMAIL');
-            $licence = Configuration::get('ERP_LICENCE');
-
-            if ($licence != '' && $email != '')
+            $output_success = array();
+            $output_error = array();
+            
+            // check existing licence and load it if valid
+            if (Tools::isSubmit('submitCheckLoadLicence'))
             {
-                // If get checksum for each file
-                if (Licence::getChecksum(_PS_MODULE_DIR_.'erpillicopresta'))
+                // check licence
+                $obLicence = new Licence();
+                $obLicence->number = Configuration::get('ERP_LICENCE');                
+                $result = $obLicence->loadLicence();
+                        
+                // no error
+                if( $result['error'] == false )
                 {
-                    // Create global checksum
-                    $checksum = md5(serialize(ErpIllicopresta::$checksum));
-                    Configuration::updateValue('ERP_CHECKSUM', $checksum);
-
-                    // Call WS
-                    $result = Licence::wsCall($licence, $email, Configuration::get('PS_SHOP_DOMAIN'), $checksum, 'get');
-                    
-                    if($result['code'] == 200)
+                    // redirect to module configuration
+                    Tools::redirectAdmin('?controller=AdminModules&configure=erpillicopresta&conf=4&token='.Tools::getAdminTokenLite('AdminModules'));
+                }
+                // error, the licence does not exist
+                else
+                    $output_error[] = $result['msg'];
+            }
+            
+            // save an existing license number
+            else if (Tools::isSubmit('submitValidateHasLicence'))
+            {
+                $existing_license = Tools::getValue('erp_set_licence');
+                $has_licence_number = Tools::getValue('erp_has_licence_number');
+                
+                // the merchant already has a license number
+                if( $has_licence_number == 1 )
+                {
+                    // check licence validation
+                    if( !empty($existing_license) )
                     {
-                    	if ($this->installModuleTabs())
-			{
-				Configuration::updateValue('ERPILLICOPRESTA_CONFIGURATION_OK', true);
-                             $output_success .= $this->l('Licence updated successfully').'<br/>';
-			}
-                         else
-                             $output_error .= $this->l('Licence updated successfully but unable to install tabs').'<br/>';
+                        // Check if licence exists in server
+                        $obLicence = new Licence();
+                        $obLicence->number = $existing_license;
+                        $result = $obLicence->loadLicence();
+                        
+                        // the licence exist we save it and install all controller
+                        if( $result['error'] == false )
+                        {
+                            // redirect to module configuration
+                            Tools::redirectAdmin('?controller=AdminModules&configure=erpillicopresta&conf=4&token='.Tools::getAdminTokenLite('AdminModules'));
+                        }
+                        // error, the licence does not exist
+                        else
+                            $output_error[] = $result['msg'];
                     }
                     else
+                        $output_error[] = $this->l('Please enter your existing license number.');
+                }
+                
+                // no licence, hide the "has licence" form 
+                else {
+                    $this->diplayFormHasLicence = false;
+                }
+            }
+            
+            // create a new licence
+            elseif(Tools::isSubmit('submitCreateNewLicence'))
+            {
+                // get configuration value
+                $email = Configuration::get('PS_SHOP_EMAIL');
+                $licence_number = Configuration::get('ERP_NEW_LICENCE');
+                
+                // get activation form input
+                $domaine_name = Tools::getValue('erp_licence_domaine_name');    // entered domaine name
+                $licence_password = Tools::getValue('erp_licence_password');    // entered licence password
+                $contact_name = Tools::getValue('erp_contact_name');            // entered contact name
+                $_erp_cgv = Tools::isSubmit('_erp_cgv');                        // entered CGV
+                $selected_feature = Tools::getValue('selected_feature');        // selected feature to create a new basket
+                $contact_mail = Tools::getValue('erp_contact_mail');            // entered contact mail
+                
+                // is a free licence or not
+                $licence_is_free = Tools::getValue('erp_licence_is_free', null) === '1' ? true : false;
+                
+                // if contact mail is given
+                if( !empty($contact_mail) )
+                {
+                    $email = $contact_mail;
+                    Configuration::updateValue('ERP_CONTACT_MAIL', $email); // save ontact mail in configuration
+                }
+                                
+                // check value
+                if ($licence_number != '' && $email != '' && $domaine_name != '' && $licence_password != '' && $contact_name != '' && $_erp_cgv)
+                {
+                    // if feature not empty
+                    if( !empty($selected_feature) )
                     {
-                    	$output_error .= $result['message'];
-                    }   
+                        // if get checksum for each file
+                        if (Licence::getChecksum(_PS_MODULE_DIR_.'erpillicopresta'))
+                        {
+                            // Create global checksum
+                            $checksum = md5(serialize(ErpIllicopresta::$checksum));
+                            Configuration::updateValue('ERP_CHECKSUM', $checksum);
+
+                             // create a new licence
+                            $objLicence = new Licence();
+                            $objLicence->number = $licence_number;
+
+                            // Data to create a new licence
+                            $objLicence->post_data = array(
+                                'number' => $licence_number,
+                                'mode' => 'purchase',
+                                'email' => $email,
+                                'password' => $licence_password,
+                                'domain_name' => $domaine_name,
+                                'active' => 1,
+                                'blacklist' => 0,
+                                'date_add' => date('Y-m-d H:i:s'),
+                                'date_upd' => date('Y-m-d H:i:s'),
+                                'date_end' => NULL,
+                            );
+
+                            // create a new licence
+                            $result_add_licence = $objLicence->addLicence();
+
+                            // if no error while creating licence
+                            if( $result_add_licence['error'] == false )
+                            {
+                                // To know when the module is properly configured
+                                Configuration::updateValue('ERP_CONFIGURATION_OK', true);
+
+                                //is free licence, redirect to module configuration  
+                                if( $licence_is_free === true )
+                                    Tools::redirectAdmin('?controller=AdminModules&configure=erpillicopresta&conf=4&token='.Tools::getAdminTokenLite('AdminModules'));
+                                
+                                 // else, redirect to ILLICOPRESTA shop
+                                else
+                                {
+                                    $url = ERP_URL_ESHOP.$this->iso_code.'/?passkeyUpdateCart='.urlencode(base64_encode(sha1('updateCart').'||'.PRIVATE_KEY.'||'.$licence_number.'||'.'add'.'||'.implode(',', $selected_feature)));
+                                    $url .= '&'.ERP_TAGS_GA_COMMANDE;
+                                    $this->context->cookie->__set('erp_do_redirect_shop',$url);
+                                    Tools::redirectAdmin('?controller=AdminModules&configure=erpillicopresta&conf=4&token='.Tools::getAdminTokenLite('AdminModules'));
+                                }
+                            }
+                            // if error while creating licence
+                            else if( $result_add_licence['error'] == true)
+                            {
+                                $this->diplayFormHasLicence = false;
+                                $output_error[] = $result_add_licence['msg'];
+                            }
+                        }
+                        else
+                            $output_error[] = $this->l('Error while getting the checksum.').'<br/>';
+                    }
+                    else
+                        $output_error[] = $this->l('Error while getting the basket content.').'<br/>';	
+                }
+                else {
+                    $output_error[] = $this->l('Dear merchant, please fill out the entire form above in order to finalise your order.').'<br/>';
+                }
+            }
+            
+            // upadte basket
+            elseif (Tools::isSubmit('submitUpdateBasket'))
+            {
+                $selected_feature = Tools::getValue('selected_feature');        // selected feature to create a new basket
+                $current_basket_ids = Tools::getValue('current_basket_ids');      // list of current basket ids
+                $licence_id = Configuration::get('ERP_LICENCE_ID');
+                 
+                // if feature not empty
+                if( !empty($selected_feature) && !empty($current_basket_ids) && !empty($licence_id) )
+                {
+                    // redirect to shop
+                    $url = ERP_URL_ESHOP.$this->iso_code.'/?passkeyUpdateCart='.urlencode(base64_encode(sha1('updateCart').'||'.PRIVATE_KEY.'||'.Configuration::get('ERP_LICENCE').'||'.'update'.'||'.implode(',', $selected_feature)));
+                    $url .= '&'.ERP_TAGS_GA_COMMANDE;
+                    Tools::redirectLink($url);
                 }
                 else
-                	$output_error .= $this->l('Error while getting checksum.').'<br/>';	
+                    $output_error[] = $this->l('An error has occurred while retrieving the contents of your cart. '
+                            . 'Either the ids of your current cart are empty or your license number is empty.').'<br/>';
             }
-            else
-                $output_error .= $this->l('Empty licence or email.').'<br/>';
-		}
+            
+            // save general setting
+            else if (Tools::isSubmit('submitGeneralSettings'))
+            {
+                    $result_general_setting = false;
 
+                    // save enable/disable original menu of prestashop
+                    if (Tools::getValue('erp_disable_original_menus') == 1)
+                        $result_general_setting = $this->changeStatusOfOriginalMenus(0);
+                    else
+                        $result_general_setting = $this->changeStatusOfOriginalMenus(1);
 
-		// save general setting
-		else if (Tools::isSubmit('submitGeneralSettings'))
-		{
-			$result_general_setting = false;
+                    if ($result_general_setting)
+                    {
+                        Configuration::updateValue('ERP_DISABLE_ORIGINAL_MENUS', (int)Tools::getValue('erp_disable_original_menus'));
+                        $output_success[] = $this->l('General setting updated successfully').'<br/>';
+                    }
+                    else
+                        $output_error[] = $this->l('Error while saving general settings. Please try again.').'<br/>';
+            }
 
-			// save enable/disable original menu of prestashop
-			if (Tools::getValue('erp_disable_original_menus') == 1)
-				$result_general_setting = $this->changeStatusOfOriginalMenus(0);
-			else
-				$result_general_setting = $this->changeStatusOfOriginalMenus(1);
+            else if (Tools::isSubmit('submitInventorySettings'))
+            {
+                if (Configuration::get(self::getControllerStatusName('AdminInventory')))
+                {
+                    // Get "gap" value 
+                    $gap_stock = (string)Tools::getValue('erp_gap_stock');
 
-			if ($result_general_setting)
-			{
-				Configuration::updateValue('ERP_DISABLE_ORIGINAL_MENUS', (int)Tools::getValue('erp_disable_original_menus'));
-				$output_success .= $this->l('General setting updated successfully').'<br/>';
-			}
-			else
-				$output_error .= $this->l('Error while saving general settings. Please try again.').'<br/>';
-		}
+                    // If it is an unsigned int 
+                    if (!ctype_digit($gap_stock))
+                        $output_error[] = $this->l('Invalid stock gap value ! The stock gap value must be a positive integer.').'<br/>';
+                    else
+                    {
+                        // if value "0", then we delete gap in database
+                        if ((int)$gap_stock == 0)
+                                                $gap_stock = '';
 
-		else if (Tools::isSubmit('submitInventorySettings'))
-		{
-			if (Configuration::get(self::getControllerStatusName('AdminInventory')))
-			{
-				// Récupération valeur de gap
-				$gap_stock = (string)Tools::getValue('erp_gap_stock');
-                                
-				// Si c'est bien un unsigned int
-				if (!preg_match('#^[0-9]*$#', $gap_stock))
-								$output_error .= $this->l('Invalid stock gap value ! The stock gap value must be a positive integer.').'<br/>';
-				else
-				{
-					// Si valeur "0", alors on supprime l'ecart en base
-					if ((int)$gap_stock == 0)
-								$gap_stock = '';
+                        // if ok we insert / update in configuration
+                        Configuration::updateValue('ERP_GAP_STOCK', $gap_stock);
+                        $output_success[] = $this->l('Inventory settings updated successfully').'<br/>';
+                    }
+                }
+            }
 
-					// SI ok on insert / update en conf
-					Configuration::updateValue('ERP_GAP_STOCK', $gap_stock);
-					$output_success .= $this->l('Inventory settings updated successfully').'<br/>';
-				}
-			}
-		}
+            // save advanced order settings
+            else if (Tools::isSubmit('submitAdvancedOrderSettings'))
+            {
 
-		// save advanced order settings
-		else if (Tools::isSubmit('submitAdvancedOrderSettings'))
-		{
-			// save stock level configuration
-			$erp_level_stock_alert = Tools::getValue('erp_level_stock_alert');
-			$erp_level_stock_normal = Tools::getValue('erp_level_stock_normal');
+                // save stock level configuration
+                $erp_level_stock_alert = Tools::getValue('erp_level_stock_alert');
+                $erp_level_stock_normal = Tools::getValue('erp_level_stock_normal');
 
-			$sauve1 = Configuration::updateValue('ERP_LEVEL_STOCK_ALERT', $erp_level_stock_alert);
-			$sauve2 = Configuration::updateValue('ERP_LEVEL_STOCK_NORMAL', $erp_level_stock_normal);
+                $sauve1 = Configuration::updateValue('ERP_LEVEL_STOCK_ALERT', $erp_level_stock_alert);
+                $sauve2 = Configuration::updateValue('ERP_LEVEL_STOCK_NORMAL', $erp_level_stock_normal);
 
-			// save status_warning_stock
-			$order_states = OrderState::getOrderStates((int)$this->context->language->id);
-			foreach ($order_states as $state)
-			{
-				if (Tools::isSubmit('erp_status_warning_stock_'.$state['id_order_state']))
-					Configuration::updateValue('ERP_STATUS_WARNING_STOCK_'.$state['id_order_state'], 'on');
-				else
-					Configuration::updateValue('ERP_STATUS_WARNING_STOCK_'.$state['id_order_state'], '');
-			}
+                // save status_warning_stock
+                $order_states = OrderState::getOrderStates((int)$this->context->language->id);
+                foreach ($order_states as $state)
+                {
+                        if (Tools::isSubmit('erp_status_warning_stock_'.$state['id_order_state']))
+                                Configuration::updateValue('ERP_STATUS_WARNING_STOCK_'.$state['id_order_state'], 'on');
+                        else
+                                Configuration::updateValue('ERP_STATUS_WARNING_STOCK_'.$state['id_order_state'], '');
+                }
 
-			if ($sauve1 && $sauve2)
-				$output_success .= $this->l('Advanced order settings updated successfully');
-		}
+                if ($sauve1 && $sauve2)
+                    $output_success[] = $this->l('Advanced order settings updated successfully');
+                else
+                    $output_error[] = $this->l('Error while saving advanced order settings !');
+            }
 
-		// save advanced supply orders setting
-		elseif (Tools::isSubmit('submitAdvancedSupplyOrderSettings'))
-		{
-			foreach (array_keys($this->field_name_configuration) as $field_name)
-			{
-				if (Tools::isSubmit($field_name))
-				{
-                                        if (Tools::strtoupper($field_name) == 'ERP_COEFFICIENTS')
-                                        {
-                                                $regex = '/^([0-9]+([\.,][0-9]+)?;){5}([0-9]+([\.,][0-9]+)?)$/';
-                                                if (!preg_match($regex, Tools::getValue($field_name)))
-                                                {
-                                                    $output_error .= $this->l('The weighting coefficients that you filled out do not fit the required syntax ! Please rewrite the weighting coefficients.').'<br/>';
-                                                    continue;
-                                                }
-                                                elseif (array_sum(explode(';', Tools::getValue($field_name))) == 0)
-                                                {
-                                                    $output_error .= $this->l('All weigthing coefficients must not be null at the same time !').'<br/>';
-                                                    continue;
-                                                }
-                                        }
-					elseif (!Configuration::updateValue( Tools::strtoupper($field_name), Tools::getValue($field_name)))
-					{
-						$output_error .= $this->l('Error while saving supplier orders settings : '.$field_name).'<br/>';
-						continue;
-					}
-				}
-			}
-			$output_success .= $this->l('Supplier orders settings updated successfully').'<br/>';
-		}
+            // save advanced supply orders setting
+            elseif (Tools::isSubmit('submitAdvancedSupplyOrderSettings'))
+            {
+                    foreach (array_keys($this->field_name_configuration) as $field_name)
+                    {
+                            if (Tools::isSubmit($field_name))
+                            {
+                                    if (Tools::strtoupper($field_name) == 'ERP_COEFFICIENTS')
+                                    {
+                                            $regex = '/^([0-9]+([\.,][0-9]+)?;){5}([0-9]+([\.,][0-9]+)?)$/';
+                                            if (!preg_match($regex, Tools::getValue($field_name)))
+                                            {
+                                                $output_error[] = $this->l('The weighting coefficients that you filled out do not fit the required syntax ! Please rewrite the weighting coefficients.').'<br/>';
+                                                continue;
+                                            }
+                                            elseif (array_sum(explode(';', Tools::getValue($field_name))) == 0)
+                                            {
+                                                $output_error[] = $this->l('All weigthing coefficients must not be null at the same time !').'<br/>';
+                                                continue;
+                                            }
+                                    }
+                                    elseif (!Configuration::updateValue( Tools::strtoupper($field_name), Tools::getValue($field_name)))
+                                    {
+                                            $output_error[] = $this->l('Error while saving supplier orders settings : '.$field_name).'<br/>';
+                                            continue;
+                                    }
+                            }
+                    }
+                    $output_success[] = $this->l('Supplier orders settings updated successfully').'<br/>';
+            }
+            
+            // user has licence but it's not valid
+            // If user has a non-valid licence (expired or else)
+            if (Configuration::hasKey('ERP_LICENCE') && Configuration::get('ERP_LICENCE') != '' && Configuration::get('ERP_LICENCE_VALIDITY') != '1' && empty($output_error))
+            {
+                // do not display cart
+                $this->blockLicence = true;
 
-		if (!is_null($output_success))
-			$output_success = $this->displayConfirmation( $output_success);
+                // display error message
+                if( !Configuration::hasKey('ERP_MSG_AFTER_PROCESS'))
+                {
+                    $output_error[] = $this->l('A license number exists for your store but is invalid.').' '.sprintf($this->l('Please contact our technical service to this email: %s'), ERP_EMAIL_SUPPORT);
+                }
+            }
+                        
+            $output_error_str = $output_success_str = '';
+                    
+            if (!empty($output_success))
+                foreach ($output_success as $success)
+                    $output_success_str .= $this->displayConfirmation( $success);
 
-		if (!is_null($output_error))
-			$output_error = $this->displayError( $output_error);
-
-		return $output_error.$output_success;
+            if (!empty($output_error))
+                    $output_error_str = $this->displayErrorList($output_error);
+            
+            return $output_error_str.$output_success_str;
 	}
 
 	/*
@@ -995,17 +764,16 @@ class ErpIllicopresta extends Module
 	*/
 	public static function getControllerStatusName($controller)
 	{
-		// delete ADMIN in the name
-		$controller = str_replace('Admin', '', $controller);
+            // delete ADMIN in the name
+            $controller = str_replace('Admin', '', $controller);
 
-		// configuration name is limited by 32 characteres
-		$controller = Tools::strlen($controller) > 21 ? Tools::substr($controller, 0, 21) : $controller;
+            // configuration name is limited by 32 characteres
+            $controller = Tools::strlen($controller) > 21 ? Tools::substr($controller, 0, 21) : $controller;
 
-		// uppercase
-		$controller = Tools::strtoupper($controller);
-
-		// final name to controller statut
-		return 'ERP_'.$controller.'_STATUS';
+            // uppercase
+            $controller = Tools::strtoupper($controller);
+            // final name to controller statut
+            return 'ERP_'.$controller.'_STATUS';
 	}
 
 	/*
@@ -1013,30 +781,21 @@ class ErpIllicopresta extends Module
 	*/
 	private function installErpTab()
 	{
-		@copy(_PS_MODULE_DIR_.$this->name.'/logo.gif', _PS_IMG_DIR_.'t/AdminERP.gif');
+            @copy(_PS_MODULE_DIR_.$this->name.'/logo.gif', _PS_IMG_DIR_.'t/AdminERP.gif');
 
-		// erp tab name by lang
-		$erp_management_name_tab = array('en'=>'1 Click ERP Illicopresta', 'fr'=>'1 Click ERP Illicopresta', 'es'=>'1 Click ERP Illicopresta');
+            $tab = new Tab();
 
-		$tab = new Tab();
+            foreach (Language::getLanguages(false) as $language)
+                $tab->name[$language['id_lang']] = '1 Click ERP Illicopresta';
 
-		foreach (Language::getLanguages(false) as $language)
-		{
-			$iso_code = array_key_exists($language['iso_code'], $erp_management_name_tab) ? $language['iso_code'] : 'en';
-			$tab->name[$language['id_lang']] = $erp_management_name_tab[$iso_code];
-		}
+            $tab->class_name = 'AdminERP';
+            $tab->module = $this->name;
+            $tab->id_parent = (int)Configuration::get('ERP_ADMIN_PARENT_ORDERS_TAB_ID'); // return the id of orders tab
 
-		$tab->class_name = 'AdminERP';
-		$tab->module = $this->name;
-		$tab->id_parent = (int)Configuration::get('ERP_ADMIN_PARENT_ORDERS_TAB_ID'); // return the id of orders tab
-				
-		if (!$tab->save())
-		{
-			$this->_errors[] = $this->l('Error while creating ERP tab. Please contact the customer service.');
-			return false;
-
-		}
-		return true;
+            if (!$tab->save())
+                $this->_errors[] = $this->l('Error while creating ERP tab. Please contact the customer service.');
+            
+            return true;
 	}
 
 	/*
@@ -1044,17 +803,14 @@ class ErpIllicopresta extends Module
 	*/
 	private function uninstallErpTab()
 	{
-		$id_tab = Tab::getIdFromClassName('AdminERP');
-		if ($id_tab != 0)
-		{
-                    $tab = new Tab($id_tab);
-                    if (!$tab->delete())
-                    {
-                        $this->_errors[] = $this->l('Error while uninstalling ERP tab !');
-                        return false;
-                    }
-		}
-		return true;
+            $id_tab = Tab::getIdFromClassName('AdminERP');
+            if ($id_tab != 0)
+            {
+                $tab = new Tab($id_tab);
+                if (!$tab->delete())
+                    $this->_errors[] = $this->l('Error while uninstalling ERP tab !');
+            }
+            return true;
 	}
 
 	/*
@@ -1062,89 +818,74 @@ class ErpIllicopresta extends Module
 	*/
 	public function installModuleTabs()
 	{
-		// get controllers list
-		$erp_features = ErpFeature::getFeatures($this->context->language->iso_code);
+            // get controllers list
+            $erp_features = ErpFeature::getFeatures($this->context->language->iso_code);
 
-		if ($erp_features)
-		{
-			foreach ($erp_features as $feature)
-			{
-				@copy(_PS_MODULE_DIR_.$this->name.'/logo.gif', _PS_IMG_DIR_.'t/'.$feature['controller'].'.gif');
-				$tab = new Tab();
-				foreach (Language::getLanguages(false) as $language)
-					$tab->name[$language['id_lang']] = $feature['name'];
+            if (!empty($erp_features))
+            {
+                foreach ($erp_features as $feature)
+                {
+                    @copy(_PS_MODULE_DIR_.$this->name.'/logo.gif', _PS_IMG_DIR_.'t/'.$feature['controller'].'.gif');
+                    $tab = new Tab();
+                    foreach (Language::getLanguages(false) as $language)
+                            $tab->name[$language['id_lang']] = $feature['name'];
 
-				$tab->class_name = $feature['controller'];
-				$tab->module = $this->name;
-				$tab->id_parent = -1; // -1 to not display the tab in BO
-				if (!$tab->save())
-					return false;
+                    $tab->class_name = $feature['controller'];
+                    $tab->module = $this->name;
+                    $tab->id_parent = -1; // -1 to not display the tab in BO
+                    if (!$tab->save())
+                    {
+                        $this->_errors[] = $this->l('Error while installing module tabs !');
+                        return false;
+                    }
 
-				// configuration name is limited to 32 caracteres
-				$controller_status_name = self::getControllerStatusName($feature['controller']);
+                    // configuration name is limited to 32 caracteres
+                    $controller_status_name = self::getControllerStatusName($feature['controller']);
 
-				// save feature statut
-				if (!Configuration::updateValue($controller_status_name, ErpFeature::isPro($feature['status'])))
-					return false;
-			}
-		}
-		return true;
+                    // save feature statut
+                    if (!Configuration::updateValue($controller_status_name, $feature['status']) )
+                        return false;
+                }
+            }
+            return true;
 	}
 
 	/* Delete subtab */
 	public function uninstallModuleTabs()
 	{
-		// uninstall module tabs only if the module is installed
-		// else,module tables do not exist
-		if (Module::isInstalled('erpillicopresta'))
-		{
-                    // get controllers list
-                    $erp_features = ErpFeature::getFeatures($this->context->language->iso_code);
+            // uninstall module tabs only if the module is installed
+            // else,module tables do not exist
+            if (Module::isInstalled('erpillicopresta'))
+            {
+                // get controllers list
+                $erp_features = ErpFeature::getFeatures($this->context->language->iso_code);
 
-                    if ($erp_features)
-                    {
-                        foreach ($erp_features as $feature)
+                if (!empty($erp_features))
+                {
+                    foreach ($erp_features as $feature)
+                    {	
+                        $id_tab = Tab::getIdFromClassName($feature['controller']);
+
+                        if ($id_tab != 0)
                         {
-						
-                            $id_tab = Tab::getIdFromClassName($feature['controller']);
-							
-                            if ($id_tab != 0)
-                            {
-                                    $tab = new Tab($id_tab);
-									
-                                    if (!$tab->delete())
-                                    {
-                                        $this->_errors[] = $this->l('Error while uninstalling module tabs !');
-                                        return false;
-                                    }
-                            }
+                            $tab = new Tab($id_tab);
 
-                            // get controller status name
-                            $controller_status_name = self::getControllerStatusName($feature['controller']);
-
-                            // save feature statut
-                            if (!Configuration::deleteByName($controller_status_name))
-                                    return false;
+                            if (!$tab->delete())
+                                $this->_errors[] = $this->l('Error while uninstalling module tabs !');
                         }
+
+                        // get controller status name
+                        $controller_status_name = self::getControllerStatusName($feature['controller']);
+
+                        // save feature statut
+                        Configuration::deleteByName($controller_status_name);        
                     }
-		}
-		return true;
+                }
+            }
+            return true;
 	}
 
 	
-
-	/* */
-	private function installPackConf()
-	{
-            return Licence::installPackConf();
-	}
-
-	/* */
-	private function uninstallPackConf()
-	{
-            return Licence::uninstallPackConf();
-	}
-
 	/**/
         public static $_MODULE = array();
 	public static function findTranslation($name, $string, $source)
@@ -1206,71 +947,62 @@ class ErpIllicopresta extends Module
 	*/
 	public function isCurlInstalled()
 	{
-		if (in_array('curl', get_loaded_extensions()) && function_exists('curl_version'))
-			return true;
-		else {
-			$this->_errors[] = $this->l('Error : cURL is not available. Please contact the customer service.');
-			return false;
-		}
+            if (in_array('curl', get_loaded_extensions()) && function_exists('curl_version'))
+                    return true;
+            else {
+                    $this->_errors[] = $this->l('Error : cURL is not available. Please contact the customer service.');
+                    return false;
+            }
 	}
 
 	private function installStockMvtReason()
 	{
-			require_once _PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpStockMvtReason.php';
+            require_once _PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpStockMvtReason.php';
 
-			foreach ($this->stock_mvt_reason as $name => $mvt_param)
-			{
-				if (ErpStockMvtReason::existsByName($name) == false)
-				{
-					$stock_mvt_reason_increase = new ErpStockMvtReason();
-					$stock_mvt_reason_increase->name = array();
+            foreach ($this->stock_mvt_reason as $name => $mvt_param)
+            {
+                $stock_mvt_reason_increase = new ErpStockMvtReason();
+                $stock_mvt_reason_increase->name = array();
 
-					foreach (Language::getLanguages(false) as $language)
-					{
-							$iso_code = array_key_exists($language['iso_code'], $mvt_param['lang']) ? $language['iso_code'] : 'en';
-							$stock_mvt_reason_increase->name[$language['id_lang']] = $mvt_param['lang'][$iso_code];
-					}
+                foreach (Language::getLanguages(false) as $language)
+                {
+                    $iso_code = array_key_exists($language['iso_code'], $mvt_param['lang']) ? $language['iso_code'] : 'en';
+                    $stock_mvt_reason_increase->name[$language['id_lang']] = $mvt_param['lang'][$iso_code];
+                }
 
-					$stock_mvt_reason_increase->sign = $mvt_param['sign'];
-					if (!$stock_mvt_reason_increase->add(true))
-					{
-						$this->_errors[] = $this->l('Error while creating stock movement reason : ').$name.' '.$this->l('Please try again or contact the customer service.');
-						return false;
-					}
+                $stock_mvt_reason_increase->sign = $mvt_param['sign'];
+                if (!$stock_mvt_reason_increase->add(true))
+                    $this->_errors[] = $this->l('Error while creating stock movement reason : ').$name.' '.$this->l('Please try again or contact the customer service.');
 
-					if (isset($mvt_param['configuration_name']))
-							Configuration::updateValue($mvt_param['configuration_name'], (int)ErpStockMvtReason::existsByName($name));
-				}
-			}
-
-			return true;
+                if (isset($mvt_param['configuration_name']))
+                    Configuration::updateValue($mvt_param['configuration_name'], null);
+            }
+            
+            return true;
 	}
 
 	private function uninstallStockMvtReason()
 	{
-			require_once _PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpStockMvtReason.php';
+            require_once _PS_MODULE_DIR_.'erpillicopresta/classes/stock/ErpStockMvtReason.php';
 
-			if (!empty($this->stock_mvt_reason))
-			{
-				// get array keys only
-				$stock_mvt_reason_array = array_keys($this->stock_mvt_reason);
+            if (!empty($this->stock_mvt_reason))
+            {
+                // get array keys only
+                $stock_mvt_reason_array = array_keys($this->stock_mvt_reason);
 
-				foreach ($stock_mvt_reason_array as $name)
-				{
-                                    $id_stock_mvt_reason = ErpStockMvtReason::existsByName($name);
-                                    
-					if ($id_stock_mvt_reason != false && (int)$id_stock_mvt_reason > 0)
-					{
-						$obj_stock_mvt_reason = new ErpStockMvtReason( $id_stock_mvt_reason);
-						if (!$obj_stock_mvt_reason->delete())
-                                                {
-                                                    $this->_errors[] = $this->l('Error while deleting stock movement reason !');
-                                                    return false;
-                                                }
-					}
-				}
-			}
-			return true;
+                foreach ($stock_mvt_reason_array as $name)
+                {
+                    $id_stock_mvt_reason = ErpStockMvtReason::existsByName($name);
+
+                    if ($id_stock_mvt_reason != false && (int)$id_stock_mvt_reason > 0)
+                    {
+                        $obj_stock_mvt_reason = new ErpStockMvtReason( $id_stock_mvt_reason);
+                        if (!$obj_stock_mvt_reason->delete())
+                            $this->_errors[] = $this->l('Error while deleting stock movement reason !');
+                    }
+                }
+            }
+            return true;
 	}
 
 	/*
@@ -1278,26 +1010,24 @@ class ErpIllicopresta extends Module
 	*/
 	private function addTrashCategory()
 	{
-		$obj_category = new Category();
+            $obj_category = new Category();
 
-		$obj_category->name = array();
-		foreach (Language::getLanguages(false) as $language)
-			$obj_category->name[$language['id_lang']] = $this->trash_category_name;
+            $obj_category->name = array();
+            $obj_category->link_rewrite  = array();
 
-		$obj_category->id_parent = '2';
+            foreach (Language::getLanguages(false) as $language)
+            {
+                $obj_category->name[$language['id_lang']] = $this->trash_category_name;
+                $obj_category->link_rewrite[$language['id_lang']] = $this->trash_category_name;
+            }
 
-		$obj_category->link_rewrite  = array();
-		foreach (Language::getLanguages(false) as $language)
-			$obj_category->link_rewrite[$language['id_lang']] = $this->trash_category_name;
+            $obj_category->id_parent = Configuration::get('PS_HOME_CATEGORY');
+            $obj_category->active  = 0;
 
-		$obj_category->active  = 0;
-		if ($obj_category->add())
-				return true;
-		else
-		{
-			$this->_errors[] = $this->l('Error while creating trash category. Please try again or contact the customer service.');
-			return false;
-		}
+            if (!$obj_category->add())
+                $this->_errors[] = $this->l('Error while creating trash category. Please try again or contact the customer service.');
+                
+            return true;
 	}
 
 	/*
@@ -1306,41 +1036,40 @@ class ErpIllicopresta extends Module
 	*/
 	public function addOrderState($name)
 	{
-		$state_existe = false;
-		$states = OrderState::getOrderStates( (int)$this->context->language->id);
+            $state_existe = false;
+            $states = OrderState::getOrderStates( (int)$this->context->language->id);
 
-		// check if order state exist
-		foreach ($states as $state)
-		{
-			if (in_array($name, $state))
-			{
-				$state_existe = true;
-				$id_state = $state['id_order_state'];
-				break;
-			}
-		}
+            // check if order state exist
+            foreach ($states as $state)
+            {
+                if (in_array($name, $state))
+                {
+                    $state_existe = true;
+                    $id_state = $state['id_order_state'];
+                    break;
+                }
+            }
 
-		// The state does not exist, we create it.
-		if (!$state_existe)
-		{
-			// create new order state
-			$order_state = new OrderState();
-			$order_state->color = 'DarkOrange';
-			$order_state->name = array();
-			$languages = Language::getLanguages(false);
-				foreach ($languages as $language)
-					$order_state->name[$language['id_lang']] = $name;
+            // The state does not exist, we create it.
+            if (!$state_existe)
+            {
+                // create new order state
+                $order_state = new OrderState();
+                $order_state->color = 'DarkOrange';
+                $order_state->name = array();
+                $languages = Language::getLanguages(false);
+                    foreach ($languages as $language)
+                            $order_state->name[$language['id_lang']] = $name;
 
-			// Update object
-			if (!$order_state->add())
-					return false;
+                // Update object
+                $order_state->add();                       
 
-			Configuration::updateValue('ERP_GENERATE_ORDER_STATE_TO', $order_state->id);
-		}
-		else
-			Configuration::updateValue('ERP_GENERATE_ORDER_STATE_TO', $id_state);
+                Configuration::updateValue('ERP_GENERATE_ORDER_STATE_TO', $order_state->id);
+            }
+            else
+                Configuration::updateValue('ERP_GENERATE_ORDER_STATE_TO', $id_state);
 
-		return true;
+            return true;
 	}
 
 	/*
@@ -1348,13 +1077,13 @@ class ErpIllicopresta extends Module
 	*/
 	private function deleteTrashCategory()
 	{
-		$category = Category::getCategories( false, false, false, ' AND cl.`name` = \''.pSQL($this->trash_category_name).'\' ');
-		if (!empty( $category))
-		{
-			$obj_category = new Category();
-			$obj_category->id = $category[0]['id_category'];
-			return $obj_category->delete();
-		}
+            $category = Category::getCategories( false, false, false, ' AND cl.`name` = \''.pSQL($this->trash_category_name).'\' ');
+            if (!empty( $category))
+            {
+                $obj_category = new Category();
+                $obj_category->id = $category[0]['id_category'];
+                return $obj_category->delete();
+            }
 	}
 
 	/*
@@ -1416,55 +1145,203 @@ class ErpIllicopresta extends Module
 
 	public function hookDisplayBackOfficeHeader()
 	{
-		//load global.css on any BO controller to display icon Order (and other things)
-		$this->context->controller->addCSS($this->_path.'css/global.css');
-		
-		// get current controller
-		$current_controller = Tools::getValue('controller');
+            //load global_v3.css on any BO controller to display icon Order (and other things)
+            $this->context->controller->addJquery();
+            $this->context->controller->addCSS($this->_path.'css/global_v3.css');
+            $this->context->controller->addJS($this->_path.'js/tools_v3.js');
+            
+            // get current controller
+            $current_controller = Tools::getValue('controller');
 
-		//allowed contoller to display side bar left
-		$allowed_controller = array(
-				'AdminAdvancedOrder',
-				'AdminAdvancedSupplyOrder',
-				'AdminStockTransfer',
-				'AdminInventory',
-				'AdminGenerateSupplyOrders',
-				'AdminAdvancedSupplier',
-				'AdminAdvancedStock',
-				'AdminStockGap',
-				'AdminErpZone',
-		);
-                
-		if (in_array($current_controller, $allowed_controller))
-		{
-                    
-                    $this->context->controller->addCSS($this->_path.'css/design.css');
-                    $this->context->controller->addJS($this->_path.'js/tools.js');
+            //allowed contoller to display side bar left
+            $allowed_controller = array(
+                'AdminAdvancedOrder',
+                'AdminAdvancedSupplyOrder',
+                'AdminStockTransfer',
+                'AdminInventory',
+                'AdminGenerateSupplyOrders',
+                'AdminAdvancedSupplier',
+                'AdminAdvancedStock',
+                'AdminStockGap',
+                'AdminErpZone',
+            );
 
-                    if (!$this->is_1_6) 
-                    {
-                        $this->context->controller->addCSS($this->_path.'css/fieldset_to_tab.css');
-                        $this->context->controller->addCSS($this->_path.'css/bootstrap.css');
-                    }
+            if (in_array($current_controller, $allowed_controller))
+            {
+                $this->context->controller->addCSS($this->_path.'css/design.css');
+                $this->context->controller->addJS($this->_path.'js/mbExtruder/jquery.hoverIntent.min.js');
+                $this->context->controller->addJS($this->_path.'js/mbExtruder/jquery.mb.flipText.js');
+                $this->context->controller->addJS($this->_path.'js/mbExtruder/mbExtruder.js');
+                $this->context->controller->addCSS($this->_path.'css/mbExtruder/mbExtruder.css', 'all');
                 
-                    $this->context->controller->addJS($this->_path.'js/mbExtruder/jquery.hoverIntent.min.js');
-			$this->context->controller->addJS($this->_path.'js/mbExtruder/jquery.mb.flipText.js');
-			$this->context->controller->addJS($this->_path.'js/mbExtruder/mbExtruder.js');
-			$this->context->controller->addCSS($this->_path.'css/mbExtruder/mbExtruder.css', 'all');
-		}
+                if (!$this->is_1_6)
+                    $this->context->controller->addCSS($this->_path.'css/bootstrap.css');
+            }
+
+            // for module configuration page only
+            else if ( Tools::getValue('configure') == 'erpillicopresta' && ( $current_controller == 'adminmodules' || $current_controller == 'AdminModules'))
+            {
+                $this->context->controller->addJS($this->_path.'js/jquery.validate/jquery.validate.js');
+                $this->context->controller->addJS($this->_path.'js/jquery.validate/messages_'.$this->context->language->iso_code.'.js');
+                $this->context->controller->addJqueryUI('ui.slider');
+                $this->context->controller->addJS($this->_path.'js/jquery-ui-slider-pips/jquery-ui-slider-pips.js');
+                $this->context->controller->addCSS($this->_path.'css/jquery-ui-slider-pips/jquery-ui-slider-pips.css');
+                $this->context->controller->addCSS($this->_path.'css/configuration_v3.css');
                 
-                if ($current_controller == 'AdminModules' && Tools::getValue('configure') == 'erpillicopresta')
-				{
-				
-					// pour la version 1605 de prestashop tools est chargé avant Jquery ce qui cause des erreurs
-					// On demande à Prestashop d'intégrer ce jquery d'abord
-					if( _PS_VERSION_ == '1.6.0.5')
-					{
-						$this->context->controller->addJquery();
-					}
-					
-                    $this->context->controller->addJS($this->_path.'js/tools.js');
-				}
-                
+                // Add BS3 Css for 1.5
+                if(!$this->is_1_6)
+                    $this->context->controller->addCSS($this->_path.'css/bs3.css');
+            }
 	}
+        
+        
+        /*
+        * Load a licence if exists while installing module
+        */
+        public function loadLicenceIfExists()
+        {
+            // if licence exists in configuration and is not empty
+            if(Configuration::hasKey('ERP_LICENCE') && Configuration::get('ERP_LICENCE') != '')
+            {
+                // Check if licence exists in server and install all controller
+                $obLicence = new Licence();
+                $obLicence->number = Configuration::get('ERP_LICENCE');
+                $result = $obLicence->loadExistingLicence();
+
+                // no error
+                if( $result['error'] == false )
+                {
+                    // save success message to display after install
+                    Configuration::updateValue('ERP_MSG_AFTER_PROCESS', htmlentities($this->displayConfirmation($result['msg'])));
+                }
+                // existing licence is not valid
+                else
+                {
+                    // save error message to display after install
+                    Configuration::updateValue('ERP_MSG_AFTER_PROCESS', htmlentities($this->displayError($result['msg'])));
+                    
+                    // set licence has invalid
+                    Configuration::updateValue('ERP_LICENCE_VALIDITY', '0');
+                    Configuration::updateValue('ERP_LICENCE_INSTALL_ERROR', '1');
+                }
+            }
+            
+            // this function does not block the installation of the module
+            return true;
+        }
+        
+        public function displayCart()
+        {
+            // no license found in configuration
+            if( $this->diplayFormHasLicence || Configuration::get('ERP_LICENCE_INSTALL_ERROR') == '1' || $this->blockLicence )
+                return;
+           
+            // create a new licence
+            $objLicence = new Licence();
+            $objLicence->number = Configuration::hasKey('ERP_LICENCE') ? Configuration::get('ERP_LICENCE') : '';
+                      
+            // get all containers 
+            $containers_data = $objLicence->getAllContainers();
+            
+            // if contailers getted successfully
+            if( !$containers_data['error'])
+            {
+                // get current basket
+                $current_basket = $objLicence->getCurrentBasket( true );
+                
+                // Error if basket is empty and licence existe
+                if( empty($current_basket['msg']['feature_id']) && Configuration::get('ERP_LICENCE') != '')
+                {
+                    $er = $this->l('Error while getting the license basket.');
+                    $er .= sprintf($this->l('Please contact our technical support to this mail adress: %s'), ERP_EMAIL_SUPPORT);
+                    return $this->displayError($er);
+                }
+                
+                // no error display cart
+                else 
+                {
+                    // asign var to cart template
+                    $this->smarty->assign( array(
+                            'containers' => $containers_data['msg'],
+                            'current_basket' => $current_basket['msg']['feature_id'],
+                            'basket_ids' => $current_basket['msg']['basket_id'],
+                            'globa_level_selected' => $current_basket['msg']['globa_level_selected'],
+                        )
+                    );
+
+                    // call template cart
+                    return $this->display(__FILE__,'views/templates/admin/configuration/cart.tpl');
+                }
+
+            }
+            else {
+                return $this->displayError( $this->l('Error while getting container.').' '.$containers_data['msg'] );
+            }
+        }
+        
+        /*
+        * Check if a domaine name is a developper domaine like 127.0.0.1 or localhost
+        */
+        static public function isDevelopper($domaine = null)
+        {
+            
+            // is not domain 
+            if(empty($domaine))
+                $domaine = Configuration::get('PS_SHOP_DOMAIN');
+            
+            // check domain_name : if it's IP non-routable, so it's a developper access
+            $pattern = "/(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)|(^127\.0\.0\.1)|(localhost)/";
+            preg_match($pattern, $domaine , $matches);
+
+            if(count($matches) > 0)
+                return true;
+            else
+                return false;
+        }     
+        
+        public function displayErrorList($errors)
+        {
+            // asign var to cart template
+            $this->smarty->assign(array('errors' => $errors));
+            return $this->display(__FILE__,'views/templates/admin/configuration/error.tpl');
+        }    
+        
+        public function getDefaultForcastOrders()
+        {
+            // Number of order passed last month
+            $dateFrom = date('Y-m-d', mktime(0, 0, 0, date('m') - 1, 1, date('Y')));
+            $dateTo = date('Y-m-d', mktime(0, 0, 0, date('m'), 1 - 1, date('Y')));
+
+            if($this->is_1_6)
+                $nbOrderLastMonth = AdminStatsControllerCore::getOrders($dateFrom, $dateTo);
+            else
+            {
+                $orderLastMonth = Order::getOrdersIdByDate($dateFrom, $dateTo);
+                $nbOrderLastMonth = count($orderLastMonth);
+            }
+
+            if($nbOrderLastMonth < 100 ) $default = '0-100';
+            elseif($nbOrderLastMonth < 200) $default = '100-200';
+            elseif($nbOrderLastMonth < 300) $default = '200-300';
+            elseif($nbOrderLastMonth < 500) $default = '300-500';
+            elseif($nbOrderLastMonth < 1000) $default = '500-1000';
+            elseif($nbOrderLastMonth < 2000) $default = '1000-2000';
+            else $default = '2000+';
+            
+            return $default;
+        }
+        
+        /*
+        *   To do after first install v3
+        */
+        public function doAfterFirstIntallV3()
+        {
+            // first install if this conf does not exit
+            if(!Configuration::hasKey('ERP_FIRST_INSTALL_DATE') || Configuration::get('ERP_FIRST_INSTALL_DATE') == '' || Configuration::get('ERP_FIRST_INSTALL_DATE') == false )
+            {
+                $this->loadLicenceIfExists();
+                Configuration::updateValue('ERP_FIRST_INSTALL_DATE', date("Y-m-d H:i:s"));
+            }
+        }
+        
 }
