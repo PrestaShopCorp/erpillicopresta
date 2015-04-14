@@ -60,7 +60,7 @@ class ErpIllicopresta extends Module
                 
 		$this->name = 'erpillicopresta';
 		$this->tab = 'administration';
-		$this->version = '3.0.0';
+		$this->version = '3.0.1';
 		$this->author = 'illicopresta';	
 		$this->displayName = $this->l('1 Click ERP Illicopresta');
 		$this->description = $this->l('Save time in managing your E-Shop with the first ERP FREE and flexible(customer orders, Shipment, Suppliers, Stock management and export, inventory, ...).');
