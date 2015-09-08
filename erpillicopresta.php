@@ -1146,9 +1146,7 @@ class ErpIllicopresta extends Module
 	public function hookDisplayBackOfficeHeader()
 	{
             //load global_v3.css on any BO controller to display icon Order (and other things)
-            $this->context->controller->addJquery();
             $this->context->controller->addCSS($this->_path.'css/global_v3.css');
-            $this->context->controller->addJS($this->_path.'js/tools_v3.js');
 
             // get current controller
             $current_controller = Tools::getValue('controller');
@@ -1168,6 +1166,8 @@ class ErpIllicopresta extends Module
 
             if (in_array($current_controller, $allowed_controller))
             {
+                $this->context->controller->addJquery();
+                $this->context->controller->addJS($this->_path.'js/tools_v3.js');
                 $this->context->controller->addCSS($this->_path.'css/design.css');
                 $this->context->controller->addJS($this->_path.'js/mbExtruder/jquery.hoverIntent.min.js');
                 $this->context->controller->addJS($this->_path.'js/mbExtruder/jquery.mb.flipText.js');
@@ -1182,6 +1182,8 @@ class ErpIllicopresta extends Module
             // for module configuration page only
             else if ( Tools::getValue('configure') == 'erpillicopresta' && ( $current_controller == 'adminmodules' || $current_controller == 'AdminModules'))
             {
+                $this->context->controller->addJquery();
+                $this->context->controller->addJS($this->_path.'js/tools_v3.js');
                 $this->context->controller->addJS($this->_path.'js/jquery.validate/jquery.validate.js');
                 $this->context->controller->addJS($this->_path.'js/jquery.validate/messages_'.$this->context->language->iso_code.'.js');
                 $this->context->controller->addJqueryUI('ui.slider');
