@@ -1174,8 +1174,9 @@ class ErpIllicopresta extends Module
                 $this->context->controller->addJS($this->_path.'js/mbExtruder/mbExtruder.js');
                 $this->context->controller->addCSS($this->_path.'css/mbExtruder/mbExtruder.css', 'all');
 
-                if (!$this->is_1_6)
+                if (!$this->is_1_6) {
                     $this->context->controller->addCSS($this->_path.'css/bootstrap.css');
+                }
             }
 
             // for module configuration page only
@@ -1189,8 +1190,9 @@ class ErpIllicopresta extends Module
                 $this->context->controller->addCSS($this->_path.'css/configuration_v3.css');
 
                 // Add BS3 Css for 1.5
-                if(!$this->is_1_6)
+                if (!$this->is_1_6) {
                     $this->context->controller->addCSS($this->_path.'css/bs3.css');
+                }
             }
 	}
 
