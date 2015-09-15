@@ -2,7 +2,7 @@
 <module>
 	<name>erpillicopresta</name>
 	<displayName><![CDATA[1 Click ERP Illicopresta]]></displayName>
-	<version><![CDATA[3.0.2]]></version>
+	<version><![CDATA[3.0.3]]></version>
 	<description><![CDATA[Save time ! Optimize customer and suppliers orders treatment, set up suppliers sheets and manage your stock and inventory.]]></description>
 	<author><![CDATA[illicopresta]]></author>
 	<tab><![CDATA[administration]]></tab>
